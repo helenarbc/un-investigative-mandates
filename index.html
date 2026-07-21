@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UN Investigative Mandates — votes, mandates and reports</title>
+<meta name="description" content="Explorer of UN country-specific investigative mandates 2006–2026: resolutions, recorded votes, sponsorships, mandate language, and a paragraph-level search of the mechanisms' reports.">
+<link rel="stylesheet" href="assets/app.css?v=15">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%232a78d6'/%3E%3Crect x='3' y='8' width='2' height='5' fill='white'/%3E%3Crect x='7' y='5' width='2' height='8' fill='white'/%3E%3Crect x='11' y='3' width='2' height='10' fill='white'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-top">
+    <h1 id="site-title">UN Investigative Mandates</h1>
+    <div class="masthead-actions">
+      <button class="icon-btn" id="theme-toggle" title="Switch light/dark">◐ Theme</button>
+    </div>
+  </div>
+  <p class="subtitle">Every Human Rights Council resolution 2006–2026 that establishes, renews or
+  newly tasks a <b>country-specific investigative or accountability mechanism</b> — commissions of
+  inquiry, fact-finding missions, groups of experts and OHCHR investigations — with all recorded
+  votes, sponsorships and mandate language. Thematic mechanisms and country special procedures are
+  not included. The Reports library adds the reports of related GA-, Security-Council- and
+  Secretary-General-mandated bodies for the same situations (those have no HRC votes).
+  Every figure links to the UN document it comes from.</p>
+</header>
+
+<nav class="tabbar" role="tablist" aria-label="Main sections">
+  <button class="tab" role="tab" data-tab="mechs" aria-selected="true">Mechanisms</button>
+  <button class="tab" role="tab" data-tab="res" aria-selected="false">Resolutions</button>
+  <button class="tab" role="tab" data-tab="votes" aria-selected="false">Votes</button>
+  <button class="tab" role="tab" data-tab="reports" aria-selected="false">Reports</button>
+  <button class="tab" role="tab" data-tab="about" aria-selected="false">About &amp; method</button>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ TAB: RESOLUTIONS (language & coding of the texts) ============ -->
+  <section class="view" id="view-res">
+    <div id="fb-slot-res"><div class="filterbar" id="filterbar"><!-- rendered by app.js --></div></div>
+    <div id="res-content"><!-- rendered by app.js --></div>
+  </section>
+
+  <!-- ============ TAB: VOTES (how states vote) ============ -->
+  <section class="view" id="view-votes">
+    <div id="fb-slot-votes"></div>
+    <nav class="subnav" id="votes-subnav" aria-label="Votes views">
+      <button data-sub="matrix" aria-selected="true">Votes matrix</button>
+      <button data-sub="states" aria-selected="false">State profiles</button>
+      <button data-sub="sponsors" aria-selected="false">Sponsorship</button>
+    </nav>
+    <div id="votes-content"><!-- rendered by app.js --></div>
+  </section>
+
+  <!-- ============ TAB: MECHANISMS ============ -->
+  <section class="view" id="view-mechs">
+    <div id="mechs-content"></div>
+  </section>
+
+  <!-- ============ TAB 2: REPORTS ============ -->
+  <section class="view" id="view-reports">
+    <div id="reports-content"><div class="skeleton">Loading the reports corpus…</div></div>
+  </section>
+
+  <!-- ============ TAB 3: ABOUT ============ -->
+  <section class="view" id="view-about">
+    <div class="prose" id="about-content"><!-- rendered by app.js --></div>
+  </section>
+
+</main>
+
+<footer class="footer" id="footer"></footer>
+
+<div id="tooltip" role="status" aria-hidden="true"></div>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script src="data/core.js?v=15"></script>
+<script src="data/paragraphs/manifest.js?v=15"></script>
+<script src="assets/synonyms.js?v=15"></script>
+<script src="assets/charts.js?v=15"></script>
+<script src="assets/app.js?v=15"></script>
+<script src="assets/reports.js?v=15"></script>
+</body>
+</html>
