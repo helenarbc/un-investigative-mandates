@@ -21,6 +21,8 @@
   };
   const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const unLink = (sym) => `https://docs.un.org/en/${sym}`;
+  const wsOn = (k) => !!(window.HRCWorkspace && window.HRCWorkspace.has(k));
+  const wsBtn = (key, off, on) => `<button class="icon-btn ws-btn" data-ws-key="${esc(key)}" data-ws-off="${off}" data-ws-on="${on}" aria-pressed="${wsOn(key)}">${wsOn(key) ? on : off}</button>`;
 
   /* ---------- indices ---------- */
   const RES = D.resolutions.slice().sort((a, b) => (a.date_adopted || "").localeCompare(b.date_adopted || ""));
@@ -136,22 +138,25 @@
       for (let y = YEARS.min; y <= YEARS.max; y++) o += opt(String(y), String(y), String(sel));
       return o;
     };
+    const MECH_OPTS = D.bodies.filter(b => (b.resolutions || []).length).map(b => b.short_name).sort();
     $("#filterbar").innerHTML = `
       <div class="filter-row">
         <div class="f-item f-search"><label for="f-q">Search</label>
           <input type="search" id="f-q" placeholder="Symbol, title or mechanism…" value="${esc(F.q)}"></div>
         <div class="f-item"><label for="f-y0">From</label><select id="f-y0">${yearOpts(F.y0)}</select></div>
         <div class="f-item"><label for="f-y1">To</label><select id="f-y1">${yearOpts(F.y1)}</select></div>
-        <div class="f-item"><label for="f-country">Situation (country)</label>
-          <select id="f-country">${opt("", "All")}${COUNTRIES.map(c => opt(c, c, F.country)).join("")}</select></div>
-        <div class="f-item"><label for="f-mode">Adoption</label>
-          <select id="f-mode">${opt("", "All")}${opt("Recorded vote", "Recorded vote", F.mode)}${opt("Consensus", "Consensus", F.mode)}</select></div>
+        <div class="f-item"><label for="f-body">Mechanism</label>
+          <select id="f-body">${opt("", "All")}${MECH_OPTS.map(b => opt(b, b, F.body)).join("")}</select></div>
         <div class="f-actions">
-          <button class="icon-btn" id="f-more" aria-expanded="false">Analytical filters ▾</button>
+          <button class="icon-btn" id="f-more" aria-expanded="false">More filters ▾</button>
           <button class="icon-btn reset-btn" id="f-reset" title="Clear all filters">Reset</button>
         </div>
       </div>
       <div class="filter-row" id="f-adv" hidden>
+        <div class="f-item"><label for="f-country">Situation (country)</label>
+          <select id="f-country">${opt("", "All")}${COUNTRIES.map(c => opt(c, c, F.country)).join("")}</select></div>
+        <div class="f-item"><label for="f-mode">Adoption</label>
+          <select id="f-mode">${opt("", "All")}${opt("Recorded vote", "Recorded vote", F.mode)}${opt("Consensus", "Consensus", F.mode)}</select></div>
         <div class="f-item"><label for="f-role">Resolution role</label>
           <select id="f-role">${opt("", "All")}${ROLES.map(x => opt(x, x, F.role)).join("")}</select></div>
         <div class="f-item"><label for="f-ca">Criminal-accountability wording</label>
@@ -172,7 +177,7 @@
       <div class="filter-note" id="f-note"></div>`;
 
     $("#f-q").addEventListener("input", (e) => { F.q = e.target.value.trim(); update(); });
-    [["f-y0", "y0", Number], ["f-y1", "y1", Number], ["f-country", "country", String],
+    [["f-y0", "y0", Number], ["f-y1", "y1", Number], ["f-body", "body", String], ["f-country", "country", String],
      ["f-mode", "mode", String], ["f-role", "role", String],
      ["f-ca", "ca", String], ["f-gloc", "genderLoc", String], ["f-glab", "genderLabel", String],
      ["f-child", "children", String]].forEach(([id, key, cast]) => {
@@ -186,7 +191,7 @@
       const adv = $("#f-adv");
       adv.hidden = !adv.hidden;
       $("#f-more").setAttribute("aria-expanded", String(!adv.hidden));
-      $("#f-more").textContent = adv.hidden ? "Analytical filters ▾" : "Analytical filters ▴";
+      $("#f-more").textContent = adv.hidden ? "More filters ▾" : "More filters ▴";
     });
     $("#f-reset").addEventListener("click", resetFilters);
     $("#f-verbs").addEventListener("click", (e) => {
@@ -204,10 +209,10 @@
       update();
     });
     // keep the advanced row open if any advanced filter is active
-    if (F.role || F.ca || F.genderLoc || F.genderLabel || F.children || F.verbs.size || F.fw.size) {
+    if (F.country || F.mode || F.role || F.ca || F.genderLoc || F.genderLabel || F.children || F.verbs.size || F.fw.size) {
       $("#f-adv").hidden = false;
       $("#f-more").setAttribute("aria-expanded", "true");
-      $("#f-more").textContent = "Analytical filters ▴";
+      $("#f-more").textContent = "More filters ▴";
     }
   }
 
@@ -325,7 +330,7 @@
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Resolutions</h2><span class="count">${R.length}</span>
-          <span class="spacer"></span><button class="icon-btn" id="csv-res">Download CSV</button></div>
+          <span class="spacer"></span><details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-res">Download CSV</button></div></details></div>
         <div class="tblwrap tall" id="res-table"></div>
         <div class="panel-note">Click a row for details, the vote breakdown and links to the UN documents.</div>
       </div>`;
@@ -510,21 +515,27 @@
           <span class="count">${recorded.length} recorded votes · ${active.size} states</span>
           ${filterChip()}
           <span class="spacer"></span>
-          <div class="seg" id="mx-rows">
-            <button data-v="states" aria-pressed="${matrixRows === "states"}">states</button>
-            <button data-v="groups" aria-pressed="${matrixRows === "groups"}">regional groups</button>
-          </div>
-          <div class="seg" id="mx-cols">
-            <button data-v="mechanism" aria-pressed="${matrixCols === "mechanism"}">by mechanism</button>
-            <button data-v="date" aria-pressed="${matrixCols === "date"}">by date</button>
-          </div>
+          <details class="menu"><summary class="icon-btn">Display options ▾</summary>
+            <div class="menu-list">
+              <div class="menu-label">Rows</div>
+              <div class="seg" id="mx-rows">
+                <button data-v="states" aria-pressed="${matrixRows === "states"}">states</button>
+                <button data-v="groups" aria-pressed="${matrixRows === "groups"}">regional groups</button>
+              </div>
+              <div class="menu-label">Columns</div>
+              <div class="seg" id="mx-cols">
+                <button data-v="mechanism" aria-pressed="${matrixCols === "mechanism"}">by mechanism</button>
+                <button data-v="date" aria-pressed="${matrixCols === "date"}">by date</button>
+              </div>
+            </div>
+          </details>
           <span class="legend">
             <span class="lg"><span class="sw" style="background:var(--yes)"></span>Yes</span>
             <span class="lg"><span class="sw" style="background:var(--no)"></span>No</span>
             <span class="lg"><span class="sw" style="background:var(--abstain)"></span>Abstain</span>
             <span class="lg"><span class="sw" style="background:var(--absent)"></span>Absent</span>
           </span>
-          <button class="icon-btn" id="csv-matrix">Download CSV</button>
+          <details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-matrix">Download CSV</button></div></details>
         </div>
         <div class="matrix-wrap" id="matrix-host"></div>
         <div class="panel-note">${matrixRows === "states"
@@ -725,7 +736,7 @@
         </div></div>` : ""}
       <div class="panel">
         <div class="panel-head"><h2>Voting record</h2><span class="count">${myVotes.length}</span>
-        <span class="spacer"></span><button class="icon-btn" id="csv-state">Download CSV</button></div>
+        <span class="spacer"></span><details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-state">Download CSV</button></div></details></div>
         <div class="tblwrap tall"><table class="data"><thead><tr><th class="no-sort">Resolution</th>
           <th class="no-sort">Date</th><th class="no-sort">Title</th><th class="no-sort">Position</th></tr></thead>
         <tbody>${myVotes.slice().reverse().map(({ r, c }) => `<tr data-sym="${esc(r.symbol)}">
@@ -798,7 +809,7 @@
         <div class="panel-head"><h2>Who sponsors these resolutions?</h2>
           <span class="count">sponsorship recorded for ${inSel.length} of ${R.length} selected resolutions</span>
           ${filterChip()}
-          <span class="spacer"></span><button class="icon-btn" id="csv-sp">Download CSV</button></div>
+          <span class="spacer"></span><details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-sp">Download CSV</button></div></details></div>
         <div class="panel-body">
           <div class="legend" style="padding-bottom:8px">
             <span class="lg"><span class="sw" style="background:var(--c1)"></span>Main sponsor / core group</span>
@@ -878,19 +889,22 @@
       (grouped.get("OHCHR investigation (broader)") || { rows: [] }).rows.length;
     host.innerHTML = `
       <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
-        <b style="color:var(--ink)">${D.bodies.length} country-specific investigative and accountability mechanisms.</b>
-        ${hrcCount} were mandated by the Human Rights Council or conducted by OHCHR at the Council's request —
-        these are the mechanisms whose resolutions and votes appear in the Votes tab. The remaining
-        ${D.bodies.length - hrcCount} were mandated by the Secretary-General, the General Assembly or the
-        Security Council: they have no HRC resolutions or votes, but their reports are searchable in the
-        Reports tab. Thematic mechanisms and country special procedures are outside the dataset.
+        <b style="color:var(--ink)">${D.bodies.length} country-specific investigative and accountability mechanisms</b> —
+        ${hrcCount} mandated by the Human Rights Council, ${D.bodies.length - hrcCount} by the Secretary-General, the
+        General Assembly or the Security Council. Click a name for its mandate, resolutions, votes and reports.
+        <details class="more"><summary>What is and is not included</summary>
+          <div>The ${hrcCount} Council-mandated bodies (including OHCHR investigations at the Council's request) are the
+          mechanisms whose resolutions and votes appear in the Resolutions and Votes tabs. The other
+          ${D.bodies.length - hrcCount} have no HRC resolutions or votes, but their reports are searchable in the
+          Reports tab. Thematic mechanisms and country special procedures are outside the dataset.
+          Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
+          HRC mandating resolutions — renewals inherit the founding language; the non-Council bodies are not coded by design.</div></details>
       </div></div>
       ${[...grouped.values()].filter(g => g.rows.length).map(g => `
       <div class="panel">
         <div class="panel-head"><h2>${esc(g.label)}</h2><span class="count">${g.rows.length}</span></div>
         <div class="tblwrap"><table class="data"><thead><tr>
           <th class="no-sort">Mechanism</th><th class="no-sort">Situation</th><th class="no-sort">Active</th>
-          <th class="no-sort">Mandate action verbs</th><th class="no-sort">Frameworks</th>
           <th class="no-sort">Explore</th></tr></thead>
         <tbody>${g.rows.sort((a, b) =>
           ((a.end_date ? 1 : 0) - (b.end_date ? 1 : 0)) ||
@@ -903,8 +917,6 @@
               <div style="font-size:12px;color:var(--muted)">${esc(b.full_name || "")}</div></td>
             <td>${esc(countryName(b.country) || "—")}</td>
             <td style="white-space:nowrap">${yearsOf(b)}</td>
-            <td style="max-width:230px">${(b.mandate_action_verbs || []).map(v => `<span class="badge">${esc(v)}</span>`).join(" ") || "—"}</td>
-            <td style="white-space:nowrap">${(b.mandate_legal_frameworks || []).map(f => `<span class="badge on" style="background:var(${FW_COMBO_COLOR[f] || "--c1"})">${esc(f)}</span>`).join(" ") || "—"}</td>
             <td style="white-space:nowrap">
               ${nres ? `<a class="mech-res" data-body="${esc(b.short_name)}">${nres} resolution${nres > 1 ? "s" : ""}</a>
                 <br><a class="mech-votes" data-body="${esc(b.short_name)}">votes</a>` : `<span style="color:var(--muted)">no HRC resolutions</span>`}
@@ -913,10 +925,7 @@
           </tr>`;
         }).join("")}</tbody></table></div>
       </div>`).join("")}
-      <div class="panel-note" style="padding:0 4px 10px">Mandate action verbs and legal frameworks are the union of each
-      mechanism's HRC mandating resolutions (renewals inherit the founding language); the ${D.bodies.length - hrcCount} non-Council
-      bodies are not coded by design. Click "resolutions &amp; votes" to see that mechanism's texts in the Votes tab,
-      or "reports" to open its documents in the Reports tab.</div>`;
+`;
     host.onclick = (e) => {
       const mo = e.target.closest("a.mech-open");
       if (mo) { openMechanism(mo.dataset.body); return; }
@@ -958,6 +967,7 @@
       <div class="modal-head">
         <div><h3>${esc(b.full_name || name)}</h3>
           <div class="sym">${esc(name)} · ${esc(countryName(b.country) || "")} · ${active}</div></div>
+        ${wsBtn("m:" + name, "☆ Save", "★ Saved")}
         <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
@@ -1106,6 +1116,7 @@
       <div class="modal-head">
         <div><h3>${esc(r.title)}</h3>
           <div class="sym">${esc(r.symbol)} · ${fmtDate(r.date_adopted)} · session ${esc(r.session || "—")}</div></div>
+        ${wsBtn("r:" + r.symbol, "☆ Save", "★ Saved")}
         <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
@@ -1164,6 +1175,9 @@
   $("#overlay").addEventListener("click", (e) => { if (e.target === $("#overlay")) closeModal(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
   document.addEventListener("click", (e) => {
+    $$("details.menu[open]").forEach(d => { if (!d.contains(e.target)) d.removeAttribute("open"); });
+  });
+  document.addEventListener("click", (e) => {
     const a = e.target.closest("a.reslink");
     if (a) { e.preventDefault(); openResolution(a.dataset.sym); }
   });
@@ -1200,7 +1214,7 @@
     const bits = [];
     if (F.y0 !== YEARS.min || F.y1 !== YEARS.max) bits.push(`years ${F.y0}-${F.y1}`);
     if (F.country) bits.push(F.country);
-    if (F.body) bits.push(`mechanism: ${F.body} (set from the Mechanisms tab — Reset clears it)`);
+    if (F.body) bits.push(`mechanism: ${F.body}`);
     if (F.mode) bits.push(F.mode);
     if (F.role) bits.push("role: " + F.role);
     if (F.ca) bits.push("accountability: " + F.ca);
@@ -1234,6 +1248,12 @@
       language of the mandates themselves — including how they address criminal accountability,
       gender and children. The <b>Reports</b> tab searches the mechanisms' own reports paragraph
       by paragraph and returns only verbatim text with citations.</p>
+      <p><button class="icon-btn" onclick="window.HRCTour && HRCTour.start()">? Take the one-minute tour</button></p>
+      <h2>Your workspace</h2>
+      <p>While you read, save paragraphs (Reports tab), resolutions and mechanisms with the <b>Save</b> buttons.
+      They collect in the <b>☆ Workspace</b> (top right), where you can add a note to each item, copy all the
+      citations, download the selection as a text file or a spreadsheet, or copy a link that opens the same
+      selection for a colleague. The workspace lives only in your browser — nothing is sent anywhere.</p>
       <h2>What is included</h2>
       <p>Every HRC resolution or decision adopted 2006–2026 (in regular session, special session
       or organizational meeting) that <b>(a) establishes</b> a country-specific investigative or
@@ -1328,12 +1348,38 @@
       setTab("votes", false);
     } else if (h === "#/reports") {
       setTab("reports");
+    } else if (h.startsWith("#/reports/")) {
+      // deep link into a document/paragraph: keep the hash for reports.js
+      setTab("reports", false);
+    } else if (h.startsWith("#/workspace")) {
+      // shared selection or the drawer itself: workspace.js reads the hash
+      setTab("mechs", false);
     } else if (h === "#/about") {
       setTab("about");
     } else {
       setTab("mechs");
     }
   }
-  window.HRCApp = { openResolution, setTab, esc, fmtDate, unLink, downloadCSV, bySym, bodyByName };
+  const yearsOf = (b) => {
+    const y0 = (b.start_date || "").slice(0, 4), y1 = (b.end_date || "").slice(0, 4);
+    return y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "";
+  };
+  // items the Workspace can save from this module (keyed "r:<symbol>", "m:<short name>")
+  const wsItems = {
+    r: (sym) => {
+      const r = bySym.get(sym);
+      if (!r) return null;
+      return { sym, title: r.title || "", date: fmtDate(r.date_adopted), mode: r.adoption_mode || "",
+        tally: r.tally || "", bodies: r.bodies || [], role: r.resolution_role || "", unlink: unLink(sym) };
+    },
+    m: (name) => {
+      const b = bodyByName.get(name);
+      if (!b) return null;
+      return { name, full_name: b.full_name || "", country: countryName(b.country) || "", years: yearsOf(b),
+        verbs: (b.mandate_action_verbs || []).join(", "), frameworks: (b.mandate_legal_frameworks || []).join(", "),
+        link: b.links || "" };
+    },
+  };
+  window.HRCApp = { openResolution, openMechanism, setTab, esc, fmtDate, unLink, downloadCSV, bySym, bodyByName, wsItems };
   boot();
 })();

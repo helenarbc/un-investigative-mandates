@@ -11,6 +11,7 @@
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   const $ = (sel, root) => (root || document).querySelector(sel);
   const fold = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const wsOn = (k) => !!(window.HRCWorkspace && window.HRCWorkspace.has(k));
 
   const M = window.HRC_PARAGRAPHS || null; // manifest, present once corpus is built
   const state = {
@@ -42,7 +43,9 @@
     const p = new Promise((resolve, reject) => {
       shardResolvers.set(name.replace(/\.json$/, ""), resolve);
       const s = document.createElement("script");
-      s.src = "data/paragraphs/" + name.replace(/\.json$/, ".js");
+      // the shard's content hash from the (versioned) manifest busts stale caches after a rebuild
+      const sha = ((window.HRC_PARAGRAPHS || {}).shards || {})[name];
+      s.src = "data/paragraphs/" + name.replace(/\.json$/, ".js") + (sha && sha.sha256_16 ? "?h=" + sha.sha256_16 : "");
       s.onerror = () => reject(new Error("Failed to load " + name));
       s.onload = () => setTimeout(resolve, 0); // fallback if ids mismatch
       document.head.appendChild(s);
@@ -166,7 +169,7 @@
     const sym = d.symbol ? `, UN Doc ${d.symbol}` : "";
     const para = p.unnumbered
       ? `, unnumbered paragraph ${p.seq + 1}${p.annex ? ` (annex ${p.annex})` : ""}`
-      : `, para. ${p.n}${p.annex ? ` (annex ${p.annex})` : ""}`;
+      : `, para. ${p.n}${p.annex ? ` (annex ${p.annex})` : ""}${p.printed ? ` (misprinted as ${p.printed} in the document)` : ""}`;
     return `${body}, "${d.title || d.doc_id}"${sym}${date}${para}.`;
   }
   function paraAnchor(p) { return `#/reports/doc/${encodeURIComponent(p.rec_id)}/${encodeURIComponent(p.id)}`; }
@@ -236,30 +239,26 @@
     const EXAMPLES = [
       '"crimes against humanity" Myanmar',
       'attacks on hospitals',
-      'starvation siege',
       '"enforced disappearance" -Syria',
     ];
     body.innerHTML = `
       <div class="panel"><div class="panel-body">
         <div class="ask-help" style="margin:0 0 8px;font-size:13.5px;color:var(--ink-2)">
-          <b style="color:var(--ink)">How this works:</b> type any words and the site finds the exact paragraphs
-          of the mechanisms' reports (${M.documents} documents) that contain them, ranked by relevance, each with
-          its citation and a link to the UN source. You always read the original text, word for word —
-          nothing is AI-generated.</div>
-        <div class="ask-help" style="margin:0 0 10px;font-size:12.5px">
-          <b>What is searched:</b> the mechanisms' substantive output — official reports, conference room
-          papers (CRPs), annexes, and terms of reference. Press releases, oral statements and hearing
-          transcripts are <b>not</b> part of this corpus.</div>
+          Type any words: you get the exact paragraphs of the mechanisms' reports that contain them, each with its
+          citation and UN source — verbatim, nothing is AI-generated.
+          <details class="more"><summary>How search works</summary>
+            <div><b>What is searched:</b> ${M.documents} documents — the mechanisms' official reports, conference room
+            papers (CRPs), annexes and terms of reference. Press releases, oral statements and hearing transcripts
+            are <b>not</b> included. Results are ranked by relevance; all your words must appear in the paragraph.<br>
+            <b>Syntax:</b> words are combined with AND · <code>"quoted phrase"</code> = exact phrase · <code>OR</code>
+            for alternatives · <code>-word</code> excludes · <code>wildcar*</code> matches word beginnings.</div></details></div>
         <div class="ask-box">
           <input type="search" id="ask-input" placeholder='Try: sexual violence detention — or "crimes against humanity"'
             value="${esc(state.lastQuery)}" autocomplete="off">
           <button id="ask-go">Search</button>
         </div>
-        <div class="ask-help">Try an example:
-          ${EXAMPLES.map(x => `<button class="chip ask-example" data-q="${esc(x)}">${esc(x)}</button>`).join(" ")}
-          <details style="display:inline-block;margin-left:6px"><summary style="cursor:pointer;display:inline">search syntax</summary>
-          words are combined with AND · <code>"quoted phrase"</code> = exact phrase · <code>OR</code> for alternatives ·
-          <code>-word</code> excludes · <code>wildcar*</code> matches word beginnings</details></div>
+        <div class="ask-help">Try:
+          ${EXAMPLES.map(x => `<button class="chip ask-example" data-q="${esc(x)}">${esc(x)}</button>`).join(" ")}</div>
         <div class="filterbar" style="box-shadow:none;margin:0">${filterRow(state.docs.size ? state.docs : new Map())}</div>
         <div id="ask-status" class="ask-status"></div>
         <div id="ask-progress"></div>
@@ -359,7 +358,7 @@
     const d = docOf(p);
     const paraLabel = p.unnumbered
       ? `<span class="unnumbered-flag">unnumbered ¶${p.seq + 1}</span>`
-      : `¶ ${esc(p.n)}${p.annex ? ` <span class="unnumbered-flag">annex ${p.annex}</span>` : ""}`;
+      : `¶ ${esc(p.n)}${p.annex ? ` <span class="unnumbered-flag">annex ${p.annex}</span>` : ""}${p.printed ? ` <span class="unnumbered-flag" title="The document misprints this paragraph's number; it is shown in its position in the sequence.">printed as ${esc(p.printed)}</span>` : ""}`;
     let text = p.text;
     let clipped = false;
     if (text.length > 900) {
@@ -384,6 +383,7 @@
         <button class="pc-copy">Copy paragraph</button>
         <button class="pc-cite">Copy citation</button>
         <button class="pc-open">Open in document</button>
+        <button data-ws-key="p:${esc(p.id)}" data-ws-off="Save to workspace" data-ws-on="Saved ✓" aria-pressed="${wsOn("p:" + p.id)}">${wsOn("p:" + p.id) ? "Saved ✓" : "Save to workspace"}</button>
         ${d.symbol ? `<a href="${esc(A().unLink(d.symbol))}" target="_blank" rel="noopener">UN source ↗</a>` : ""}
       </div>
     </article>`;
@@ -515,12 +515,13 @@
             ${d.symbol ? `<a class="icon-btn" href="${esc(A().unLink(d.symbol))}" target="_blank" rel="noopener">UN source ↗</a>` : ""}
           </div>
           ${(d.gaps || []).length ? `<div class="panel-note">Note: paragraph number${d.gaps.length > 1 ? "s" : ""}
-            ${esc(d.gaps.join(", "))} ${d.gaps.length > 1 ? "are" : "is"} missing from the source text extraction.</div>` : ""}
+            ${esc(d.gaps.join(", "))} ${d.gaps.length > 1 ? "do" : "does"} not appear in the source text — the document's own numbering skips ${d.gaps.length > 1 ? "them" : "it"}, or the paragraph sits inside a table or image. Nothing was invented to fill the hole.</div>` : ""}
+          ${(d.misprints || []).length ? `<div class="panel-note">Note: ${d.misprints.map(m => `paragraph ${esc(m.n)} is misprinted as “${esc(m.printed)}” in the document`).join("; ")} — shown here in its position in the sequence.</div>` : ""}
           <div class="panel-body" id="doc-paras">
             ${paras.map(p => `<div class="para" id="p-${esc(p.id)}" data-pid="${esc(p.id)}">
-              <div class="pn" title="${p.unnumbered ? "sequential position (no printed number)" : "printed paragraph number"}">${p.unnumbered ? "·" + (p.seq + 1) : esc(p.n)}${p.annex ? `<div style="font-size:9px">ax${p.annex}</div>` : ""}</div>
+              <div class="pn" title="${p.unnumbered ? "sequential position (no printed number)" : p.printed ? `misprinted as ${esc(p.printed)} in the document` : "printed paragraph number"}">${p.unnumbered ? "·" + (p.seq + 1) : esc(p.n)}${p.annex ? `<div style="font-size:9px">ax${p.annex}</div>` : ""}${p.printed ? `<div style="font-size:9px">(${esc(p.printed)})</div>` : ""}</div>
               <div class="pt">${esc(p.text)}</div>
-              <div style="flex:0 0 auto"><button class="chip pc-cite" data-pid="${esc(p.id)}" title="Copy citation">cite</button></div>
+              <div style="flex:0 0 auto;display:flex;gap:4px;align-items:flex-start"><button class="chip pc-cite" data-pid="${esc(p.id)}" title="Copy citation">cite</button><button class="chip" data-ws-key="p:${esc(p.id)}" data-ws-off="save" data-ws-on="saved ✓" aria-pressed="${wsOn("p:" + p.id)}">${wsOn("p:" + p.id) ? "saved ✓" : "save"}</button></div>
             </div>`).join("")}
           </div>
         </div>`;
@@ -556,5 +557,18 @@
   }
   window.addEventListener("load", handleHash);
 
-  window.HRCReports = { activate, showMechanism };
+  /* ---------- workspace items ("p:<paragraph id>") ---------- */
+  function wsItem(id) {
+    const p = state.paras.find(x => x.id === id);
+    if (!p) return null;
+    const d = docOf(p);
+    const label = p.unnumbered
+      ? `unnumbered ¶${p.seq + 1}${p.annex ? ` (annex ${p.annex})` : ""}`
+      : `¶ ${p.n}${p.annex ? ` (annex ${p.annex})` : ""}${p.printed ? ` (printed as ${p.printed})` : ""}`;
+    return { id: p.id, rec_id: p.rec_id, symbol: d.symbol || "", doc_id: d.doc_id || "", title: d.title || "",
+      body: (d.bodies || [])[0] || "", date: d.date ? A().fmtDate(d.date) : String(d.year || ""),
+      label, text: p.text, cite: citeOf(p), unlink: d.symbol ? A().unLink(d.symbol) : "" };
+  }
+
+  window.HRCReports = { activate, showMechanism, openDoc, wsItem, loadAll: () => loadAllShards() };
 })();
