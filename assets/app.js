@@ -699,9 +699,22 @@
   let currentState = "";
   function viewStates(R) {
     const host = $("#votes-content");
-    if (!currentState) currentState = "Argentina";
-    const si = stateIdxByName.get(currentState);
     const recorded = R.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol));
+    // only states that matter for this selection: Council members at the time of at
+    // least one recorded vote (any position, including absent), plus any sponsor
+    const relevant = new Set();
+    recorded.forEach(r => {
+      const row = votesOf(r.symbol);
+      for (let i = 0; i < row.length; i++) if (row[i] && row[i] !== ".") relevant.add(i);
+    });
+    R.forEach(r => { const sp0 = sponsorsOf(r.symbol); if (sp0) { sp0.m.forEach(i => relevant.add(i)); sp0.c.forEach(i => relevant.add(i)); } });
+    const narrowed = filtersActive() && relevant.size && relevant.size < STATES.length;
+    const stateList = narrowed
+      ? [...relevant].map(i => STATES[i]).sort((a, b) => a.state.localeCompare(b.state))
+      : STATES;
+    if (!currentState || (narrowed && !stateList.some(s => s.state === currentState)))
+      currentState = stateList.some(s => s.state === "Argentina") ? "Argentina" : stateList[0].state;
+    const si = stateIdxByName.get(currentState);
     const myVotes = [];
     recorded.forEach(r => {
       const c = votesOf(r.symbol)[si];
@@ -738,11 +751,15 @@
     host.innerHTML = `
       <div class="panel"><div class="panel-body state-picker">
         <label for="state-select">State profile — choose a state</label>
-        <select id="state-select">${STATES.map(s =>
+        <select id="state-select">${stateList.map(s =>
           `<option${s.state === currentState ? " selected" : ""}>${esc(s.state)}</option>`).join("")}</select>
         <span class="count" style="color:var(--muted)"><span class="dotkey" style="background:var(${g.color})"></span>${esc(g.short)}</span>
         ${filterChip()}
-      </div></div>
+      </div>
+      ${narrowed ? `<div class="panel-note">Listing the ${stateList.length} states that were Council members when at least one of the
+        ${recorded.length} selected recorded vote${recorded.length === 1 ? "" : "s"} took place (or sponsored a selected text). States that
+        were not members at the time have no position to show and are left out; clear the filter to see all ${STATES.length}.</div>` : ""}
+      </div>
       <div class="tiles">
         <div class="tile"><div class="t-label">Votes cast (in selection)</div><div class="t-value">${myVotes.length}</div><div class="t-sub">of ${recorded.length} recorded votes</div></div>
         <div class="tile"><div class="t-label">Yes</div><div class="t-value" style="color:var(--yes)">${count("Y")}</div></div>
