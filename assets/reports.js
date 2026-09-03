@@ -354,6 +354,11 @@
     return out + esc(text.slice(pos));
   }
 
+  function sectionStart(p) {
+    if (!p.section) return false;
+    const prev = state.paras.find(x => x.rec_id === p.rec_id && x.seq === p.seq - 1);
+    return !prev || prev.section !== p.section;
+  }
   function paraCard(p, hlRegs) {
     const d = docOf(p);
     const paraLabel = p.unnumbered
@@ -377,6 +382,7 @@
         <span>·</span><span>${esc(d.title || "")}</span>
         <span>·</span><span>${esc(d.date ? A().fmtDate(d.date) : (d.year || ""))}</span>
       </div>
+      ${p.section ? `<div class="pc-section" title="The heading this paragraph sits under in the document">§ ${esc(p.section)}${sectionStart(p) ? ` <span class="unnumbered-flag">· first paragraph under this heading</span>` : ""}</div>` : ""}
       <div class="pc-text">${highlight(text, hlRegs)}</div>
       ${clipped ? `<div style="margin:-2px 0 6px"><button class="chip pc-expand">Show the full paragraph</button></div>` : ""}
       <div class="pc-actions">
@@ -493,6 +499,56 @@
   }
 
   /* ---------- document reader ---------- */
+  // gap labels come from the build as "93" or "a1:5" (paragraph 5 of annex 1)
+  function parseGap(g) {
+    const m = /^(?:a(\d+):)?(\d+)$/.exec(String(g));
+    return m ? { annex: m[1] ? +m[1] : 0, n: +m[2] } : null;
+  }
+  function gapLabel(g) {
+    const x = parseGap(g);
+    return x ? (x.annex ? `${x.n} (annex ${x.annex})` : String(x.n)) : String(g);
+  }
+  function paraRow(p) {
+    return `<div class="para" id="p-${esc(p.id)}" data-pid="${esc(p.id)}">
+      <div class="pn" title="${p.unnumbered ? "sequential position (no printed number)" : p.printed ? `misprinted as ${esc(p.printed)} in the document` : "printed paragraph number"}">${p.unnumbered ? "·" + (p.seq + 1) : esc(p.n)}${p.annex ? `<div style="font-size:9px">ax${p.annex}</div>` : ""}${p.printed ? `<div style="font-size:9px">(${esc(p.printed)})</div>` : ""}</div>
+      <div class="pt">${esc(p.text)}</div>
+      <div style="flex:0 0 auto;display:flex;gap:4px;align-items:flex-start"><button class="chip pc-cite" data-pid="${esc(p.id)}" title="Copy citation">cite</button><button class="chip" data-ws-key="p:${esc(p.id)}" data-ws-off="save" data-ws-on="saved ✓" aria-pressed="${wsOn("p:" + p.id)}">${wsOn("p:" + p.id) ? "saved ✓" : "save"}</button></div>
+    </div>`;
+  }
+  function gapRow(nums, prev, next) {
+    const one = nums.length === 1;
+    return `<div class="para gap"><div class="pn" title="number skipped by the document itself">${one ? nums[0] : "…"}</div>
+      <div class="pt gap-note">The official document has no paragraph${one ? ` ${nums[0]}` : `s ${nums.slice(0, -1).join(", ")} and ${nums[nums.length - 1]}`}: its own numbering jumps
+      from ${prev == null ? "the start" : prev} to ${next}. Nothing was lost in the transcription — the UN text itself skips ${one ? "this number" : "these numbers"}.</div></div>`;
+  }
+  function readerRows(paras, d) {
+    const gaps = new Map();                        // annex -> ascending list of skipped numbers
+    (d.gaps || []).forEach(g => {
+      const x = parseGap(g);
+      if (!x) return;
+      if (!gaps.has(x.annex)) gaps.set(x.annex, []);
+      gaps.get(x.annex).push(x.n);
+    });
+    gaps.forEach(arr => arr.sort((a, b) => a - b));
+    const lastN = new Map();
+    let prevSection = null;
+    const out = [];
+    paras.forEach(p => {
+      if (p.section && p.section !== prevSection) {
+        out.push(`<div class="para sec"><div class="pn"></div><div class="pt sec-title" title="Heading as printed in the document">${esc(p.section)}</div></div>`);
+        prevSection = p.section;
+      }
+      if (!p.unnumbered && p.n != null && /^\d+$/.test(String(p.n))) {
+        const a = p.annex || 0, n = +p.n;
+        const prev = lastN.has(a) ? lastN.get(a) : null;
+        const due = (gaps.get(a) || []).filter(g => g < n && (prev == null || g > prev));
+        if (due.length) out.push(gapRow(due, prev, n));
+        lastN.set(a, n);
+      }
+      out.push(paraRow(p));
+    });
+    return out.join("");
+  }
   function openDoc(recId, paraId) {
     const shard = state.docShard.get(recId);
     const show = () => {
@@ -514,15 +570,11 @@
             <button class="icon-btn" id="doc-back">← Back</button>
             ${d.symbol ? `<a class="icon-btn" href="${esc(A().unLink(d.symbol))}" target="_blank" rel="noopener">UN source ↗</a>` : ""}
           </div>
-          ${(d.gaps || []).length ? `<div class="panel-note">Note: paragraph number${d.gaps.length > 1 ? "s" : ""}
-            ${esc(d.gaps.join(", "))} ${d.gaps.length > 1 ? "do" : "does"} not appear in the source text — the document's own numbering skips ${d.gaps.length > 1 ? "them" : "it"}, or the paragraph sits inside a table or image. Nothing was invented to fill the hole.</div>` : ""}
+          ${(d.gaps || []).length ? `<div class="panel-note">Note: the official document's own numbering skips paragraph${d.gaps.length > 1 ? "s" : ""}
+            ${esc(d.gaps.map(gapLabel).join(", "))} — each gap is marked where it falls in the text below. Nothing is missing from this reader.</div>` : ""}
           ${(d.misprints || []).length ? `<div class="panel-note">Note: ${d.misprints.map(m => `paragraph ${esc(m.n)} is misprinted as “${esc(m.printed)}” in the document`).join("; ")} — shown here in its position in the sequence.</div>` : ""}
           <div class="panel-body" id="doc-paras">
-            ${paras.map(p => `<div class="para" id="p-${esc(p.id)}" data-pid="${esc(p.id)}">
-              <div class="pn" title="${p.unnumbered ? "sequential position (no printed number)" : p.printed ? `misprinted as ${esc(p.printed)} in the document` : "printed paragraph number"}">${p.unnumbered ? "·" + (p.seq + 1) : esc(p.n)}${p.annex ? `<div style="font-size:9px">ax${p.annex}</div>` : ""}${p.printed ? `<div style="font-size:9px">(${esc(p.printed)})</div>` : ""}</div>
-              <div class="pt">${esc(p.text)}</div>
-              <div style="flex:0 0 auto;display:flex;gap:4px;align-items:flex-start"><button class="chip pc-cite" data-pid="${esc(p.id)}" title="Copy citation">cite</button><button class="chip" data-ws-key="p:${esc(p.id)}" data-ws-off="save" data-ws-on="saved ✓" aria-pressed="${wsOn("p:" + p.id)}">${wsOn("p:" + p.id) ? "saved ✓" : "save"}</button></div>
-            </div>`).join("")}
+            ${readerRows(paras, d)}
           </div>
         </div>`;
       $("#doc-back").addEventListener("click", () => { render(); });

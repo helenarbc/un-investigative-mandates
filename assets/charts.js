@@ -59,7 +59,7 @@
         y -= h;
       });
       // x labels: every k-th to avoid collisions
-      const step = Math.ceil(n / Math.floor(iw / 34));
+      const step = Math.ceil(n / Math.max(1, Math.floor(iw / (opts.labelWidth || 34))));
       if (i % step === 0) {
         const xl = el("text", { x: x + bw / 2, y: H - 6, "text-anchor": "middle", "font-size": 10.5, fill: css("--muted") });
         xl.textContent = cat;
@@ -133,6 +133,71 @@
     host.appendChild(svg);
   }
 
+  /* lines: one polyline per series over shared categories; null values break the line.
+     opts: {categories, series:[{label,color,values}], height, yMax, yLabel(v), tooltip(ci), onPointClick(ci)} */
+  function lines(host, opts) {
+    host.textContent = "";
+    const W = Math.max(host.clientWidth || 640, 320);
+    const H = opts.height || 220;
+    const n = opts.categories.length;
+    if (!n) { host.textContent = "No data."; return; }
+    const rotate = n > 6;
+    const padL = 38, padR = 10, padT = 10, padB = rotate ? 54 : 24;
+    const iw = W - padL - padR, ih = H - padT - padB;
+    const yMax = opts.yMax || 100;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img" });
+    const xAt = (i) => padL + (n === 1 ? iw / 2 : iw * i / (n - 1));
+    const yAt = (v) => padT + ih - ih * v / yMax;
+    const ticks = 4;
+    for (let t = 0; t <= ticks; t++) {
+      const v = yMax * t / ticks, y = yAt(v);
+      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: y, y2: y, stroke: css("--grid"), "stroke-width": 1 }));
+      const lbl = el("text", { x: padL - 6, y: y + 4, "text-anchor": "end", "font-size": 10.5, fill: css("--muted") });
+      lbl.textContent = opts.yLabel ? opts.yLabel(v) : v;
+      svg.appendChild(lbl);
+    }
+    opts.categories.forEach((c, i) => {
+      const x = xAt(i);
+      svg.appendChild(el("line", { x1: x, x2: x, y1: padT, y2: padT + ih, stroke: css("--grid"), "stroke-width": 1, "stroke-dasharray": "2 3" }));
+      const attrs = { x, y: padT + ih + 14, "text-anchor": rotate ? "end" : "middle", "font-size": 10.5, fill: css("--ink-2") };
+      if (rotate) attrs.transform = `rotate(-35 ${x} ${padT + ih + 14})`;
+      const lbl = el("text", attrs);
+      lbl.textContent = c;
+      svg.appendChild(lbl);
+    });
+    opts.series.forEach((sr) => {
+      let d = "", open = false;
+      sr.values.forEach((v, i) => {
+        if (v == null) { open = false; return; }
+        d += (open ? " L" : " M") + xAt(i).toFixed(1) + " " + yAt(v).toFixed(1);
+        open = true;
+      });
+      if (d) svg.appendChild(el("path", { d: d.trim(), fill: "none", stroke: sr.color, "stroke-width": 2, "stroke-linejoin": "round" }));
+      sr.values.forEach((v, i) => {
+        if (v == null) return;
+        const c = el("circle", { cx: xAt(i), cy: yAt(v), r: 3.5, fill: sr.color, stroke: css("--surface"), "stroke-width": 1.5, "data-ci": i });
+        svg.appendChild(c);
+      });
+    });
+    // hover/click columns
+    opts.categories.forEach((c, i) => {
+      const x0 = i === 0 ? padL : (xAt(i - 1) + xAt(i)) / 2;
+      const x1 = i === n - 1 ? W - padR : (xAt(i) + xAt(i + 1)) / 2;
+      const hit = el("rect", { x: x0, y: padT, width: Math.max(1, x1 - x0), height: ih, fill: "transparent", "data-ci": i });
+      if (opts.onPointClick) { hit.style.cursor = "pointer"; hit.addEventListener("click", () => opts.onPointClick(i)); }
+      svg.appendChild(hit);
+    });
+    svg.addEventListener("pointermove", (e) => {
+      const t = e.target.getAttribute && e.target.getAttribute("data-ci");
+      if (t === null || t === undefined) return;
+      const ci = +t;
+      const rows = opts.tooltip ? opts.tooltip(ci) : opts.series.map(sr => ({ label: sr.label, color: sr.color, value: sr.values[ci] }));
+      window.HRCTooltip.show(e, opts.categories[ci], rows);
+    });
+    svg.addEventListener("pointerleave", () => window.HRCTooltip.hide());
+    host.appendChild(svg);
+  }
+
   function niceCeil(v) {
     const p = Math.pow(10, Math.floor(Math.log10(v)));
     for (const m of [1, 2, 2.5, 4, 5, 8, 10]) if (m * p >= v) return m * p;
@@ -185,5 +250,5 @@
     if (t && t.style.display === "block") window.HRCTooltip.move(e);
   });
 
-  window.HRCCharts = { stackedColumns, hBars };
+  window.HRCCharts = { stackedColumns, hBars, lines };
 })();

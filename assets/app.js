@@ -312,11 +312,20 @@
         <div class="tile clickable" id="tile-mechs" title="Open the Mechanisms tab"><div class="t-label">Mechanisms concerned</div><div class="t-value">${bodiesSet.size}</div><div class="t-sub">see the Mechanisms tab</div></div>
       </div>
       <div class="panel">
+        <div class="panel-head"><h2>Adopted by recorded vote or by consensus, per year</h2>
+          <span class="count">${recorded.length} by recorded vote (all passed) · ${consensus} by consensus</span></div>
+        <div class="panel-body"><div class="chart-host" id="mode-chart"></div><div class="legend" id="mode-legend"></div></div>
+        <div class="panel-note">Each column is one year: the lower part counts resolutions put to a recorded vote and
+          <b>adopted with a majority of Yes votes</b>, the upper part those adopted by consensus (without a vote). Every recorded
+          vote in this dataset passed — a defeated draft never becomes a resolution, so it cannot appear here (the Yemen
+          renewal rejected in October 2021 is the best-known example). The narrowest result is 21 in favour, 19 against,
+          7 abstaining (resolution 51/27, 2022). Counts reflect the current filters; click a column to focus that year.</div>
+      </div>
+      <div class="panel">
         <div class="panel-head"><h2>Resolutions per year</h2>
           <span class="spacer"></span>
           <div class="seg" id="stack-seg">
             <button data-k="resolution_role" aria-pressed="${stackBy === "resolution_role"}">by role</button>
-            <button data-k="adoption_mode" aria-pressed="${stackBy === "adoption_mode"}">by adoption</button>
             <button data-k="legal_frameworks" aria-pressed="${stackBy === "legal_frameworks"}">legal frameworks mentioned</button>
           </div>
         </div>
@@ -349,6 +358,20 @@
       tooltip: (ci) => series.map(s => ({ label: s.label, color: s.color, value: s.values[ci] })).filter(x => x.value),
     });
     $("#year-legend").innerHTML = series.map(s =>
+      `<span class="lg"><span class="sw" style="background:${s.color}"></span>${esc(s.label)}</span>`).join("");
+    // adoption mode per year (always shown)
+    const modeSeries = [
+      { key: "vote", label: "recorded vote — adopted (Yes majority)", color: cssVar("--c1"),
+        values: years.map(y => R.filter(r => r.year === y && r.adoption_mode === "Recorded vote").length) },
+      { key: "consensus", label: "consensus (without a vote)", color: cssVar("--c2"),
+        values: years.map(y => R.filter(r => r.year === y && r.adoption_mode !== "Recorded vote").length) },
+    ];
+    window.HRCCharts.stackedColumns($("#mode-chart"), {
+      categories: years.map(String), series: modeSeries, height: 200,
+      onBarClick: (ci) => { F.y0 = F.y1 = years[ci]; renderFilters(); update(); },
+      tooltip: (ci) => modeSeries.map(s => ({ label: s.label, color: s.color, value: s.values[ci] })).filter(x => x.value),
+    });
+    $("#mode-legend").innerHTML = modeSeries.map(s =>
       `<span class="lg"><span class="sw" style="background:${s.color}"></span>${esc(s.label)}</span>`).join("");
     $("#stack-seg").addEventListener("click", (e) => {
       const k = e.target.dataset && e.target.dataset.k;
@@ -794,12 +817,12 @@
     inSel.forEach(r => {
       const s = sponsorsOf(r.symbol);
       (r.bodies || []).forEach(bn => {
-        if (!mechSp.has(bn)) mechSp.set(bn, { resCount: 0, lastDate: "", mains: new Map(), cos: new Set() });
+        if (!mechSp.has(bn)) mechSp.set(bn, { resCount: 0, lastDate: "", mains: new Map(), cos: new Set(), coTotal: 0 });
         const m = mechSp.get(bn);
         m.resCount++;
         if ((r.date_adopted || "") > m.lastDate) m.lastDate = r.date_adopted || "";
         s.m.forEach(i => m.mains.set(i, (m.mains.get(i) || 0) + 1));
-        s.c.forEach(i => m.cos.add(i));
+        s.c.forEach(i => { m.cos.add(i); m.coTotal++; });
       });
     });
     const mechRows2 = [...mechSp.entries()].sort((a, b) => b[1].lastDate.localeCompare(a[1].lastDate));
@@ -826,7 +849,9 @@
           <span class="count">who leads on each mechanism's resolutions — most recent first</span></div>
         <div class="tblwrap tall"><table class="data"><thead><tr>
           <th class="no-sort">Mechanism</th><th class="no-sort num">Resolutions with sponsors</th>
-          <th class="no-sort">Main sponsors / core group (× resolutions led)</th><th class="no-sort num">Co-sponsoring states</th>
+          <th class="no-sort">Main sponsors / core group (× resolutions led)</th>
+          <th class="no-sort num" title="How many different states co-sponsored at least one of this mechanism's resolutions in the selection. A state that co-sponsors every renewal is counted once.">Different co-sponsoring states</th>
+          <th class="no-sort num" title="Average number of co-sponsors per resolution (co-sponsorships divided by resolutions with a sponsor list)">Co-sponsors per resolution</th>
         </tr></thead><tbody>
         ${mechRows2.map(([bn, m]) => `<tr>
           <td><a class="mechlink" data-body="${esc(bn)}"><b>${esc(bn)}</b></a></td>
@@ -834,10 +859,14 @@
           <td>${[...m.mains.entries()].sort((a, b2) => b2[1] - a[1]).map(([i, n]) =>
             `<span class="badge">${esc(STATES[i].state)}${m.resCount > 1 ? ` ×${n}` : ""}</span>`).join(" ") || "—"}</td>
           <td class="num">${m.cos.size}</td>
+          <td class="num">${m.resCount ? Math.round(m.coTotal / m.resCount) : "—"}</td>
         </tr>`).join("")}
         </tbody></table></div>
         <div class="panel-note">"×n" = the state appears as main sponsor on n of the mechanism's resolutions in the
-        selection. Click a mechanism name for its profile and vote history.</div>
+        selection. <b>Different co-sponsoring states</b> counts each state once, however many of the mechanism's
+        resolutions it co-sponsored (so 42 means 42 different countries signed on to at least one of them);
+        <b>co-sponsors per resolution</b> is the average size of the co-sponsor list. Click a mechanism name for its
+        profile and vote history.</div>
       </div>`;
     host.querySelectorAll("a.mechlink").forEach(a =>
       a.addEventListener("click", () => openMechanism(a.dataset.body)));
@@ -885,6 +914,19 @@
       if (!y0) return "—";
       return y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`;
     };
+    const durationOf = (b) => {
+      if (!b.start_date) return "—";
+      const a = new Date(b.start_date), z = b.end_date ? new Date(b.end_date) : new Date();
+      if (isNaN(a) || isNaN(z)) return "—";
+      let months = (z.getFullYear() - a.getFullYear()) * 12 + (z.getMonth() - a.getMonth());
+      if (z.getDate() < a.getDate()) months--;
+      months = Math.max(0, months);
+      const y = Math.floor(months / 12), m = months % 12;
+      const parts = [];
+      if (y) parts.push(`${y} year${y > 1 ? "s" : ""}`);
+      if (m || !y) parts.push(`${m} month${m === 1 ? "" : "s"}`);
+      return `${parts.join(" and ")} (${b.end_date ? "ended" : "ongoing"})`;
+    };
     const hrcCount = (grouped.get("HRC investigative mandate") || { rows: [] }).rows.length +
       (grouped.get("OHCHR investigation (broader)") || { rows: [] }).rows.length;
     host.innerHTML = `
@@ -905,6 +947,7 @@
         <div class="panel-head"><h2>${esc(g.label)}</h2><span class="count">${g.rows.length}</span></div>
         <div class="tblwrap"><table class="data"><thead><tr>
           <th class="no-sort">Mechanism</th><th class="no-sort">Situation</th><th class="no-sort">Active</th>
+          <th class="no-sort" title="From the start of the mandate to its end, or to today if it is still running">Duration</th>
           <th class="no-sort">Explore</th></tr></thead>
         <tbody>${g.rows.sort((a, b) =>
           ((a.end_date ? 1 : 0) - (b.end_date ? 1 : 0)) ||
@@ -917,6 +960,7 @@
               <div style="font-size:12px;color:var(--muted)">${esc(b.full_name || "")}</div></td>
             <td>${esc(countryName(b.country) || "—")}</td>
             <td style="white-space:nowrap">${yearsOf(b)}</td>
+            <td style="white-space:nowrap">${durationOf(b)}</td>
             <td style="white-space:nowrap">
               ${nres ? `<a class="mech-res" data-body="${esc(b.short_name)}">${nres} resolution${nres > 1 ? "s" : ""}</a>
                 <br><a class="mech-votes" data-body="${esc(b.short_name)}">votes</a>` : `<span style="color:var(--muted)">no HRC resolutions</span>`}
@@ -977,22 +1021,33 @@
         </div>
         <div class="meta-grid">
           <div class="m"><b>Mandate action verbs</b>${esc((b.mandate_action_verbs || []).join(", ") || "—")}</div>
-          ${b.mission_number ? `<div class="m"><b>Mission number</b>${esc(String(b.mission_number))}</div>` : ""}
-          ${b.links ? `<div class="m"><b>Mandating text</b><a href="${esc(b.links)}" target="_blank" rel="noopener">${esc(b.links.replace(/^https?:\/\//, ""))} ↗</a></div>` : ""}
+          ${b.links ? (() => {
+            const isRes = /undocs\.org|docs\.un\.org/i.test(b.links);
+            const symFromUrl = decodeURIComponent(b.links.replace(/^https?:\/\/[^/]+\/(en\/)?/i, "").replace(/[?#].*$/, ""));
+            return `<div class="m"><b>${isRes ? "Mandating resolution" : "Official web page"}</b><a href="${esc(b.links)}" target="_blank" rel="noopener">${esc(isRes ? symFromUrl : (b.full_name || name))} ↗</a></div>`;
+          })() : ""}
         </div>
         ${(() => {
           const founding = mres.find(r => r.resolution_role === "founding" && r.verbatim_mandate) ||
             mres.find(r => r.verbatim_mandate);
           return founding ? `
-            <h4 style="margin:12px 0 4px;font-size:13px">Mandate as adopted (verbatim — ${esc(founding.symbol)})</h4>
+            <h4 style="margin:12px 0 4px;font-size:13px">Mandate as adopted — verbatim from resolution ${esc(founding.symbol.replace("A/HRC/RES/", "").replace("A/HRC/DEC/", "decision ").replace("A/HRC/", ""))} (${esc(String(founding.year || (founding.date_adopted || "").slice(0, 4)))}${founding.resolution_role ? `, ${esc(founding.resolution_role)} text` : ""})</h4>
             <blockquote class="verbatim">${esc(founding.verbatim_mandate)}</blockquote>` : "";
         })()}
         ${mres.length ? `
         <h4 style="margin:12px 0 4px;font-size:13px">How the Council has voted on this mechanism</h4>
         <div class="chart-host" id="mech-evo"></div>
         <div class="legend" id="mech-evo-legend"></div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">One column per resolution, oldest to newest —
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">One column per resolution (year in brackets), oldest to newest —
         click a column for the full card. Grey stubs: adopted by consensus (no vote).</div>
+        ${mres.some(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)) ? `
+        <h4 style="margin:14px 0 4px;font-size:13px">How each regional group voted, resolution by resolution</h4>
+        <div class="chart-host" id="mech-groups"></div>
+        <div class="legend" id="mech-groups-legend"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Each line is one UN regional group: the share of its
+        Council members voting <b>in favour</b> (out of those voting Yes, No or Abstain), one point per recorded vote, oldest
+        to newest. Hover a point for the group's Yes · No · Abstain; click it for the resolution. Consensus adoptions have no
+        vote and are left out.</div>` : ""}
         <div class="tblwrap" style="max-height:280px;margin-top:10px"><table class="data"><tbody>
           ${mres.map((r, i) => `<tr data-sym="${esc(r.symbol)}"><td>${resLink(r)}</td>
             <td style="white-space:nowrap">${fmtDate(r.date_adopted)}</td>
@@ -1015,7 +1070,7 @@
     history.replaceState(null, "", "#/mech/" + encodeURIComponent(name));
     $("#modal-close").addEventListener("click", closeModal);
     if (mres.length) {
-      const cats = mres.map(r => r.symbol.replace("A/HRC/RES/", "").replace("A/HRC/DEC/", "DEC ").replace("A/HRC/", ""));
+      const cats = mres.map(r => `${r.symbol.replace("A/HRC/RES/", "").replace("A/HRC/DEC/", "DEC ").replace("A/HRC/", "")} (${r.year || (r.date_adopted || "").slice(0, 4)})`);
       const count = (r, code) => {
         const row = votesOf(r.symbol);
         if (!row) return 0;
@@ -1032,7 +1087,7 @@
           values: mres.map(r => r.adoption_mode === "Recorded vote" ? 0 : 4) },
       ];
       window.HRCCharts.stackedColumns($("#mech-evo"), {
-        categories: cats, series, height: 200,
+        categories: cats, series, height: 200, labelWidth: 88,
         onBarClick: (ci) => openResolution(mres[ci].symbol),
         tooltip: (ci) => {
           const r = mres[ci];
@@ -1044,6 +1099,39 @@
       });
       $("#mech-evo-legend").innerHTML = series.filter(s => s.values.some(v => v)).map(s =>
         `<span class="lg"><span class="sw" style="background:${s.color}"></span>${esc(s.label)}</span>`).join("");
+      // regional groups, resolution by resolution (recorded votes only)
+      const voted = mres.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol));
+      if (voted.length && $("#mech-groups")) {
+        const tallyBy = (r) => {
+          const row = votesOf(r.symbol), out = new Map();
+          GROUP_META.forEach(g => out.set(g.short, { Y: 0, N: 0, A: 0 }));
+          for (let i = 0; i < row.length; i++) {
+            const c = row[i];
+            if (c !== "Y" && c !== "N" && c !== "A") continue;
+            const g = groupOf(STATES[i].regional_group);
+            const k = g ? g.short : "Other";
+            if (!out.has(k)) out.set(k, { Y: 0, N: 0, A: 0 });
+            out.get(k)[c]++;
+          }
+          return out;
+        };
+        const tallies = voted.map(tallyBy);
+        const gcats = voted.map(r => `${r.symbol.replace("A/HRC/RES/", "").replace("A/HRC/DEC/", "DEC ").replace("A/HRC/", "")} (${r.year || (r.date_adopted || "").slice(0, 4)})`);
+        const gseries = GROUP_META.map(g => ({
+          key: g.short, label: g.short, color: cssVar(g.color),
+          values: tallies.map(t => { const c = t.get(g.short); const cast = c ? c.Y + c.N + c.A : 0; return cast ? Math.round(100 * c.Y / cast) : null; }),
+        }));
+        window.HRCCharts.lines($("#mech-groups"), {
+          categories: gcats, series: gseries, height: 230, yMax: 100, yLabel: (v) => v + "%",
+          onPointClick: (ci) => openResolution(voted[ci].symbol),
+          tooltip: (ci) => gseries.map(sr => {
+            const c = tallies[ci].get(sr.key) || { Y: 0, N: 0, A: 0 };
+            return { label: sr.label, color: sr.color, value: sr.values[ci] == null ? "no votes cast" : `${sr.values[ci]}% in favour (${c.Y} · ${c.N} · ${c.A})` };
+          }).concat([{ label: fmtDate(voted[ci].date_adopted), value: "" }]),
+        });
+        $("#mech-groups-legend").innerHTML = gseries.map(sr =>
+          `<span class="lg"><span class="sw" style="background:${sr.color}"></span>${esc(sr.label)}</span>`).join("");
+      }
       $("#modal .tblwrap tbody").addEventListener("click", (e) => {
         const vt = e.target.closest("button.vm-toggle");
         if (vt) {
