@@ -25,8 +25,17 @@
   const wsBtn = (key, off, on) => `<button class="icon-btn ws-btn" data-ws-key="${esc(key)}" data-ws-off="${off}" data-ws-on="${on}" aria-pressed="${wsOn(key)}">${wsOn(key) ? on : off}</button>`;
 
   /* ---------- indices ---------- */
-  const RES = D.resolutions.slice().sort((a, b) => (a.date_adopted || "").localeCompare(b.date_adopted || ""));
+  // Reference-only bodies (special procedures with investigative tasks, e.g. the Special
+  // Rapporteur on Afghanistan 2021–2026): kept on the site for context, but their
+  // resolutions, votes and sponsorships are excluded from every count, chart and filter.
+  const REF_SCOPE = "Special procedure with investigative tasks (reference only)";
+  const REF_BODIES = new Set(D.bodies.filter(b => b.scope === REF_SCOPE).map(b => b.short_name));
+  const isRefRes = (r) => (r.bodies || []).length > 0 && (r.bodies || []).every(bn => REF_BODIES.has(bn));
+  const byDate = (a, b) => (a.date_adopted || "").localeCompare(b.date_adopted || "");
+  const RES = D.resolutions.filter(r => !isRefRes(r)).sort(byDate);
+  const REFRES = D.resolutions.filter(isRefRes).map(r => Object.assign({}, r, { reference_only: true })).sort(byDate);
   const bySym = new Map(RES.map(r => [r.symbol, r]));
+  const byRefSym = new Map(REFRES.map(r => [r.symbol, r]));
   const STATES = D.states;
   const stateIdxByName = new Map(STATES.map((s, i) => [s.state, i]));
   const bodyByName = new Map(D.bodies.map(b => [b.short_name, b]));
@@ -71,9 +80,26 @@
 
   const ROLE_COLOR = { founding: "--c1", renewal: "--c2", expansion: "--c5", tasking: "--c3" };
   const MODE_COLOR = { "Recorded vote": "--c1", "Consensus": "--c2" };
-  const CA_COLOR = { "explicit ICL": "--seq-550", "ambiguous accountability": "--seq-250", "none": "--grid" };
+  // Criminal-accountability wording of the mandate paragraphs (literal coding, one value per text):
+  //  - "names crimes or criminal proceedings": the mandate text uses the word crime(s) or
+  //    criminal-justice vocabulary (crimes against humanity, war crimes, genocide, criminal/command
+  //    responsibility, criminal prosecutions or proceedings, International Criminal Court, legal proceedings);
+  //  - "accountability or perpetrators wording only": accountability / impunity / those responsible /
+  //    perpetrators, with none of the above;
+  //  - "none": neither; "no mandate text": renewals that only extend the mandate "as set out in" an earlier text.
+  // No mandate paragraph in the dataset contains the phrase "international criminal law".
+  const CA_COLOR = {
+    "names crimes or criminal proceedings": "--seq-550",
+    "accountability or perpetrators wording only": "--seq-250",
+    "none": "--grid", "no mandate text": "--grid",
+  };
+  const CA_SHORT = {
+    "names crimes or criminal proceedings": "names crimes",
+    "accountability or perpetrators wording only": "accountability wording only",
+    "none": "none", "no mandate text": "no mandate text",
+  };
   const ROLES = ["founding", "renewal", "expansion", "tasking"];
-  const CAS = ["explicit ICL", "ambiguous accountability", "none"];
+  const CAS = ["names crimes or criminal proceedings", "accountability or perpetrators wording only", "none", "no mandate text"];
   const GENDER_LABELS = ["gender analysis", "SGBV", "women and girls"];
   const LOCS = [["mandate", "in the mandate"], ["other_ops", "in other operative paragraphs"], ["preamble", "in the preamble"]];
 
@@ -160,7 +186,7 @@
         <div class="f-item"><label for="f-role">Resolution role</label>
           <select id="f-role">${opt("", "All")}${ROLES.map(x => opt(x, x, F.role)).join("")}</select></div>
         <div class="f-item"><label for="f-ca">Criminal-accountability wording</label>
-          <select id="f-ca">${opt("", "All")}${CAS.map(x => opt(x, x, F.ca)).join("")}${opt("(not coded)", "not coded", F.ca)}</select></div>
+          <select id="f-ca" title="Literal coding of the mandate paragraphs: 'names crimes' = the text uses the word crime(s) or criminal-justice vocabulary; 'accountability wording only' = accountability / impunity / those responsible, without naming crimes">${opt("", "All")}${CAS.map(x => opt(x, CA_SHORT[x] || x, F.ca)).join("")}${opt("(not coded)", "not coded", F.ca)}</select></div>
         <div class="f-item"><label for="f-gloc">Gender language</label>
           <select id="f-gloc">${opt("", "Anywhere / any")}${LOCS.map(l => opt(l[0], l[1], F.genderLoc)).join("")}${opt("(none)", "no gender language", F.genderLoc)}</select></div>
         <div class="f-item"><label for="f-glab">Gender label</label>
@@ -276,12 +302,19 @@
     if (!role) return `<span class="badge" title="Resolution role">role not coded</span>`;
     return `<span class="badge on" title="${esc(ROLE_DEF[role] || "Resolution role")}" style="background:var(${ROLE_COLOR[role] || "--muted"})">${esc(role)}</span>`;
   }
+  const CA_TITLE = {
+    "names crimes or criminal proceedings": "The mandate paragraphs use the word crime(s) or criminal-justice vocabulary (crimes against humanity, war crimes, genocide, criminal or command responsibility, criminal prosecutions or proceedings, International Criminal Court, legal proceedings). No mandate paragraph in the dataset names 'international criminal law' as such.",
+    "accountability or perpetrators wording only": "The mandate paragraphs speak of accountability, impunity, those responsible or perpetrators, but do not name crimes or criminal proceedings.",
+    "none": "No accountability or criminal-law wording in the mandate paragraphs.",
+    "no mandate text": "A renewal that only extends the mandate as set out in an earlier resolution; no task language to code.",
+  };
   function caBadge(r) {
     const ca = r.criminal_accountability;
     if (!ca) return `<span class="badge" title="Criminal-accountability wording">wording not coded</span>`;
-    if (ca === "none") return `<span class="badge" title="Criminal-accountability wording">no accountability wording</span>`;
-    const c = ca === "explicit ICL" ? "--seq-550" : "--seq-400";
-    return `<span class="badge on" title="Criminal-accountability wording" style="background:var(${c})">${esc(ca)}</span>`;
+    if (ca === "none") return `<span class="badge" title="${esc(CA_TITLE[ca])}">no accountability wording</span>`;
+    if (ca === "no mandate text") return `<span class="badge" title="${esc(CA_TITLE[ca])}">no mandate text</span>`;
+    const c = ca === "names crimes or criminal proceedings" ? "--seq-550" : "--seq-400";
+    return `<span class="badge on" title="${esc(CA_TITLE[ca] || "Criminal-accountability wording")}" style="background:var(${c})">${esc(CA_SHORT[ca] || ca)}</span>`;
   }
   function genderBadges(r) {
     const g = r.gender_language || {};
@@ -912,6 +945,7 @@
     ["SG-mandated investigation", "Mandated by the Secretary-General"],
     ["GA-mandated mechanism", "Mandated by the General Assembly"],
     ["UNSC-mandated mechanism", "Mandated by the Security Council"],
+    [REF_SCOPE, "Special procedures with investigative tasks — shown for reference, not counted"],
   ];
   const docCountByBody = {};
   D.documents.forEach(d => (d.bodies || []).forEach(b => { docCountByBody[b] = (docCountByBody[b] || 0) + 1; }));
@@ -946,16 +980,23 @@
     };
     const hrcCount = (grouped.get("HRC investigative mandate") || { rows: [] }).rows.length +
       (grouped.get("OHCHR investigation (broader)") || { rows: [] }).rows.length;
+    const refCount = (grouped.get(REF_SCOPE) || { rows: [] }).rows.length;
+    const counted = D.bodies.length - refCount;
     host.innerHTML = `
       <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
-        <b style="color:var(--ink)">${D.bodies.length} country-specific investigative and accountability mechanisms</b> —
-        ${hrcCount} mandated by the Human Rights Council, ${D.bodies.length - hrcCount} by the Secretary-General, the
-        General Assembly or the Security Council. Click a name for its mandate, resolutions, votes and reports.
+        <b style="color:var(--ink)">${counted} country-specific investigative and accountability mechanisms</b> —
+        ${hrcCount} mandated by the Human Rights Council, ${counted - hrcCount} by the Secretary-General, the
+        General Assembly or the Security Council${refCount ? `, plus ${refCount} special procedure shown for reference only (not counted)` : ""}.
+        Click a name for its mandate, resolutions, votes and reports.
         <details class="more"><summary>What is and is not included</summary>
           <div>The ${hrcCount} Council-mandated bodies (including OHCHR investigations at the Council's request) are the
           mechanisms whose resolutions and votes appear in the Resolutions and Votes tabs. The other
-          ${D.bodies.length - hrcCount} have no HRC resolutions or votes, but their reports are searchable in the
-          Reports tab. Thematic mechanisms and country special procedures are outside the dataset.
+          ${counted - hrcCount} have no HRC resolutions or votes, but their reports are searchable in the
+          Reports tab. Thematic mechanisms and country special procedures are outside the dataset, with one exception
+          shown for reference: the Special Rapporteur on Afghanistan, which the Council gave fact-finding support (2021) and a
+          task to document and preserve information (2022–2026) until the Independent Investigative Mechanism for Afghanistan
+          created in October 2025 is operational. Its ${REFRES.length} resolutions, and their votes and sponsorships, are
+          excluded from every count, chart and filter on this site.
           Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
           HRC mandating resolutions — renewals inherit the founding language; the non-Council bodies are not coded by design.</div></details>
       </div></div>
@@ -971,15 +1012,18 @@
           (b.start_date || "").localeCompare(a.start_date || "")).map(b => {
           const nres = (b.resolutions || []).length;
           const ndocs = docCountByBody[b.short_name] || 0;
+          const isRef = b.scope === REF_SCOPE;
           return `<tr>
             <td><a class="mech-open" data-body="${esc(b.short_name)}" style="cursor:pointer"><b>${esc(b.short_name)}</b></a>
+              ${isRef ? `<span class="badge" style="margin-left:4px" title="Shown for reference; not counted in any statistic">reference only</span>` : ""}
               ${!b.end_date && b.start_date ? `<span class="badge on" style="background:var(--c2);margin-left:4px">active</span>` : ""}
               <div style="font-size:12px;color:var(--muted)">${esc(b.full_name || "")}</div></td>
             <td>${esc(countryName(b.country) || "—")}</td>
             <td style="white-space:nowrap">${yearsOf(b)}</td>
             <td style="white-space:nowrap">${durationOf(b)}</td>
             <td style="white-space:nowrap">
-              ${nres ? `<a class="mech-res" data-body="${esc(b.short_name)}">${nres} resolution${nres > 1 ? "s" : ""}</a>
+              ${isRef ? `<span style="color:var(--muted)">${nres} resolution${nres > 1 ? "s" : ""} (reference only)</span>`
+                : nres ? `<a class="mech-res" data-body="${esc(b.short_name)}">${nres} resolution${nres > 1 ? "s" : ""}</a>
                 <br><a class="mech-votes" data-body="${esc(b.short_name)}">votes</a>` : `<span style="color:var(--muted)">no HRC resolutions</span>`}
               ${ndocs ? `<br><a class="mech-reports" data-body="${esc(b.short_name)}">${ndocs} report${ndocs > 1 ? "s" : ""}</a>` : ""}
             </td>
@@ -1017,11 +1061,13 @@
     "SG-mandated investigation": "Mandated by the Secretary-General",
     "GA-mandated mechanism": "Mandated by the General Assembly",
     "UNSC-mandated mechanism": "Mandated by the Security Council",
+    [REF_SCOPE]: "Special procedure with investigative tasks — reference only, not counted",
   };
   function openMechanism(name) {
     const b = bodyByName.get(name);
     if (!b) return;
-    const mres = RES.filter(r => (r.bodies || []).includes(name));
+    const isRef = b.scope === REF_SCOPE;
+    const mres = (isRef ? REFRES : RES).filter(r => (r.bodies || []).includes(name));
     const y0 = (b.start_date || "").slice(0, 4), y1 = (b.end_date || "").slice(0, 4);
     const active = y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "—";
     $("#modal").innerHTML = `
@@ -1036,6 +1082,13 @@
           <span class="badge">${esc(SCOPE_LABEL[b.scope] || (mres.length ? SCOPE_LABEL["HRC investigative mandate"] : b.scope || "—"))}</span>
           ${(b.mandate_legal_frameworks || []).map(f => `<span class="badge on" style="background:var(${FW_COMBO_COLOR[f] || "--c1"})">${esc(f)}</span>`).join(" ")}
         </div>
+        ${isRef ? `<div class="panel-note" style="margin:10px 0;border:1px solid var(--grid);border-radius:6px;padding:8px 10px">
+          <b>Shown for reference only.</b> This is a special procedure, not an investigative body. The Council gave it
+          fact-finding, legal-analysis and forensic support (resolution 48/1, 2021) and a task to document and preserve
+          information on violations (51/20, 2022), kept in force until the Independent Investigative Mechanism for
+          Afghanistan (created by 60/2, October 2025) is operational. Its resolutions, votes and sponsorships are
+          <b>not counted</b> in any figure on this site.</div>` : ""}
+        ${b.predecessor_note ? `<div class="panel-note" style="margin:10px 0">${esc(b.predecessor_note)}</div>` : ""}
         <div class="meta-grid">
           <div class="m"><b>Mandate action verbs</b>${esc((b.mandate_action_verbs || []).join(", ") || "—")}</div>
           ${b.links ? (() => {
@@ -1076,7 +1129,7 @@
         </tbody></table></div>` : `<p style="color:var(--ink-2);font-size:13.5px">This body was not mandated by the
         Human Rights Council, so it has no Council resolutions or votes. Its reports are in the Reports tab.</p>`}
         <div class="linkrow">
-          ${mres.length ? `<a id="mech-to-res" style="cursor:pointer">See its resolutions</a>
+          ${mres.length && !isRef ? `<a id="mech-to-res" style="cursor:pointer">See its resolutions</a>
             <a id="mech-to-votes" style="cursor:pointer">See its votes</a>` : ""}
           ${(docCountByBody[name] || 0) ? `<a id="mech-to-reports" style="cursor:pointer">Open its ${docCountByBody[name]} report${docCountByBody[name] > 1 ? "s" : ""}</a>` : ""}
         </div>
@@ -1186,7 +1239,7 @@
     return [...out];
   }
   function openResolution(sym) {
-    const r = bySym.get(sym);
+    const r = bySym.get(sym) || byRefSym.get(sym);
     if (!r) return;
     const overlay = $("#overlay");
     const votesRow = votesOf(sym);
@@ -1225,6 +1278,9 @@
         <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
+        ${r.reference_only ? `<div class="panel-note" style="margin:0 0 10px;border:1px solid var(--grid);border-radius:6px;padding:8px 10px">
+          <b>Reference only.</b> This resolution concerns the Special Rapporteur on Afghanistan, a special procedure shown
+          on this site for context; it is not counted in any statistic, chart or filter.</div>` : ""}
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${r.adoption_mode === "Recorded vote"
             ? `${tallyPills(r)} <span style="color:var(--muted);font-size:12.5px">yes–no–abstain</span>`
@@ -1334,7 +1390,8 @@
   function update() {
     const R = filtered();
     const note = $("#f-note");
-    if (note) note.textContent = `${R.length} of ${RES.length} resolutions selected — ${filterSummary()}.`;
+    if (note) note.textContent = `${R.length} of ${RES.length} resolutions selected — ${filterSummary()}.` +
+      (REFRES.length ? ` (${REFRES.length} reference-only texts on the Special Rapporteur on Afghanistan are not counted — see Mechanisms.)` : "");
     if (currentTab === "res") viewResolutions(R);
     else if (currentTab === "votes") {
       if (currentSub === "matrix") viewMatrix(R);
@@ -1370,12 +1427,18 @@
       <p><b>Not included:</b> thematic mechanisms, country special-procedures mandates (Special
       Rapporteurs and Independent Experts) unless the same text also does (a)–(c), resolutions
       that merely welcome a mechanism's report or urge cooperation, and UPR outcome decisions.
+      One special procedure is shown <b>for reference only</b> and excluded from every figure: the
+      Special Rapporteur on Afghanistan, which the Council gave fact-finding support (2021) and a task
+      to document and preserve information (2022–2026) until the Independent Investigative Mechanism for
+      Afghanistan, created in October 2025, is operational.
       The Mechanisms and Reports tabs additionally cover related investigative bodies mandated by
       the General Assembly, the Security Council or the Secretary-General for the same country
       situations; those bodies have no HRC resolutions or votes.</p>
       <h2>Data</h2>
-      <p>The dataset covers 141 resolutions and decisions, 55 investigative bodies, 93 recorded
-      votes (4,371 state positions), sponsorship lists, and the mechanisms' public reports.
+      <p>The dataset covers ${RES.length} resolutions and decisions (complete to the end of the Council's
+      63rd session, 9 October 2026), ${D.bodies.length - REF_BODIES.size} investigative bodies,
+      ${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length} recorded
+      votes with country-by-country positions, sponsorship lists, and the mechanisms' public reports.
       It was compiled and verified against the official UN documents (docs.un.org and the OHCHR
       Search Library) by <b>Helena Rodríguez-Bronchú Carceller</b>; every figure on this site links
       back to the document it comes from.
@@ -1399,6 +1462,15 @@
         <li>"Consensus" means adopted without a vote.</li>
         <li>Mechanism-level codings (action verbs, legal frameworks) are the union of the
         mechanism's mandating resolutions, so renewals inherit the founding language.</li>
+        <li><b>Criminal-accountability wording</b> is coded literally from the mandate paragraphs, one
+        value per text: <i>names crimes or criminal proceedings</i> — the text uses the word crime(s) or
+        criminal-justice vocabulary (crimes against humanity, war crimes, genocide, criminal or command
+        responsibility, criminal prosecutions or proceedings, the International Criminal Court, legal
+        proceedings); <i>accountability or perpetrators wording only</i> — accountability, impunity, those
+        responsible or perpetrators, without naming crimes; <i>none</i>; <i>no mandate text</i> — renewals
+        that only extend the mandate "as set out in" an earlier text. The "ICL" legal-framework tag on a
+        resolution follows the same rule. No mandate paragraph in the dataset contains the phrase
+        "international criminal law".</li>
         <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
         resolutions no sponsor list has been recorded yet.</li>
         <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates
