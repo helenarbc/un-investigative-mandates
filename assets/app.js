@@ -155,6 +155,8 @@
     return true;
   }
   const filtered = () => RES.filter(matches);
+  // reference-only texts that pass the same filters: listed in the table with a tag, never counted
+  const refFiltered = () => REFRES.filter(matches);
 
   /* ---------- filter bar ---------- */
   function opt(v, label, sel) { return `<option value="${esc(v)}"${sel === v ? " selected" : ""}>${esc(label)}</option>`; }
@@ -372,9 +374,10 @@
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Resolutions</h2><span class="count">${R.length}</span>
+          ${refFiltered().length ? `<span class="count" title="Resolutions on the Special Rapporteur on Afghanistan, shown for reference only; they are not counted in any tile, chart or percentage">+ ${refFiltered().length} shown for reference, not counted</span>` : ""}
           <span class="spacer"></span><details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-res">Download CSV</button></div></details></div>
         <div class="tblwrap tall" id="res-table"></div>
-        <div class="panel-note">Click a row for details, the vote breakdown and links to the UN documents.</div>
+        <div class="panel-note">Click a row for details, the vote breakdown and links to the UN documents.${refFiltered().length ? ` Rows tagged <span class="badge">reference only</span> are the texts on the Special Rapporteur on Afghanistan: listed for context, excluded from every count above.` : ""}</div>
       </div>`;
 
     // chart
@@ -413,7 +416,7 @@
     });
     $("#tile-mechs").addEventListener("click", () => setTab("mechs"));
 
-    renderResTable(R);
+    renderResTable(R, refFiltered());
     $("#csv-res").addEventListener("click", () => {
       downloadCSV("resolutions",
         ["symbol", "date_adopted", "title", "session", "role", "mechanism_type", "bodies", "adoption_mode", "tally", "criminal_accountability", "gender_mandate", "gender_other_ops", "gender_preamble", "children_language", "action_verbs", "legal_frameworks"],
@@ -454,17 +457,17 @@
       return (x - y) * dir;
     });
   }
-  function renderResTable(R) {
+  function renderResTable(R, REFR) {
     const cols = [
       ["symbol", "Symbol"], ["date_adopted", "Date"], ["title", "Title"],
       ["resolution_role", "Role"], ["mechanism_type", "Mechanism"],
       ["adoption_mode", "Adoption"], ["criminal_accountability", "Accountability wording"], [null, "Lang."],
     ];
-    const rows = sortRows(R);
+    const rows = sortRows(R.concat(REFR || []));
     $("#res-table").innerHTML = `<table class="data"><thead><tr>${cols.map(([k, l]) =>
       `<th ${k ? `data-sort="${k}"` : 'class="no-sort"'}>${l}${k === sortKey ? ` <span class="dir">${sortDir > 0 ? "↑" : "↓"}</span>` : ""}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map(r => `<tr data-sym="${esc(r.symbol)}">
-        <td>${resLink(r)}</td>
+      <tbody>${rows.map(r => `<tr data-sym="${esc(r.symbol)}"${r.reference_only ? ' class="ref-row" style="color:var(--muted)"' : ""}>
+        <td>${resLink(r)}${r.reference_only ? ` <span class="badge" title="Shown for reference only (Special Rapporteur on Afghanistan); not counted in any figure">reference only</span>` : ""}</td>
         <td class="num" style="white-space:nowrap">${fmtDate(r.date_adopted)}</td>
         <td>${esc(r.title)}<div style="font-size:12px;color:var(--muted)">${esc((r.bodies || []).join(" · "))}</div></td>
         <td>${roleBadge(r)}</td>
@@ -477,7 +480,7 @@
       const k = e.target.closest("th") && e.target.closest("th").dataset.sort;
       if (!k) return;
       if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = k === "date_adopted" ? -1 : 1; }
-      renderResTable(filtered());
+      renderResTable(filtered(), refFiltered());
     });
     $("#res-table tbody").addEventListener("click", (e) => {
       const tr = e.target.closest("tr");
@@ -966,6 +969,7 @@
       return y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`;
     };
     const durationOf = (b) => {
+      if (/not implemented/i.test(b.short_name || "")) return "never implemented";
       if (!b.start_date) return "—";
       const a = new Date(b.start_date), z = b.end_date ? new Date(b.end_date) : new Date();
       if (isNaN(a) || isNaN(z)) return "—";
@@ -1063,10 +1067,14 @@
     "UNSC-mandated mechanism": "Mandated by the Security Council",
     [REF_SCOPE]: "Special procedure with investigative tasks — reference only, not counted",
   };
+  const PREDECESSOR_NOTE = {
+    "IIM Afghanistan (2025)": "Predecessor: Special Rapporteur with document-and-preserve mandate, 2021–2026 (reference only)",
+  };
   function openMechanism(name) {
     const b = bodyByName.get(name);
     if (!b) return;
     const isRef = b.scope === REF_SCOPE;
+    const predecessor = b.predecessor_note || PREDECESSOR_NOTE[name];
     const mres = (isRef ? REFRES : RES).filter(r => (r.bodies || []).includes(name));
     const y0 = (b.start_date || "").slice(0, 4), y1 = (b.end_date || "").slice(0, 4);
     const active = y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "—";
@@ -1088,7 +1096,7 @@
           information on violations (51/20, 2022), kept in force until the Independent Investigative Mechanism for
           Afghanistan (created by 60/2, October 2025) is operational. Its resolutions, votes and sponsorships are
           <b>not counted</b> in any figure on this site.</div>` : ""}
-        ${b.predecessor_note ? `<div class="panel-note" style="margin:10px 0">${esc(b.predecessor_note)}</div>` : ""}
+        ${predecessor ? `<div class="panel-note" style="margin:10px 0">${esc(predecessor)}</div>` : ""}
         <div class="meta-grid">
           <div class="m"><b>Mandate action verbs</b>${esc((b.mandate_action_verbs || []).join(", ") || "—")}</div>
           ${b.links ? (() => {
