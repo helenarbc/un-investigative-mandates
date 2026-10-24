@@ -69,6 +69,11 @@
 
   // legal-framework combinations (canonical order IHRL, IHL, ICL), fixed colors
   const FW_ORDER = { IHRL: 0, IHL: 1, ICL: 2 };
+  const FW_TITLE = {
+    IHRL: "International human rights law is named in the mandate paragraphs",
+    IHL: "International humanitarian law is named in the mandate paragraphs",
+    ICL: "Coder's label: the mandate paragraphs name crimes or criminal proceedings (crimes against humanity, war crimes, criminal responsibility, prosecutions, the ICC). No mandate paragraph in the dataset uses the phrase 'international criminal law'.",
+  };
   const fwCombo = (r) => {
     const fw = (r.legal_frameworks || []).slice().sort((a, b) => (FW_ORDER[a] ?? 9) - (FW_ORDER[b] ?? 9));
     return fw.length ? fw.join(" + ") : "(none)";
@@ -200,7 +205,7 @@
             `<button class="chip" data-verb="${esc(v)}" aria-pressed="${F.verbs.has(v)}">${esc(v)}</button>`).join("")}</div></div>
         <div class="f-item"><label>Legal frameworks</label>
           <div class="chip-group" id="f-fw">${FWS.map(v =>
-            `<button class="chip" data-fw="${esc(v)}" aria-pressed="${F.fw.has(v)}">${esc(v)}</button>`).join("")}</div></div>
+            `<button class="chip" data-fw="${esc(v)}" aria-pressed="${F.fw.has(v)}" title="${esc(FW_TITLE[v] || "")}">${esc(v)}</button>`).join("")}</div></div>
       </div>
       <div class="filter-note" id="f-note"></div>`;
 
@@ -1088,7 +1093,7 @@
       <div class="modal-body">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <span class="badge">${esc(SCOPE_LABEL[b.scope] || (mres.length ? SCOPE_LABEL["HRC investigative mandate"] : b.scope || "—"))}</span>
-          ${(b.mandate_legal_frameworks || []).map(f => `<span class="badge on" style="background:var(${FW_COMBO_COLOR[f] || "--c1"})">${esc(f)}</span>`).join(" ")}
+          ${(b.mandate_legal_frameworks || []).map(f => `<span class="badge on" style="background:var(${FW_COMBO_COLOR[f] || "--c1"})" title="${esc(FW_TITLE[f] || "")}">${esc(f)}</span>`).join(" ")}
         </div>
         ${isRef ? `<div class="panel-note" style="margin:10px 0;border:1px solid var(--grid);border-radius:6px;padding:8px 10px">
           <b>Shown for reference only.</b> This is a special procedure, not an investigative body. The Council gave it
@@ -1294,7 +1299,7 @@
             ? `${tallyPills(r)} <span style="color:var(--muted);font-size:12.5px">yes–no–abstain</span>`
             : `<span class="pill mode-consensus">adopted without a vote</span>`}
           ${roleBadge(r)} ${caBadge(r)}
-          ${(r.legal_frameworks || []).map(f => `<span class="badge">${esc(f)}</span>`).join(" ")}
+          ${(r.legal_frameworks || []).map(f => `<span class="badge" title="${esc(FW_TITLE[f] || "")}">${esc(f)}</span>`).join(" ")}
         </div>
         <div class="meta-grid">
           <div class="m"><b>Mechanism</b>${esc(r.mechanism_type || "—")}</div>
@@ -1444,7 +1449,7 @@
       situations; those bodies have no HRC resolutions or votes.</p>
       <h2>Data</h2>
       <p>The dataset covers ${RES.length} resolutions and decisions (complete to the end of the Council's
-      63rd session, 9 October 2026), ${D.bodies.length - REF_BODIES.size} investigative bodies,
+      63rd session, 7 October 2026), ${D.bodies.length - REF_BODIES.size} investigative bodies,
       ${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length} recorded
       votes with country-by-country positions, sponsorship lists, and the mechanisms' public reports.
       It was compiled and verified against the official UN documents (docs.un.org and the OHCHR
