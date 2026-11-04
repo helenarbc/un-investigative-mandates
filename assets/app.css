@@ -529,3 +529,13 @@ details.more > div { margin-top: 6px; }
   .sg-legend { font-size: 11.5px; }
   .sg-source { font-size: 10.5px; }
 }
+
+
+/* ---- QR code overlay (assets/qr.js): a link to this dashboard, for projecting ---- */
+.qr-backdrop{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
+  background:rgba(12,12,14,.72);backdrop-filter:blur(2px);cursor:zoom-out}
+.qr-card{background:#fff;color:#111;border-radius:14px;padding:26px 26px 18px;text-align:center;
+  box-shadow:0 18px 60px rgba(0,0,0,.42);max-width:92vw}
+.qr-card svg{display:block;margin:0 auto}
+.qr-url{display:block;margin:14px 0 2px;font-size:15px;font-weight:600;color:#1a4f9c;word-break:break-all}
+.qr-hint{margin:6px 0 0;font-size:13px;color:#555}
