@@ -1602,6 +1602,13 @@
         : "chart-k-regional-groups-by-year-all.png",
       draw: drawK,
     },
+    {
+      id: "L",
+      head: "The eight habitual opponents",
+      selfContained: true,
+      file: "chart-l-habitual-opponents.png",
+      draw: drawL,
+    },
   ];
 
 
@@ -1751,6 +1758,119 @@
       "font-size": 13.5, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 640 + noteLines.length * 18 + 6,
       "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+
+  /* ---------------- L. The eight habitual opponents ---------------- */
+  const L_MIN_VOTES = 20, L_TOP = 8;
+  const L_NO = "#eb6834", L_ABS = "#c9c8c3", L_YES_ISR = "#86b6ef", L_YES_OTH = "#2a78d6";
+  const L_SHORT = {
+    "Venezuela (Bolivarian Republic of)": "Venezuela",
+    "Bolivia (Plurinational State of)": "Bolivia",
+  };
+  const L_DATA = (() => {
+    const bodyCountry = new Map(D.bodies.map(b => [b.short_name, b.country]));
+    const isIsrael = (r) => r.symbol === K_ISRAEL_SYMBOL ||
+      (r.bodies || []).some(n => bodyCountry.get(n) === K_ISRAEL_COUNTRY);
+    const voted = TEXTS.filter(r => r.adoption_mode === "Recorded vote" && D.votes[r.symbol]);
+    const rec = new Map();
+    voted.forEach(r => {
+      const v = D.votes[r.symbol], isr = isIsrael(r);
+      D.states.forEach((s, i) => {
+        const c = v[i];
+        if (c !== "Y" && c !== "A" && c !== "N") return;
+        if (!rec.has(s.state)) rec.set(s.state, { state: s.state, yes: 0, abs: 0, no: 0, yesIsr: 0, other: [] });
+        const d = rec.get(s.state);
+        if (c === "N") d.no++;
+        else if (c === "A") d.abs++;
+        else { d.yes++; if (isr) d.yesIsr++; else d.other.push(r.symbol); }
+      });
+    });
+    const rows = [...rec.values()]
+      .map(d => Object.assign(d, { cast: d.yes + d.abs + d.no }))
+      .filter(d => d.cast >= L_MIN_VOTES)
+      .map(d => Object.assign(d, { pctNo: Math.round(100 * d.no / d.cast), yesOther: d.yes - d.yesIsr }))
+      .sort((a, b) => (b.no / b.cast) - (a.no / a.cast))
+      .slice(0, L_TOP);
+    return { rows, maxCast: Math.max(...rows.map(d => d.cast)),
+      yesIsr: rows.reduce((a, d) => a + d.yesIsr, 0) };
+  })();
+  // Short right-hand label naming the texts behind the "Yes on other texts" segment.
+  function L_OTHER_LABEL(d) {
+    if (!d.other.length) return "";
+    const nums = d.other.map(s => s.replace("A/HRC/RES/", "").replace("A/HRC/DEC/", ""));
+    const burundi = nums.filter(n => n === "36/2");
+    const rest = nums.filter(n => n !== "36/2");
+    if (burundi.length && rest.length) return `36/2 + ${rest.length === 4 ? "four" : rest.length} texts in 2026`;
+    if (burundi.length) return "36/2 Burundi (2017)";
+    return nums.join(", ");
+  }
+
+  function drawL(host) {
+    const padL = 40, padR = 34;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const title = `The ${L_DATA.rows.length === 8 ? "eight" : L_DATA.rows.length} habitual opponents vote No ` +
+      `on almost every investigation; ${L_DATA.yesIsr} of their ${L_DATA.rows.reduce((a, d) => a + d.yes, 0)} ` +
+      `Yes votes are on texts concerning Israel`;
+    const titleLines = wrapTo(title, 25, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 42 + i * 31, "font-size": 25,
+      "font-weight": 650, fill: PAL.ink }));
+
+    const legendY = 42 + titleLines.length * 31 + 24;
+    let lx = padL;
+    [["No", L_NO], ["Abstain", L_ABS], ["Yes on texts concerning Israel", L_YES_ISR],
+     ["Yes on other texts", L_YES_OTH]].forEach(([lbl, c]) => {
+      svg.appendChild(el("rect", { x: lx, y: legendY - 11, width: 13, height: 13, rx: 2.5, fill: c }));
+      text(svg, lbl, { x: lx + 19, y: legendY, "font-size": 14, fill: PAL.ink2 });
+      lx += 19 + textW(lbl, 14) + 24;
+    });
+
+    const nameR = padL + 150;          // state names end here
+    const pctR = nameR + 54;           // share of No ends here
+    const barL = pctR + 18;
+    const barR = D_W - padR - 230;     // leave room for the right-hand label
+    const scale = (barR - barL) / L_DATA.maxCast;
+    const top = legendY + 30;
+    const rowH = (588 - top) / L_DATA.rows.length;
+    const bh = Math.min(34, rowH - 14);
+
+    L_DATA.rows.forEach((d, i) => {
+      const cy = top + rowH * i + rowH / 2;
+      text(svg, L_SHORT[d.state] || d.state, { x: nameR, y: cy + 5, "text-anchor": "end",
+        "font-size": 15, "font-weight": 600, fill: PAL.ink });
+      text(svg, d.pctNo + "%", { x: pctR, y: cy + 5, "text-anchor": "end",
+        "font-size": 15, "font-weight": 650, fill: L_NO });
+
+      let x = barL;
+      [["no", L_NO, "#ffffff"], ["abs", L_ABS, "#0b0b0b"],
+       ["yesIsr", L_YES_ISR, "#0b0b0b"], ["yesOther", L_YES_OTH, "#ffffff"]].forEach(([k, c, ink]) => {
+        const v = d[k], w = v * scale;
+        if (w <= 0) return;
+        svg.appendChild(el("rect", { x, y: cy - bh / 2, width: w, height: bh, fill: c }));
+        if (textW(String(v), 14) + 8 <= w) {
+          text(svg, v, { x: x + w / 2, y: cy + 5, "text-anchor": "middle", "font-size": 14,
+            "font-weight": 600, fill: ink });
+        }
+        x += w;
+      });
+
+      const lab = L_OTHER_LABEL(d);
+      if (lab) text(svg, lab, { x: x + 10, y: cy + 5, "font-size": 14, fill: PAL.ink2 });
+    });
+
+    const NOTE = `Council members with ${L_MIN_VOTES} or more votes cast on the ` +
+      `${TEXTS.filter(r => r.adoption_mode === "Recorded vote").length} recorded votes; years of ` +
+      `membership differ (Eritrea 2019–24; the Russian Federation until April 2022), so totals are not ` +
+      `comparable across States. ‘Texts concerning Israel’: OPT/Israel and Lebanon 2006.`;
+    const noteLines = wrapTo(NOTE, 14, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 626 + i * 19, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL, y: 626 + noteLines.length * 19 + 8, "font-size": 13, fill: PAL.muted });
 
     host.textContent = "";
     host.appendChild(svg);
