@@ -355,8 +355,10 @@
   }
 
   /* ---------------- chart D: the term each mandate sets ---------------- */
-  // Founding and renewal texts only; expansions and taskings set no term.
-  // mandate_term is coded in scripts/export.py from the verbatim mandate paragraphs.
+  // Every text that creates a body or extends its mandate in time, whatever its coded
+  // role: foundings, renewals, and expansions that also extend (43/28, Syria 2020).
+  // Pure taskings set no term and carry no mandate_term, so they drop out here.
+  // Coded in scripts/export.py from the verbatim mandate paragraphs.
   const TERMS = ["not stated", "other set term", "12 months", "24 months", "ongoing"];
   const TERM_COLOR = {
     "not stated": "#c9c8c3",
@@ -498,10 +500,19 @@
       if (n.dot) svg.appendChild(el("circle", { cx, cy: Math.max(ry + 12, top - (shares ? 6 : 26)), r: 3.5, fill: TERM_COLOR.ongoing }));
     });
 
-    text(svg, "Founding and renewal texts only, coded from the mandate paragraphs. " +
-      "‘Other set term’: under twelve months, until a final report, or until an event.",
-      { x: padL - 4, y: 640, "font-size": 14, fill: PAL.muted });
-    text(svg, SOURCE_LINE, { x: padL - 4, y: 666, "font-size": 13, fill: PAL.muted });
+    // note, wrapped on word boundaries so it never runs off the canvas
+    const NOTE = "Texts that create or extend a body, coded from the mandate paragraphs; taskings, which set no " +
+      "term, are not shown. ‘Other set term’: under twelve months, until a final report, or until an event.";
+    const noteLines = [];
+    NOTE.split(" ").forEach(w => {
+      const last = noteLines.length - 1;
+      const test = last >= 0 ? noteLines[last] + " " + w : w;
+      if (last >= 0 && textW(test, 14) <= iw) noteLines[last] = test;
+      else noteLines.push(w);
+    });
+    noteLines.forEach((ln, i) => text(svg, ln,
+      { x: padL - 4, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL - 4, y: 626 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
 
     host.textContent = "";
     host.appendChild(svg);
