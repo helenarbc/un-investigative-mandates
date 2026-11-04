@@ -11,8 +11,8 @@
   const STORE = "hrc-tour-done-v1";
 
   const STEPS = [
-    { tab: null, sel: ".tabbar", title: "Five views of one dataset",
-      text: "Mechanisms, Resolutions, Votes, Reports and About & method. Every figure on the site links back to the UN document it comes from." },
+    { tab: null, sel: ".tabbar", title: "One dataset, seven views",
+      text: "Mechanisms, Resolutions, Votes and Reports are the dataset itself; Summary graphs holds the headline charts, ready to download; About & method explains the coding; Other mechanisms keeps the bodies and texts that are deliberately counted nowhere. Every figure links back to the UN document it comes from." },
     { tab: "mechs", sel: "#mechs-content .panel", title: "Start with a mechanism",
       text: "Each row is one investigative body. Open it to read its founding mandate verbatim, the resolutions that created and renewed it, how the votes evolved, and its reports." },
     { tab: "res", sel: "#filterbar", title: "Filter the resolutions",

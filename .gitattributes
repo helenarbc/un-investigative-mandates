@@ -1,0 +1,9 @@
+# Keep one style of line ending inside git, whatever Windows or Google Drive sync
+# does to the working copy. Without this a file shows as "every line changed"
+# when only the invisible end-of-line characters differ. Added 4 November 2026.
+* text=auto
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary

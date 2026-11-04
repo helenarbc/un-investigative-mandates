@@ -947,25 +947,37 @@
   }
 
   /* ---------- view: mechanisms tab ---------- */
+  // The Mechanisms tab holds only the bodies the Council mandated — the ones every
+  // figure on the site counts. Everything else lives on the Other mechanisms tab,
+  // so nothing appears in the main list that the charts leave out.
   const SCOPE_GROUPS = [
     ["HRC investigative mandate", "Mandated by the Human Rights Council"],
     ["OHCHR investigation (broader)", "OHCHR investigations at the Council's request"],
+  ];
+  const OTHER_SCOPE_GROUPS = [
     ["SG-mandated investigation", "Mandated by the Secretary-General"],
     ["GA-mandated mechanism", "Mandated by the General Assembly"],
     ["UNSC-mandated mechanism", "Mandated by the Security Council"],
-    [REF_SCOPE, "Special procedures with investigative tasks — shown for reference, not counted"],
+    [REF_SCOPE, "Special procedures with investigative tasks"],
   ];
   const docCountByBody = {};
   D.documents.forEach(d => (d.bodies || []).forEach(b => { docCountByBody[b] = (docCountByBody[b] || 0) + 1; }));
 
-  function renderMechs() {
-    const host = $("#mechs-content");
-    const grouped = new Map(SCOPE_GROUPS.map(([k, label]) => [k, { label, rows: [] }]));
+  const scopeKeyOf = (b) =>
+    // GE Darfur lacks a scope value in the source data; it has HRC resolutions,
+    // so it belongs with the Council-mandated group
+    b.scope || (b.resolutions.length ? "HRC investigative mandate" : "SG-mandated investigation");
+
+  function renderMechs() { renderBodies("#mechs-content", SCOPE_GROUPS, false); }
+  function renderOther() { renderBodies("#other-content", OTHER_SCOPE_GROUPS, true); }
+
+  function renderBodies(hostSel, groupSpec, isOther) {
+    const host = $(hostSel);
+    const keys = new Set(groupSpec.map(g => g[0]));
+    const grouped = new Map(groupSpec.map(([k, label]) => [k, { label, rows: [] }]));
     D.bodies.forEach(b => {
-      // GE Darfur lacks a scope value in the source data; it has HRC resolutions,
-      // so it belongs with the Council-mandated group
-      const key = b.scope || (b.resolutions.length ? "HRC investigative mandate" : "SG-mandated investigation");
-      if (!grouped.has(key)) grouped.set(key, { label: key, rows: [] });
+      const key = scopeKeyOf(b);
+      if (!keys.has(key)) return;
       grouped.get(key).rows.push(b);
     });
     const yearsOf = (b) => {
@@ -987,28 +999,47 @@
       if (m || !y) parts.push(`${m} month${m === 1 ? "" : "s"}`);
       return `${parts.join(" and ")} (${b.end_date ? "ended" : "ongoing"})`;
     };
-    const hrcCount = (grouped.get("HRC investigative mandate") || { rows: [] }).rows.length +
-      (grouped.get("OHCHR investigation (broader)") || { rows: [] }).rows.length;
-    const refCount = (grouped.get(REF_SCOPE) || { rows: [] }).rows.length;
-    const counted = D.bodies.length - refCount;
-    host.innerHTML = `
+    const nHere = [...grouped.values()].reduce((a, g) => a + g.rows.length, 0);
+    const intro = isOther ? `
       <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
-        <b style="color:var(--ink)">${counted} country-specific investigative and accountability mechanisms</b> —
-        ${hrcCount} mandated by the Human Rights Council, ${counted - hrcCount} by the Secretary-General, the
-        General Assembly or the Security Council${refCount ? `, plus ${refCount} special procedure shown for reference only (not counted)` : ""}.
-        Click a name for its mandate, resolutions, votes and reports.
-        <details class="more"><summary>What is and is not included</summary>
-          <div>The ${hrcCount} Council-mandated bodies (including OHCHR investigations at the Council's request) are the
-          mechanisms whose resolutions and votes appear in the Resolutions and Votes tabs. The other
-          ${counted - hrcCount} have no HRC resolutions or votes, but their reports are searchable in the
-          Reports tab. Thematic mechanisms and country special procedures are outside the dataset, with one exception
-          shown for reference: the Special Rapporteur on Afghanistan, which the Council gave fact-finding support (2021) and a
-          task to document and preserve information (2022–2026) until the Independent Investigative Mechanism for Afghanistan
-          created in October 2025 is operational. Its ${REFRES.length} resolutions, and their votes and sponsorships, are
-          excluded from every count, chart and filter on this site.
-          Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
-          HRC mandating resolutions — renewals inherit the founding language; the non-Council bodies are not coded by design.</div></details>
+        <b style="color:var(--ink)">${nHere} mechanisms that are not counted anywhere on this site.</b>
+        They are kept here because the material is useful, but none of them is included in the dataset:
+        <b>no figure, chart, percentage or filter on any other tab counts them</b>. They have no Human Rights
+        Council resolutions or votes of their own${REFRES.length ? `, except the Special Rapporteur on Afghanistan, whose
+        ${REFRES.length} resolutions are listed for reference and excluded from every count` : ""}.
+        Their reports are searchable in the Reports tab.
+        <details class="more"><summary>Why each one is out</summary>
+          <div>Bodies mandated by the Secretary-General, the General Assembly or the Security Council are outside the
+          Council's own practice, which is what this dataset measures; the list of them is a selection, not a complete one.
+          The Special Rapporteur on Afghanistan is a country special procedure: the Council gave it fact-finding support
+          (2021) and a task to document and preserve information (2022–2026) until the Independent Investigative Mechanism
+          for Afghanistan, created in October 2025, is operational — close enough to an investigative mandate to be worth
+          showing, not close enough to count. None of these bodies' mandates are coded for action verbs or legal
+          frameworks, by design.</div></details>
       </div></div>
+      ${(D.excluded_texts || []).length ? `
+      <div class="panel">
+        <div class="panel-head"><h2>Texts excluded from the corpus</h2><span class="count">${(D.excluded_texts || []).length}</span></div>
+        <div class="tblwrap"><table class="data"><thead><tr><th class="no-sort">Resolution</th><th class="no-sort">Why it is excluded</th></tr></thead>
+        <tbody>${(D.excluded_texts || []).map(x => `<tr>
+          <td style="white-space:nowrap"><a href="${esc(unLink(x.symbol))}" target="_blank" rel="noopener">${esc(x.symbol)}</a></td>
+          <td>${esc(x.reason)}</td></tr>`).join("")}</tbody></table></div>
+        <div class="panel-note">These texts were adopted by the Council but fall outside the inclusion test in
+          About &amp; method. They are not in the ${RES.length} resolutions counted anywhere on this site.</div>
+      </div>` : ""}` : `
+      <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
+        <b style="color:var(--ink)">${nHere} country-specific investigative and accountability mechanisms mandated by the
+        Human Rights Council</b> (including OHCHR investigations at the Council's request). These are the bodies every
+        figure, chart and percentage on this site counts. Click a name for its mandate, resolutions, votes and reports.
+        <details class="more"><summary>What is and is not included</summary>
+          <div>Their resolutions and votes are what the Resolutions and Votes tabs show. Bodies mandated by the
+          Secretary-General, the General Assembly or the Security Council, the Special Rapporteur on Afghanistan, and
+          texts excluded from the corpus are all on the <b>Other mechanisms</b> tab and are counted nowhere.
+          Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
+          HRC mandating resolutions — renewals inherit the founding language.</div></details>
+      </div></div>`;
+    host.innerHTML = `
+      ${intro}
       ${[...grouped.values()].filter(g => g.rows.length).map(g => `
       <div class="panel">
         <div class="panel-head"><h2>${esc(g.label)}</h2><span class="count">${g.rows.length}</span></div>
@@ -1373,6 +1404,7 @@
     }
     if (tab === "reports" && window.HRCReports) window.HRCReports.activate();
     if (tab === "mechs") renderMechs();
+    if (tab === "other") renderOther();
   }
   function setSub(sub) {
     currentSub = sub;
@@ -1414,6 +1446,13 @@
   }
 
   /* ---------- about + footer ---------- */
+  // Bodies on the site that the Council did not mandate (GA-, UNSC- and SG-mandated),
+  // shown for context in the Mechanisms and Reports tabs and counted in no figure.
+  const COUNCIL_SCOPES = new Set(["HRC investigative mandate", "OHCHR investigation (broader)"]);
+  const COUNCIL_BODIES = D.bodies.filter(b => COUNCIL_SCOPES.has(b.scope)).length;
+  const OTHER_MANDATED_BODIES = D.bodies.filter(
+    b => !COUNCIL_SCOPES.has(b.scope) && b.scope !== REF_SCOPE).length;
+
   function renderAbout() {
     $("#about-content").innerHTML = `
       <h2>What this is</h2>
@@ -1440,16 +1479,20 @@
       <p><b>Not included:</b> thematic mechanisms, country special-procedures mandates (Special
       Rapporteurs and Independent Experts) unless the same text also does (a)–(c), resolutions
       that merely welcome a mechanism's report or urge cooperation, and UPR outcome decisions.
+      A request to OHCHR for a report, where no mechanism exists and no investigative or evidence
+      function is given, does not qualify (for example S-23/1 on Boko Haram, 2015, which is
+      therefore excluded).
       One special procedure is shown <b>for reference only</b> and excluded from every figure: the
       Special Rapporteur on Afghanistan, which the Council gave fact-finding support (2021) and a task
       to document and preserve information (2022–2026) until the Independent Investigative Mechanism for
       Afghanistan, created in October 2025, is operational.
-      The Mechanisms and Reports tabs additionally cover related investigative bodies mandated by
-      the General Assembly, the Security Council or the Secretary-General for the same country
-      situations; those bodies have no HRC resolutions or votes.</p>
+      The <b>Other mechanisms</b> tab lists, for context, ${OTHER_MANDATED_BODIES} investigative bodies mandated by the
+      General Assembly, the Security Council or the Secretary-General (a selection, not a complete list), the
+      Special Rapporteur on Afghanistan, and the texts excluded from the corpus. None of them is counted in any
+      figure on this site; their reports are searchable in the Reports tab.</p>
       <h2>Data</h2>
       <p>The dataset covers ${RES.length} resolutions and decisions (complete to the end of the Council's
-      63rd session, 7 October 2026), ${D.bodies.length - REF_BODIES.size} investigative bodies,
+      63rd session, 7 October 2026), ${COUNCIL_BODIES} Council-mandated investigative bodies,
       ${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length} recorded
       votes with country-by-country positions, sponsorship lists, and the mechanisms' public reports.
       It was compiled and verified against the official UN documents (docs.un.org and the OHCHR
@@ -1484,6 +1527,9 @@
         that only extend the mandate "as set out in" an earlier text. The "ICL" legal-framework tag on a
         resolution follows the same rule. No mandate paragraph in the dataset contains the phrase
         "international criminal law".</li>
+        <li><b>4 November 2026:</b> S-23/1 (Boko Haram, 2015) excluded from the corpus. It requests
+        an OHCHR report compiled from information supplied by the affected States, gives no
+        investigative or evidence mandate and creates no body.</li>
         <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
         resolutions no sponsor list has been recorded yet.</li>
         <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates
@@ -1546,6 +1592,8 @@
       setTab("mechs", false);
     } else if (h === "#/about") {
       setTab("about");
+    } else if (h === "#/other") {
+      setTab("other");
     } else {
       setTab("mechs");
     }

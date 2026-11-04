@@ -515,3 +515,17 @@ details.more > div { margin-top: 6px; }
   table.matrix th.state { min-width: 110px; font-size: 10.5px; }
   .modal-head, .modal-body { padding-left: 14px; padding-right: 14px; }
 }
+
+/* ---------- Summary graphs tab (assets/summary.js) ---------- */
+.sg-card { break-inside: avoid; }
+.sg-card .panel-head h2 { font-size: 16px; line-height: 1.35; max-width: 70ch; }
+.sg-card .panel-note { font-size: 12.5px; max-width: 86ch; }
+.sg-legend { padding-top: 8px; gap: 10px 14px; }
+.sg-legend-title { font-size: 12.5px; color: var(--muted); margin-right: 2px; }
+.sg-source { font-size: 11.5px; color: var(--muted); padding: 0 14px 12px; }
+.sg-png { white-space: nowrap; }
+@media (max-width: 560px) {
+  .sg-card .panel-head h2 { font-size: 14.5px; }
+  .sg-legend { font-size: 11.5px; }
+  .sg-source { font-size: 10.5px; }
+}
