@@ -189,7 +189,7 @@
         <div class="f-item"><label for="f-country">Situation (country)</label>
           <select id="f-country">${opt("", "All")}${COUNTRIES.map(c => opt(c, c, F.country)).join("")}</select></div>
         <div class="f-item"><label for="f-mode">Adoption</label>
-          <select id="f-mode">${opt("", "All")}${opt("Recorded vote", "Recorded vote", F.mode)}${opt("Consensus", "Consensus", F.mode)}</select></div>
+          <select id="f-mode">${opt("", "All")}${opt("Recorded vote", "Recorded vote", F.mode)}${opt("Consensus", "Without a vote", F.mode)}</select></div>
         <div class="f-item"><label for="f-role">Resolution role</label>
           <select id="f-role">${opt("", "All")}${ROLES.map(x => opt(x, x, F.role)).join("")}</select></div>
         <div class="f-item"><label for="f-ca">Criminal-accountability wording</label>
@@ -293,7 +293,7 @@
 
   /* ---------- shared bits ---------- */
   function tallyPills(r) {
-    if (r.adoption_mode !== "Recorded vote") return `<span class="pill mode-consensus">consensus</span>`;
+    if (r.adoption_mode !== "Recorded vote") return `<span class="pill mode-consensus">without a vote</span>`;
     return `<span class="pill yes" title="In favour">${r.votes_yes ?? "?"}</span>
       <span class="pill no" title="Against">${r.votes_no ?? "?"}</span>
       <span class="pill abstain" title="Abstentions">${r.votes_abstain ?? "?"}</span>`;
@@ -348,15 +348,15 @@
       <div class="tiles">
         <div class="tile"><div class="t-label">Resolutions in selection</div><div class="t-value">${R.length}</div></div>
         <div class="tile"><div class="t-label">Adopted by recorded vote</div><div class="t-value">${recorded.length}</div></div>
-        <div class="tile"><div class="t-label">Adopted by consensus</div><div class="t-value">${consensus}</div></div>
+        <div class="tile"><div class="t-label">Adopted without a vote</div><div class="t-value">${consensus}</div></div>
         <div class="tile clickable" id="tile-mechs" title="Open the Mechanisms tab"><div class="t-label">Mechanisms concerned</div><div class="t-value">${bodiesSet.size}</div><div class="t-sub">see the Mechanisms tab</div></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h2>Adopted by recorded vote or by consensus, per year</h2>
-          <span class="count">${recorded.length} by recorded vote (all passed) · ${consensus} by consensus</span></div>
+        <div class="panel-head"><h2>Adopted by recorded vote or without a vote, per year</h2>
+          <span class="count">${recorded.length} by recorded vote (all passed) · ${consensus} without a vote</span></div>
         <div class="panel-body"><div class="chart-host" id="mode-chart"></div><div class="legend" id="mode-legend"></div></div>
         <div class="panel-note">Each column is one year: the lower part counts resolutions put to a recorded vote and
-          <b>adopted with a majority of Yes votes</b>, the upper part those adopted by consensus (without a vote). Every recorded
+          <b>adopted with a majority of Yes votes</b>, the upper part those adopted without a vote. Every recorded
           vote in this dataset passed — a defeated draft never becomes a resolution, so it cannot appear here (the Yemen
           renewal rejected in October 2021 is the best-known example). The narrowest result is 21 in favour, 19 against,
           7 abstaining (resolution 51/27, 2022). Counts reflect the current filters; click a column to focus that year.</div>
@@ -404,7 +404,7 @@
     const modeSeries = [
       { key: "vote", label: "recorded vote — adopted (Yes majority)", color: cssVar("--c1"),
         values: years.map(y => R.filter(r => r.year === y && r.adoption_mode === "Recorded vote").length) },
-      { key: "consensus", label: "consensus (without a vote)", color: cssVar("--c2"),
+      { key: "consensus", label: "adopted without a vote", color: cssVar("--c2"),
         values: years.map(y => R.filter(r => r.year === y && r.adoption_mode !== "Recorded vote").length) },
     ];
     window.HRCCharts.stackedColumns($("#mode-chart"), {
@@ -444,7 +444,7 @@
       return [...ROLES.map(x => ({ key: x, label: x, color: ROLE_COLOR[x] })), { key: "(not coded)", label: "not coded", color: "--baseline" }]
         .filter(k => R.some(r => stackVal(r) === k.key));
     if (stackBy === "adoption_mode")
-      return [{ key: "Recorded vote", label: "recorded vote", color: "--c1" }, { key: "Consensus", label: "consensus", color: "--c2" }]
+      return [{ key: "Recorded vote", label: "recorded vote", color: "--c1" }, { key: "Consensus", label: "without a vote", color: "--c2" }]
         .filter(k => R.some(r => stackVal(r) === k.key));
     // legal frameworks mentioned (each resolution counted once, by combination)
     const order = ["IHRL", "IHRL + IHL", "IHRL + ICL", "IHRL + IHL + ICL", "IHL", "ICL", "(none)"];
@@ -509,7 +509,7 @@
     let recorded = R.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol));
     if (!recorded.length) {
       host.innerHTML = `<div class="panel"><div class="panel-body">No recorded votes match the current filters
-        (${R.length} resolutions selected, all adopted by consensus or without a published roll-call).</div></div>`;
+        (${R.length} resolutions selected, all adopted without a vote or without a published roll-call).</div></div>`;
       return;
     }
     // column order (+ optional mechanism blocks). Mechanism blocks follow the
@@ -1122,14 +1122,14 @@
         <div class="chart-host" id="mech-evo"></div>
         <div class="legend" id="mech-evo-legend"></div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">One column per resolution (year in brackets), oldest to newest —
-        click a column for the full card. Grey stubs: adopted by consensus (no vote).</div>
+        click a column for the full card. Grey stubs: adopted without a vote.</div>
         ${mres.some(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)) ? `
         <h4 style="margin:14px 0 4px;font-size:13px">How each regional group voted, resolution by resolution</h4>
         <div class="chart-host" id="mech-groups"></div>
         <div class="legend" id="mech-groups-legend"></div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">Each line is one UN regional group: the share of its
         Council members voting <b>in favour</b> (out of those voting Yes, No or Abstain), one point per recorded vote, oldest
-        to newest. Hover a point for the group's Yes · No · Abstain; click it for the resolution. Consensus adoptions have no
+        to newest. Hover a point for the group's Yes · No · Abstain; click it for the resolution. Adoptions without a vote have no
         vote and are left out.</div>` : ""}
         <div class="tblwrap" style="max-height:280px;margin-top:10px"><table class="data"><tbody>
           ${mres.map((r, i) => `<tr data-sym="${esc(r.symbol)}"><td>${resLink(r)}</td>
@@ -1166,7 +1166,7 @@
         { key: "N", label: "No", color: cssVar("--no"), values: mres.map(r => count(r, "N")) },
         { key: "A", label: "Abstain", color: cssVar("--abstain"), values: mres.map(r => count(r, "A")) },
         { key: "X", label: "Absent", color: cssVar("--absent"), values: mres.map(r => count(r, "X")) },
-        { key: "C", label: "consensus (no vote)", color: cssVar("--baseline"),
+        { key: "C", label: "adopted without a vote", color: cssVar("--baseline"),
           values: mres.map(r => r.adoption_mode === "Recorded vote" ? 0 : 4) },
       ];
       window.HRCCharts.stackedColumns($("#mech-evo"), {
@@ -1175,7 +1175,7 @@
         tooltip: (ci) => {
           const r = mres[ci];
           if (r.adoption_mode !== "Recorded vote")
-            return [{ label: "Adopted without a vote (consensus)", value: "" }, { label: fmtDate(r.date_adopted), value: "" }];
+            return [{ label: "Adopted without a vote", value: "" }, { label: fmtDate(r.date_adopted), value: "" }];
           return series.slice(0, 4).map(s => ({ label: s.label, color: s.color, value: s.values[ci] }))
             .concat([{ label: fmtDate(r.date_adopted), value: "" }]);
         },
@@ -1472,7 +1472,7 @@
         it is coded by its strongest effect on the mandate.</li>
         <li>Vote tallies follow the official adoption record; the roll-call lists shown are the
         official annexes.</li>
-        <li>"Consensus" means adopted without a vote.</li>
+        <li>"Without a vote" is the UN category (the data value in the base is "Consensus"): no member asked for a vote; it does not imply that every member agreed, and several such texts carry explanations of position or disassociations.</li>
         <li>Mechanism-level codings (action verbs, legal frameworks) are the union of the
         mechanism's mandating resolutions, so renewals inherit the founding language.</li>
         <li><b>Criminal-accountability wording</b> is coded literally from the mandate paragraphs, one
