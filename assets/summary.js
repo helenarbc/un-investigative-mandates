@@ -7,6 +7,13 @@
      B. Texts and bodies per situation         — horizontal bars + bodies column
      C. Bodies running at the same time        — columns per calendar year, 2006-2026
      D. The term each mandate sets             — stacked columns, counts or shares
+     E. Task verbs per founding mandate        — dot chart with yearly means
+     F. Four features of each founding mandate — dot matrix, one column per text
+     G. The fifteen task verbs                 — table: counts, first use, wording
+     E2. Task verbs: what rose is the floor    — same texts as E, read as two bands
+     H. Groups named vs groups instructed      — paired horizontal bars
+     I. How texts were adopted                — stacked columns, counts or shares
+     J. How States voted                      — average Yes / abstentions / No per voted text
 
    To add one: append an entry to CARDS at the bottom ({id, build(host)}) and a
    draw function above it. Nothing else needs touching.
@@ -69,6 +76,17 @@
   }
   // Rough advance width, good enough to decide whether a label fits.
   const textW = (s, size) => String(s).length * size * 0.58;
+  // Wrap a string on word boundaries so it never runs off the canvas.
+  function wrapTo(str, size, width) {
+    const out = [];
+    String(str).split(" ").forEach(w => {
+      const last = out.length - 1;
+      const test = last >= 0 ? out[last] + " " + w : w;
+      if (last >= 0 && textW(test, size) <= width) out[last] = test;
+      else out.push(w);
+    });
+    return out;
+  }
 
   /* ---------------- counting rules ---------------- */
   // 1. Texts: every resolution/decision except the Special Rapporteur on Afghanistan
@@ -87,6 +105,7 @@
   // Display-only label fixes (the stored value keeps its spelling; nothing is written back).
   const DISPLAY_LABEL = {
     "Cote d’Ivoire": "Côte d’Ivoire",
+    "Cote d'Ivoire": "Côte d’Ivoire",
     "Democratic Republic of the Congo": "DR Congo",
     "Central African Republic": "Central African Rep.",
     "Sudan": "Sudan (incl. Darfur)",
@@ -406,21 +425,7 @@
 
     // title: one line if it fits at 26px, otherwise wrapped on its semicolons
     const T_SIZE = 26;
-    const titleLines = (() => {
-      const full = D_TITLE();
-      if (textW(full, T_SIZE) <= iw) return [full];
-      const parts = full.split("; ");
-      const lines = [];
-      let cur = "";
-      parts.forEach((part, i) => {
-        const piece = part + (i < parts.length - 1 ? ";" : "");
-        const test = cur ? cur + " " + piece : piece;
-        if (cur && textW(test, T_SIZE) > iw) { lines.push(cur); cur = piece; }
-        else cur = test;
-      });
-      if (cur) lines.push(cur);
-      return lines;
-    })();
+    const titleLines = wrapTo(D_TITLE(), T_SIZE, iw);
     titleLines.forEach((ln, i) => text(svg, ln, {
       x: padL - 4, y: 44 + i * 32, "font-size": T_SIZE, "font-weight": 650, fill: PAL.ink,
     }));
@@ -503,13 +508,7 @@
     // note, wrapped on word boundaries so it never runs off the canvas
     const NOTE = "Texts that create or extend a body, coded from the mandate paragraphs; taskings, which set no " +
       "term, are not shown. ‘Other set term’: under twelve months, until a final report, or until an event.";
-    const noteLines = [];
-    NOTE.split(" ").forEach(w => {
-      const last = noteLines.length - 1;
-      const test = last >= 0 ? noteLines[last] + " " + w : w;
-      if (last >= 0 && textW(test, 14) <= iw) noteLines[last] = test;
-      else noteLines.push(w);
-    });
+    const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln,
       { x: padL - 4, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 626 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -523,6 +522,929 @@
     return `Twelve months is the usual term (${D_DATA.totals[i12]} of ${D_DATA.total} texts); ` +
       `two-year terms since ${D_DATA.first24}; ` +
       `${lower(word(D_DATA.ongoing.length))} bodies created with no end date`;
+  }
+
+  /* ---------------- chart E: task verbs in each founding mandate ---------------- */
+  // One dot per founding text: how many distinct task verbs its mandate paragraphs
+  // carry, on the 15-verb taxonomy. Role coding as it stands (strongest-effect rule).
+  const E_DOT = "#86b6ef", E_DOT_LATE = "#2a78d6", E_MEAN = "#2a78d6";
+  const E_MAX = 15;
+
+  const E_DATA = (() => {
+    const texts = TEXTS.filter(r => r.resolution_role === "founding")
+      .map(r => ({
+        year: r.year || +String(r.date_adopted || "").slice(0, 4),
+        n: (r.action_verbs || []).length,
+        symbol: r.symbol,
+        body: (r.bodies || [])[0] || "",
+      }))
+      .sort((a, b) => a.year - b.year || a.n - b.n);
+    const per = new Map(YEARS.map(y => [y, []]));
+    texts.forEach(t => { if (per.has(t.year)) per.get(t.year).push(t); });
+    const mean = new Map(YEARS.map(y => {
+      const v = per.get(y);
+      return [y, v.length ? v.reduce((a, t) => a + t.n, 0) / v.length : null];
+    }));
+    const since2022 = texts.filter(t => t.year >= 2022).map(t => t.n);
+    const first = texts.filter(t => t.year === YEARS[0]).map(t => t.n);
+    return {
+      texts, per, mean, n: texts.length,
+      firstMax: first.length ? Math.max(...first) : null,
+      lateMin: since2022.length ? Math.min(...since2022) : null,
+      lateMax: since2022.length ? Math.max(...since2022) : null,
+      emptyYears: YEARS.filter(y => !per.get(y).length),
+    };
+  })();
+
+  // the texts that carry a label, found by symbol so the values stay computed
+  const E_LABELS = [
+    { symbol: "A/HRC/RES/S-2/1", text: (t) => `Lebanon ${t.year}: ${t.n}`, place: "below" },
+    { symbol: "A/HRC/RES/42/25", text: (t) => `Venezuela ${t.year}: ${t.n}`, place: "below" },
+    { symbol: "A/HRC/RES/49/1", text: (t) => `Ukraine ${t.year}: ${t.n}`, place: "above", lift: 26 },
+    { symbol: "A/HRC/RES/60/2", text: (t) => `Afghanistan mechanism ${t.year}: ${t.n}`, place: "above", lift: 78 },
+  ];
+
+  function drawE(host) {
+    const padL = 72, padR = 40;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const T_SIZE = 26;
+    const titleLines = wrapTo(E_TITLE(), T_SIZE, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, {
+      x: padL - 4, y: 44 + i * 32, "font-size": T_SIZE, "font-weight": 650, fill: PAL.ink,
+    }));
+
+    const plotT = 44 + titleLines.length * 32 + 62, plotB = 576;
+    const ih = plotB - plotT;
+    const slot = iw / YEARS.length;
+    const xAt = (y) => padL + slot * YEARS.indexOf(y) + slot / 2;
+    const yAt = (v) => plotT + ih - ih * v / E_MAX;
+
+    for (let v = 0; v <= E_MAX; v += 3) {
+      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: yAt(v), y2: yAt(v), stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, v, { x: padL - 10, y: yAt(v) + 5, "text-anchor": "end", "font-size": 14, fill: PAL.muted });
+    }
+    text(svg, "task verbs", { x: padL, y: yAt(E_MAX) - 14, "font-size": 13, fill: PAL.muted });
+
+    // dots: within a year, texts sharing a value sit side by side, never stacked
+    const posOf = new Map();
+    YEARS.forEach(yr => {
+      const rows = E_DATA.per.get(yr);
+      const byVal = new Map();
+      rows.forEach(t => { if (!byVal.has(t.n)) byVal.set(t.n, []); byVal.get(t.n).push(t); });
+      byVal.forEach((group) => {
+        const step = Math.min(11, (slot - 8) / Math.max(1, group.length));
+        group.forEach((t, i) => {
+          const cx = xAt(yr) + (i - (group.length - 1) / 2) * step;
+          posOf.set(t.symbol, { cx, cy: yAt(t.n) });
+          svg.appendChild(el("circle", {
+            cx, cy: yAt(t.n), r: 5,
+            fill: yr >= 2021 ? E_DOT_LATE : E_DOT,
+            stroke: "#ffffff", "stroke-width": 1.2,
+          }));
+        });
+      });
+    });
+
+    // yearly mean: a short dash, joined by a thin line that breaks on empty years
+    let d = "", open = false;
+    YEARS.forEach(yr => {
+      const m = E_DATA.mean.get(yr);
+      if (m === null) { open = false; return; }
+      const x = xAt(yr), y = yAt(m);
+      d += (open ? " L" : " M") + x.toFixed(1) + " " + y.toFixed(1);
+      open = true;
+    });
+    if (d) svg.appendChild(el("path", { d: d.trim(), fill: "none", stroke: E_MEAN, "stroke-width": 1.6, opacity: 0.85 }));
+    YEARS.forEach(yr => {
+      const m = E_DATA.mean.get(yr);
+      if (m === null) return;
+      const x = xAt(yr), y = yAt(m);
+      svg.appendChild(el("line", { x1: x - 13, x2: x + 13, y1: y, y2: y, stroke: E_MEAN, "stroke-width": 3.2, "stroke-linecap": "round" }));
+    });
+
+    YEARS.forEach(yr => text(svg, yr, {
+      x: xAt(yr), y: plotB + 24, "text-anchor": "middle", "font-size": 14, fill: PAL.ink2,
+    }));
+    svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+
+    // labels, outside the dots, with thin leaders
+    E_LABELS.forEach(spec => {
+      const t = E_DATA.texts.find(x => x.symbol === spec.symbol);
+      const pos = t && posOf.get(spec.symbol);
+      if (!t || !pos) return;
+      const label = spec.text(t);
+      const up = spec.place === "above";
+      const ly = up ? pos.cy - (spec.lift || 26) : pos.cy + (spec.lift || 34);
+      const w = textW(label, 14);
+      let anchor = "middle", tx = pos.cx;
+      if (tx - w / 2 < padL) { anchor = "start"; tx = padL; }
+      if (tx + w / 2 > D_W - padR) { anchor = "end"; tx = D_W - padR; }
+      text(svg, label, { x: tx, y: ly, "font-size": 14, "text-anchor": anchor, fill: PAL.ink2 });
+      svg.appendChild(el("line", {
+        x1: pos.cx, x2: pos.cx, y1: up ? ly + 6 : ly - 12, y2: up ? pos.cy - 8 : pos.cy + 8,
+        stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "2 3",
+      }));
+    });
+
+    const NOTE = `One dot per founding text, coded from its mandate paragraphs on a 15-verb taxonomy ` +
+      `(n = ${E_DATA.n}). The dash and line show the mean for each year; no founding text in ` +
+      `${E_DATA.emptyYears.join(" or ")}. With one to five founding texts a year, single texts move the yearly mean.`;
+    const noteLines = wrapTo(NOTE, 14, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL - 4, y: 626 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+  function E_TITLE() {
+    return `Task verbs in each founding mandate: at most ${lower(word(E_DATA.firstMax))} in ${YEARS[0]}, ` +
+      `between ${lower(word(E_DATA.lateMin))} and ${lower(word(E_DATA.lateMax))} since 2022`;
+  }
+
+  /* ---------------- chart F: four features of each founding mandate ---------------- */
+  const F_ROWS = [
+    ["Establish the facts", (r) => (r.action_verbs || []).indexOf("establish facts") >= 0],
+    ["Identify those responsible", (r) => (r.action_verbs || []).indexOf("identify perpetrators") >= 0],
+    ["Evidence task", (r) => ["collect", "consolidate", "preserve", "analyse evidence", "document"]
+      .some(v => (r.action_verbs || []).indexOf(v) >= 0)],
+    ["Crimes or criminal proceedings named", (r) => r.criminal_accountability === "names crimes or criminal proceedings"],
+  ];
+  const F_ON = "#2a78d6", F_OFF = "#c9c8c3";
+
+  const F_DATA = (() => {
+    const texts = TEXTS.filter(r => r.resolution_role === "founding")
+      .sort((a, b) => (a.date_adopted || "").localeCompare(b.date_adopted || ""))
+      .map(r => ({
+        year: r.year || +String(r.date_adopted || "").slice(0, 4),
+        symbol: r.symbol,
+        body: (r.bodies || [])[0] || "",
+        f: F_ROWS.map(([, test]) => !!test(r)),
+      }));
+    const per = new Map(YEARS.map(y => [y, texts.filter(t => t.year === y)]));
+    const totals = F_ROWS.map((_, i) => texts.filter(t => t.f[i]).length);
+    const since2021 = texts.filter(t => t.year >= 2021);
+    const firstFacts = texts.filter(t => t.f[0]).map(t => t.year).sort((a, b) => a - b)[0];
+    return {
+      texts, per, totals,
+      n: texts.length,
+      emptyYears: YEARS.filter(y => !per.get(y).length),
+      firstFacts,
+      firstFactsBodies: texts.filter(t => t.year === firstFacts && t.f[0]).map(t => t.body),
+      firstFactsCount: texts.filter(t => t.year === firstFacts && t.f[0]).length,
+      evSince2021: since2021.filter(t => t.f[2]).length,
+      nSince2021: since2021.length,
+    };
+  })();
+
+  function drawF(host) {
+    const padR = 40;
+    const labelW = 292, totalW = 58;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const T_SIZE = 26;
+    const titleLines = wrapTo(F_TITLE(), T_SIZE, D_W - padR - 28);
+    titleLines.forEach((ln, i) => text(svg, ln, {
+      x: 28, y: 44 + i * 32, "font-size": T_SIZE, "font-weight": 650, fill: PAL.ink,
+    }));
+
+    // column geometry: one column per text, grouped by year; empty years keep a slot
+    const gridL = labelW + 12, gridR = D_W - padR - totalW;
+    const gap = 8;
+    const slots = YEARS.map(y => Math.max(1, F_DATA.per.get(y).length));
+    // a group is never narrower than its own year label, so the labels never collide
+    const MIN_GROUP = textW("2026", 13.5) + 7;
+    const avail = gridR - gridL - gap * (YEARS.length - 1);
+    let colW = 17;
+    const widthAt = (cw) => slots.reduce((a, n) => a + Math.max(MIN_GROUP, n * cw), 0);
+    while (colW > 7 && widthAt(colW) > avail) colW -= 0.25;
+    const groupX = new Map();
+    let x = gridL;
+    YEARS.forEach((y, i) => {
+      const w = Math.max(MIN_GROUP, slots[i] * colW);
+      groupX.set(y, { x0: x, x1: x + w, w, cols: slots[i] });
+      x += w + gap;
+    });
+
+    const annoTop = 44 + titleLines.length * 32 + 26;
+    const matrixTop = annoTop + 86;
+    const rowGap = 96;
+    const rowY = (i) => matrixTop + i * rowGap;
+    const matrixBottom = rowY(F_ROWS.length - 1) + 20;
+
+    // annotations with thin brackets
+    const anno = [
+      { years: [F_DATA.firstFacts], row: 0,
+        label: `${F_DATA.firstFacts}: ‘establish the facts’ and ‘identify those responsible’ enter ` +
+          `(${F_DATA.firstFactsBodies.map(b => label(b.replace(/^(COI|FFM)\s+/, "").replace(/\s*\(\d+\)$/, "")))
+            .filter((v, i, a) => a.indexOf(v) === i).join(", ")})` },
+      { years: [2021, 2025], row: 1,
+        label: `Since 2021: an evidence task in ${F_DATA.evSince2021} of ${F_DATA.nSince2021} founding texts` },
+    ];
+    anno.forEach(a => {
+      const g0 = groupX.get(a.years[0]), g1 = groupX.get(a.years[a.years.length - 1]);
+      if (!g0 || !g1) return;
+      const by = annoTop + 56;
+      const cx = (g0.x0 + g1.x1) / 2;
+      svg.appendChild(el("path", {
+        d: `M${g0.x0} ${by + 10} L${g0.x0} ${by + 4} L${g1.x1} ${by + 4} L${g1.x1} ${by + 10}`,
+        fill: "none", stroke: PAL.baseline, "stroke-width": 1,
+      }));
+      const w = textW(a.label, 14);
+      let anchorPos = "middle", tx = cx;
+      if (tx + w / 2 > D_W - padR) { anchorPos = "end"; tx = D_W - padR; }
+      if (tx - w / 2 < 28) { anchorPos = "start"; tx = 28; }
+      text(svg, a.label, { x: tx, y: by - 8 - a.row * 22, "font-size": 14, "text-anchor": anchorPos, fill: PAL.ink2 });
+      svg.appendChild(el("line", {
+        x1: cx, x2: cx, y1: by - 4 - a.row * 22, y2: by + 4,
+        stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "2 3",
+      }));
+    });
+
+    // rows
+    F_ROWS.forEach(([name], i) => {
+      const y = rowY(i);
+      text(svg, name, { x: labelW, y: y + 5, "text-anchor": "end", "font-size": 14, fill: PAL.ink });
+      svg.appendChild(el("line", {
+        x1: gridL - 6, x2: gridR + 6, y1: y, y2: y, stroke: PAL.grid, "stroke-width": 1,
+      }));
+      text(svg, F_DATA.totals[i], {
+        x: D_W - padR, y: y + 5, "text-anchor": "end", "font-size": 14, "font-weight": 650, fill: PAL.ink,
+      });
+    });
+    text(svg, `of ${F_DATA.n}`, { x: D_W - padR, y: rowY(0) - 26, "text-anchor": "end", "font-size": 12.5, fill: PAL.muted });
+
+    // cells
+    YEARS.forEach(yr => {
+      const g = groupX.get(yr);
+      const rows = F_DATA.per.get(yr);
+      const inner = rows.length * colW;
+      const x0 = g.x0 + (g.w - inner) / 2;
+      rows.forEach((t, k) => {
+        const cx = x0 + colW * (k + 0.5);
+        t.f.forEach((on, i) => {
+          svg.appendChild(el("circle", on
+            ? { cx, cy: rowY(i), r: 5, fill: F_ON }
+            : { cx, cy: rowY(i), r: 3.6, fill: "none", stroke: F_OFF, "stroke-width": 1.3 }));
+        });
+      });
+      // year label and separator
+      text(svg, yr, {
+        x: (g.x0 + g.x1) / 2, y: matrixBottom + 22, "text-anchor": "middle", "font-size": 13.5,
+        fill: rows.length ? PAL.ink2 : PAL.muted,
+      });
+      if (yr !== YEARS[YEARS.length - 1]) {
+        svg.appendChild(el("line", {
+          x1: g.x1 + gap / 2, x2: g.x1 + gap / 2, y1: rowY(0) - 16, y2: matrixBottom + 6,
+          stroke: PAL.grid, "stroke-width": 1,
+        }));
+      }
+    });
+
+    const NOTE = `One column per founding text (n = ${F_DATA.n}), coded from its mandate paragraphs. ` +
+      `Evidence task: collect, consolidate, preserve, analyse evidence or document. ` +
+      `No founding text in ${F_DATA.emptyYears.join(" or ")}.`;
+    const noteLines = wrapTo(NOTE, 14, D_W - padR - 28);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: 28, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: 28, y: 626 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+  function F_TITLE() {
+    return `From ${F_DATA.firstFacts} the Council asks its bodies to establish the facts; since 2021 ` +
+      `${F_DATA.evSince2021} of ${F_DATA.nSince2021} new bodies are also asked to collect evidence`;
+  }
+
+  /* ---------------- table G: the fifteen task verbs ---------------- */
+  // Families are a presentation grouping, not a coded field.
+  const G_FAMILIES = [
+    ["Inquiry", ["investigate", "establish facts", "identify perpetrators"]],
+    ["Evidence", ["collect", "consolidate", "preserve", "analyse evidence", "document", "verify"]],
+    ["The situation", ["monitor", "assess"]],
+    ["Outputs and relations", ["report", "make recommendations", "provide guidance", "engage"]],
+  ];
+  const G_SHADED = "Evidence";
+  const G_SHADE = "#eaf2fc";
+  const G_DISPLAY = { "identify perpetrators": "identify those responsible" };
+  // the verb, plus the synonyms mapped onto it
+  const G_PATTERNS = {
+    "investigate": [/\binvestigat\w*/i],
+    "establish facts": [/\bestablish\w*\s+the\s+facts/i, /\bdetermine\s+the\s+facts/i],
+    "identify perpetrators": [/\bidentify[^.;:]{0,40}?those\s+responsible/i, /\bidentify\w*\s+the\s+perpetrators/i, /\bclarify\w*\s+responsibility/i],
+    "collect": [/\bcollect\w*/i, /\bgather\w*/i],
+    "consolidate": [/\bconsolidat\w*/i],
+    "preserve": [/\bpreserv\w*/i],
+    "analyse evidence": [/\banalys\w*/i, /\banalyz\w*/i],
+    "document": [/\bdocument(?:s|ing|ed)?\b/i],
+    "verify": [/\bverif\w*/i],
+    "monitor": [/\bmonitor\w*/i],
+    "assess": [/\bassess(?:es|ing|ed)?\b/i],
+    "report": [/\breport\w*/i],
+    "make recommendations": [/\bmake\s+recommendations/i, /\brecommend(?:s|ing|ed)?\b/i],
+    "provide guidance": [/\bprovide\s+guidance/i, /\bguidance/i],
+    "engage": [/\bengag\w*/i],
+  };
+  const G_COUNT_WORDS = 8;   // the rule: at most eight words
+  const G_SHOW_WORDS = 8;    // the full rule fits the column; shortened only if it does not
+
+  const G_DATA = (() => {
+    const byDate = TEXTS.slice().sort((a, b) => (a.date_adopted || "").localeCompare(b.date_adopted || ""));
+    const founding = byDate.filter(r => r.resolution_role === "founding");
+    const cut = (seg, n) => {
+      const w = seg.split(/\s+/);
+      return { s: w.slice(0, n).join(" ").replace(/[,.]$/, ""), more: w.length > n };
+    };
+    const phrase = (vm, pats) => {
+      const t = String(vm || "").replace(/\s+/g, " ");
+      for (const p of pats) {
+        const m = p.exec(t);
+        if (!m) continue;
+        const rest = t.slice(m.index);
+        const stop = rest.search(/[;:]/);
+        return (stop >= 0 ? rest.slice(0, stop) : rest).trim();
+      }
+      return null;
+    };
+    const rows = [];
+    G_FAMILIES.forEach(([family, verbs]) => verbs.forEach(v => {
+      const texts = byDate.filter(r => (r.action_verbs || []).indexOf(v) >= 0);
+      const fnd = founding.filter(r => (r.action_verbs || []).indexOf(v) >= 0);
+      const counts = new Map();
+      let noLiteral = 0;
+      const why = { ref: 0, nomandate: 0, other: 0 };
+      texts.forEach(r => {
+        const seg = phrase(r.verbatim_mandate, G_PATTERNS[v]);
+        if (!seg) {
+          noLiteral++;
+          const vm = String(r.verbatim_mandate || "");
+          if (!vm.trim()) why.nomandate++;
+          else if (/as set out in|in accordance with .{0,30}resolution|under the same terms|referred to in|its resolution \d/i.test(vm)) why.ref++;
+          else why.other++;
+          return;
+        }
+        // identical wording, ignoring punctuation and case
+        const key = cut(seg, G_COUNT_WORDS).s.toLowerCase().replace(/[^a-z0-9 ]+/g, "").replace(/\s+/g, " ").trim();
+        if (!counts.has(key)) counts.set(key, { show: cut(seg, G_SHOW_WORDS), n: 0 });
+        counts.get(key).n++;
+      });
+      const top = [...counts.values()].sort((a, b) => b.n - a.n || a.show.s.localeCompare(b.show.s)).slice(0, 2);
+      rows.push({
+        family, verb: v, label: G_DISPLAY[v] || v,
+        texts: texts.length, founding: fnd.length, noLiteral, why,
+        first: texts[0] ? { sym: texts[0].symbol, year: texts[0].year } : null,
+        top,
+      });
+    }));
+    return { rows, total: byDate.length, totalFounding: founding.length };
+  })();
+
+  const shortSym = (s) => String(s).replace("A/HRC/RES/", "").replace("A/HRC/DEC/", "dec. ").replace("A/HRC/", "");
+
+  function drawG(host) {
+    const L = 28, R = D_W - 28;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    text(svg, "Fifteen task verbs, and how the Council words them",
+      { x: L, y: 36, "font-size": 23, "font-weight": 650, fill: PAL.ink });
+    text(svg, `Coded from the mandate paragraphs; a verb counts once per text. ` +
+      `Texts: of ${G_DATA.total} in the corpus; founding: of ${G_DATA.totalFounding}.`,
+      { x: L, y: 56, "font-size": 13, fill: PAL.ink2 });
+
+    const cVerb = L, cTexts = 236, cFound = 310, cFirst = 392, cWord = 512;
+    let y = 78;
+    text(svg, "Verb", { x: cVerb, y, "font-size": 12.5, "font-weight": 650, fill: PAL.muted });
+    text(svg, "Texts", { x: cTexts + 40, y, "font-size": 12.5, "font-weight": 650, "text-anchor": "end", fill: PAL.muted });
+    text(svg, "Founding", { x: cFound + 58, y, "font-size": 12.5, "font-weight": 650, "text-anchor": "end", fill: PAL.muted });
+    text(svg, "First used", { x: cFirst, y, "font-size": 12.5, "font-weight": 650, fill: PAL.muted });
+    text(svg, "How it is worded", { x: cWord, y, "font-size": 12.5, "font-weight": 650, fill: PAL.muted });
+    y += 8;
+    svg.appendChild(el("line", { x1: L, x2: R, y1: y, y2: y, stroke: PAL.baseline, "stroke-width": 1 }));
+
+    const ROW_H = 31, FAM_H = 18;
+    G_FAMILIES.forEach(([family]) => {
+      const rows = G_DATA.rows.filter(r => r.family === family);
+      const blockTop = y;
+      const blockH = FAM_H + rows.length * ROW_H;
+      if (family === G_SHADED) {
+        svg.appendChild(el("rect", { x: L - 6, y: blockTop + 2, width: R - L + 12, height: blockH - 2, fill: G_SHADE }));
+      }
+      y += FAM_H;
+      text(svg, family, { x: cVerb, y: y - 5, "font-size": 12.5, "font-weight": 650, fill: PAL.accent || "#1c5cab" });
+      rows.forEach(r => {
+        const mid = y + 13;
+        text(svg, r.label, { x: cVerb, y: mid, "font-size": 13.5, fill: PAL.ink });
+        text(svg, r.texts, { x: cTexts + 40, y: mid, "font-size": 13.5, "text-anchor": "end", fill: PAL.ink });
+        text(svg, r.founding, { x: cFound + 58, y: mid, "font-size": 13.5, "text-anchor": "end", fill: PAL.ink2 });
+        text(svg, r.first ? `${shortSym(r.first.sym)} ${r.first.year}` : "—",
+          { x: cFirst, y: mid, "font-size": 13, fill: PAL.ink2 });
+        const rightEdge = [];
+        r.top.forEach((t, i) => {
+          let show = t.show;
+          // fall back to six words rather than shrinking the type
+          if (textW(`“${show.s}”`, 13) > R - cWord - 34) {
+            const w = show.s.split(/\s+/);
+            show = { s: w.slice(0, 6).join(" ").replace(/[,.]$/, ""), more: true };
+          }
+          const q = `“${show.s}${show.more ? " …" : ""}”`;
+          const ty = y + 10 + i * 15;
+          text(svg, q, { x: cWord, y: ty, "font-size": 13, fill: PAL.ink2 });
+          text(svg, t.n, { x: cWord + textW(q, 13) + 10, y: ty, "font-size": 12.5, "font-weight": 650, fill: PAL.muted });
+          rightEdge[i] = cWord + textW(q, 13) + 10 + textW(String(t.n), 12.5);
+        });
+        // where the verb is carried without any literal wording, say how; placed on
+        // whichever of the two lines has room, right-aligned, never over the quote
+        if (r.noLiteral) {
+          const bits = [];
+          if (r.why.ref) bits.push(`${r.why.ref} by reference`);
+          if (r.why.other) bits.push(`${r.why.other} worded otherwise`);
+          if (r.why.nomandate) bits.push(`${r.why.nomandate} no mandate text`);
+          const full = `+${r.noLiteral} with no literal wording (${bits.join(", ")})`;
+          const brief = `+${r.noLiteral} with no literal wording`;
+          let note = full, line = -1;
+          for (const cand of [full, brief]) {
+            const w = textW(cand, 11.5);
+            const fit = rightEdge.findIndex(e => R - e - 14 >= w);
+            if (fit >= 0) { note = cand; line = fit; break; }
+          }
+          if (line >= 0) {
+            text(svg, note, {
+              x: R, y: y + 10 + line * 15, "text-anchor": "end",
+              "font-size": 11.5, "font-style": "italic", fill: PAL.muted,
+            });
+          }
+        }
+        y += ROW_H;
+        svg.appendChild(el("line", { x1: L, x2: R, y1: y - 2, y2: y - 2, stroke: PAL.grid, "stroke-width": 0.8 }));
+      });
+    });
+
+    text(svg, SOURCE_LINE, { x: L, y: D_H - 22, "font-size": 12.5, fill: PAL.muted });
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+  /* ---------------- chart E2: the floor rose (alternative reading of E) ---------------- */
+  // Same texts as chart E, read a different way. No mean line: with one to five
+  // founding texts a year a mean invents a trajectory. The claim here is about the
+  // range the Council works inside, which is what the two bands show.
+  const E2_EARLY_END = 2013, E2_LATE_START = 2022;
+  const E2_EARLY = "#9aa3ad", E2_MID = "#86b6ef", E2_LATE = "#2a78d6";
+  const E2_BAND_LATE = "#eaf2fc", E2_BAND_EARLY = "#f1f2f4";
+
+  const E2_DATA = (() => {
+    const texts = E_DATA.texts;
+    const early = texts.filter(t => t.year <= E2_EARLY_END).map(t => t.n);
+    const late = texts.filter(t => t.year >= E2_LATE_START).map(t => t.n);
+    const ceiling = early.length ? Math.max(...early) : null;
+    const floor = late.length ? Math.min(...late) : null;
+    const firstAtFloor = floor === null ? null : texts.find(t => t.n >= floor);
+    const peak = texts.reduce((a, t) => (!a || t.n > a.n ? t : a), null);
+    // years after the first mandate reached the floor that still carry a short one
+    const shortLate = texts.filter(t => firstAtFloor && t.year > firstAtFloor.year &&
+      t.year < E2_LATE_START && t.n < 5);
+    const shortYears = [...new Set(shortLate.map(t => t.year))].sort((a, b) => a - b);
+    return {
+      texts, ceiling, floor, firstAtFloor, peak,
+      nEarly: early.length, nLate: late.length,
+      lateMax: late.length ? Math.max(...late) : null,
+      shortYears, shortMin: shortLate.length ? Math.min(...shortLate.map(t => t.n)) : null,
+      shortMax: shortLate.length ? Math.max(...shortLate.map(t => t.n)) : null,
+    };
+  })();
+
+  function drawE2(host) {
+    const padL = 72, padR = 40;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const T_SIZE = 26;
+    const titleLines = wrapTo(E2_TITLE(), T_SIZE, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, {
+      x: padL - 4, y: 44 + i * 32, "font-size": T_SIZE, "font-weight": 650, fill: PAL.ink,
+    }));
+
+    const plotT = 44 + titleLines.length * 32 + 68, plotB = 556;
+    const ih = plotB - plotT;
+    const slot = iw / YEARS.length;
+    const xAt = (y) => padL + slot * YEARS.indexOf(y) + slot / 2;
+    const edgeL = (y) => padL + slot * YEARS.indexOf(y);
+    const edgeR = (y) => padL + slot * (YEARS.indexOf(y) + 1);
+    const yAt = (v) => plotT + ih - ih * v / E_MAX;
+
+    // the two bands: where every early mandate sat, and where every recent one sits
+    if (E2_DATA.ceiling !== null) {
+      svg.appendChild(el("rect", {
+        x: edgeL(YEARS[0]), y: yAt(E2_DATA.ceiling), width: edgeR(E2_EARLY_END) - edgeL(YEARS[0]),
+        height: plotB - yAt(E2_DATA.ceiling), fill: E2_BAND_EARLY,
+      }));
+      svg.appendChild(el("line", {
+        x1: edgeL(YEARS[0]), x2: edgeR(E2_EARLY_END), y1: yAt(E2_DATA.ceiling), y2: yAt(E2_DATA.ceiling),
+        stroke: E2_EARLY, "stroke-width": 1.6,
+      }));
+      text(svg, `Before ${E2_EARLY_END + 1}: never more than ${E2_DATA.ceiling}`,
+        { x: edgeL(YEARS[0]) + 6, y: yAt(E2_DATA.ceiling) - 9, "font-size": 14, "font-weight": 600, fill: "#6b7280" });
+      text(svg, `${E2_DATA.nEarly} founding texts`,
+        { x: edgeL(YEARS[0]) + 6, y: yAt(E2_DATA.ceiling) + 17, "font-size": 12.5, fill: PAL.muted });
+    }
+    if (E2_DATA.floor !== null) {
+      svg.appendChild(el("rect", {
+        x: edgeL(E2_LATE_START), y: plotT, width: edgeR(YEARS[YEARS.length - 1]) - edgeL(E2_LATE_START),
+        height: yAt(E2_DATA.floor) - plotT, fill: E2_BAND_LATE,
+      }));
+      svg.appendChild(el("line", {
+        x1: edgeL(E2_LATE_START), x2: edgeR(YEARS[YEARS.length - 1]), y1: yAt(E2_DATA.floor), y2: yAt(E2_DATA.floor),
+        stroke: E2_LATE, "stroke-width": 1.6,
+      }));
+      text(svg, `Since ${E2_LATE_START}: never fewer than ${E2_DATA.floor}`,
+        { x: edgeR(YEARS[YEARS.length - 1]) - 6, y: yAt(E2_DATA.floor) + 20, "text-anchor": "end",
+          "font-size": 14, "font-weight": 600, fill: "#1c5cab" });
+      text(svg, `${E2_DATA.nLate} founding texts, ${E2_DATA.floor}–${E2_DATA.lateMax}`,
+        { x: edgeR(YEARS[YEARS.length - 1]) - 6, y: yAt(E2_DATA.floor) - 9, "text-anchor": "end",
+          "font-size": 12.5, fill: PAL.muted });
+    }
+
+    for (let v = 0; v <= E_MAX; v += 3) {
+      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: yAt(v), y2: yAt(v), stroke: PAL.grid, "stroke-width": 1, opacity: 0.7 }));
+      text(svg, v, { x: padL - 10, y: yAt(v) + 5, "text-anchor": "end", "font-size": 14, fill: PAL.muted });
+    }
+    text(svg, "task verbs", { x: padL, y: yAt(E_MAX) - 14, "font-size": 13, fill: PAL.muted });
+
+    const posOf = new Map();
+    YEARS.forEach(yr => {
+      const rows = E_DATA.per.get(yr);
+      const byVal = new Map();
+      rows.forEach(t => { if (!byVal.has(t.n)) byVal.set(t.n, []); byVal.get(t.n).push(t); });
+      byVal.forEach(group => {
+        const step = Math.min(11, (slot - 8) / Math.max(1, group.length));
+        group.forEach((t, i) => {
+          const cx = xAt(yr) + (i - (group.length - 1) / 2) * step;
+          posOf.set(t.symbol, { cx, cy: yAt(t.n) });
+          svg.appendChild(el("circle", {
+            cx, cy: yAt(t.n), r: 5.5,
+            fill: yr >= E2_LATE_START ? E2_LATE : (yr <= E2_EARLY_END ? E2_EARLY : E2_MID),
+            stroke: "#ffffff", "stroke-width": 1.2,
+          }));
+        });
+      });
+      text(svg, yr, { x: xAt(yr), y: plotB + 24, "text-anchor": "middle", "font-size": 14, fill: PAL.ink2 });
+    });
+    svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+
+    // the transition: the years that kept making short mandates after the first long one
+    if (E2_DATA.shortYears.length) {
+      const y0 = E2_DATA.shortYears[0], y1 = E2_DATA.shortYears[E2_DATA.shortYears.length - 1];
+      const bx0 = edgeL(y0) + 3, bx1 = edgeR(y1) - 3, by = plotB + 40;
+      svg.appendChild(el("path", {
+        d: `M${bx0} ${by - 6} L${bx0} ${by} L${bx1} ${by} L${bx1} ${by - 6}`,
+        fill: "none", stroke: PAL.baseline, "stroke-width": 1,
+      }));
+      text(svg, `${y0}–${y1}: the Council was still creating bodies with ` +
+        `${lower(word(E2_DATA.shortMin))}- and ${lower(word(E2_DATA.shortMax))}-verb mandates`,
+        { x: (bx0 + bx1) / 2, y: by + 17, "text-anchor": "middle", "font-size": 14, fill: PAL.ink2 });
+    }
+
+    // two labels only, both carrying the claim
+    [
+      E2_DATA.firstAtFloor && { t: E2_DATA.firstAtFloor, s: `First to reach ${E2_DATA.floor}: ${label(E2_DATA.firstAtFloor.body)} ${E2_DATA.firstAtFloor.year}` },
+      E2_DATA.peak && { t: E2_DATA.peak, s: `${label(E2_DATA.peak.body).replace(/^COI\s+/, "")} ${E2_DATA.peak.year}: ${E2_DATA.peak.n}` },
+    ].filter(Boolean).forEach(spec => {
+      const pos = posOf.get(spec.t.symbol);
+      if (!pos) return;
+      const ly = pos.cy - 24;
+      const w = textW(spec.s, 14);
+      let anc = "middle", tx = pos.cx;
+      if (tx - w / 2 < padL) { anc = "start"; tx = padL; }
+      if (tx + w / 2 > D_W - padR) { anc = "end"; tx = D_W - padR; }
+      text(svg, spec.s, { x: tx, y: ly, "font-size": 14, "text-anchor": anc, fill: PAL.ink });
+      svg.appendChild(el("line", {
+        x1: pos.cx, x2: pos.cx, y1: ly + 6, y2: pos.cy - 8,
+        stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "2 3",
+      }));
+    });
+
+    const NOTE = `One dot per founding text (n = ${E_DATA.n}), coded from its mandate paragraphs on a 15-verb ` +
+      `taxonomy. No yearly average is shown: with one to five founding texts a year an average would move on ` +
+      `a single text. No founding text in ${E_DATA.emptyYears.join(" or ")}.`;
+    const noteLines = wrapTo(NOTE, 14, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 640 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL - 4, y: 640 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+  function E2_TITLE() {
+    return `What rose is the floor: before ${E2_EARLY_END + 1} no founding mandate carried more than ` +
+      `${lower(word(E2_DATA.ceiling))} task verbs; since ${E2_LATE_START} none carries fewer than ` +
+      `${lower(word(E2_DATA.floor))}`;
+  }
+
+  /* ---------------- chart H: groups named vs groups instructed ---------------- */
+  // "Named anywhere" = differentiated_analysis_whole_text; "in the instruction to the
+  // body" = differentiated_analysis_mandate, i.e. the paragraphs that create, extend
+  // or task the body. "age" is counted but not charted.
+  const H_GROUPS = ["women", "girls", "gender", "children",
+    "persons with disabilities", "older persons", "minorities"];
+  const H_LIGHT = "#c9dcf5", H_DARK = "#2a78d6", H_FOCUS_DARK = "#1d3f73";
+  const H_FOCUS = "gender";
+
+  const H_DATA = (() => {
+    const anywhere = (g) => TEXTS.filter(r => (r.differentiated_analysis_whole_text || []).indexOf(g) >= 0).length;
+    const mandate = (g) => TEXTS.filter(r => (r.differentiated_analysis_mandate || []).indexOf(g) >= 0).length;
+    const rows = H_GROUPS.map(g => ({ group: g, anywhere: anywhere(g), mandate: mandate(g) }));
+    const focus = rows.find(r => r.group === H_FOCUS);
+    const instructed = rows.filter(r => r.mandate > 0);
+    const never = rows.filter(r => r.mandate === 0);
+    const years = [...new Set(TEXTS.filter(r => (r.differentiated_analysis_mandate || []).indexOf(H_FOCUS) >= 0)
+      .map(r => r.year))].sort((a, b) => a - b);
+    // the run of consecutive years ending at the most recent one
+    let runStart = years[years.length - 1];
+    for (let i = years.length - 1; i > 0; i--) {
+      if (years[i] - years[i - 1] === 1) runStart = years[i - 1]; else break;
+    }
+    return { rows, focus, instructed, never, total: TEXTS.length, runStart, age: anywhere("age") };
+  })();
+
+  function drawH(host) {
+    const padR = 40, L = 28;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const titleLines = wrapTo(H_TITLE(), 26, D_W - padR - L);
+    titleLines.forEach((ln, i) => text(svg, ln, {
+      x: L, y: 44 + i * 32, "font-size": 26, "font-weight": 650, fill: PAL.ink,
+    }));
+
+    const subY = 44 + titleLines.length * 32 + 4;
+    text(svg, H_SUBTITLE(), { x: L, y: subY, "font-size": 15, fill: PAL.ink2 });
+
+    // legend
+    const ly = subY + 30;
+    svg.appendChild(el("rect", { x: L, y: ly - 11, width: 14, height: 13, rx: 2, fill: H_LIGHT }));
+    text(svg, "named anywhere in the text", { x: L + 20, y: ly, "font-size": 14, fill: PAL.ink2 });
+    const lx2 = L + 20 + textW("named anywhere in the text", 14) + 26;
+    svg.appendChild(el("rect", { x: lx2, y: ly - 11, width: 14, height: 13, rx: 2, fill: H_DARK }));
+    text(svg, "in the instruction to the body", { x: lx2 + 20, y: ly, "font-size": 14, fill: PAL.ink2 });
+
+    const labelW = 228;
+    const gridL = L + labelW, gridR = D_W - padR - 56;
+    const max = H_DATA.total;
+    const xAt = (v) => gridL + (gridR - gridL) * v / max;
+
+    const top = ly + 34;
+    const rowH = (546 - top) / H_GROUPS.length;
+    const barH = Math.min(17, rowH * 0.30);
+
+    // axis
+    const step = max > 120 ? 25 : 20;
+    const ticks = [];
+    for (let v = 0; v <= max; v += step) ticks.push(v);
+    if (ticks[ticks.length - 1] !== max) ticks.push(max);
+    ticks.forEach(v => {
+      svg.appendChild(el("line", { x1: xAt(v), x2: xAt(v), y1: top - 6, y2: 552, stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, v, { x: xAt(v), y: 572, "text-anchor": "middle", "font-size": 13, fill: PAL.muted });
+    });
+    text(svg, "texts", { x: xAt(max), y: top - 14, "text-anchor": "end", "font-size": 13, fill: PAL.muted });
+
+    H_DATA.rows.forEach((r, i) => {
+      const y0 = top + i * rowH;
+      const focus = r.group === H_FOCUS;
+      const mid = y0 + rowH / 2;
+      text(svg, r.group, {
+        x: gridL - 12, y: mid + 5, "text-anchor": "end", "font-size": 15,
+        "font-weight": focus ? 650 : 400, fill: focus ? H_FOCUS_DARK : PAL.ink,
+      });
+      const yA = mid - barH - 2, yM = mid + 2;
+      svg.appendChild(el("rect", { x: gridL, y: yA, width: Math.max(1, xAt(r.anywhere) - gridL), height: barH, rx: 2, fill: H_LIGHT }));
+      text(svg, r.anywhere, { x: xAt(r.anywhere) + 7, y: yA + barH - 3, "font-size": 14, fill: PAL.ink2 });
+      if (r.mandate > 0) {
+        svg.appendChild(el("rect", { x: gridL, y: yM, width: Math.max(1, xAt(r.mandate) - gridL), height: barH, rx: 2, fill: focus ? H_FOCUS_DARK : H_DARK }));
+        text(svg, r.mandate, {
+          x: xAt(r.mandate) + 7, y: yM + barH - 3, "font-size": 14, "font-weight": 650,
+          fill: focus ? H_FOCUS_DARK : PAL.ink,
+        });
+      } else {
+        // the zero has to be visible, so print it where the dark bar would start
+        text(svg, "0", { x: gridL + 7, y: yM + barH - 3, "font-size": 14, "font-weight": 650, fill: PAL.muted });
+      }
+      if (focus) {
+        text(svg, `the only group instruction that became regular: every year since ${H_DATA.runStart}`,
+          { x: xAt(r.mandate) + 30, y: yM + barH - 3, "font-size": 14, "font-style": "italic", fill: H_FOCUS_DARK });
+      }
+    });
+
+    const NOTE = `Texts, of ${H_DATA.total}. ‘In the instruction to the body’: named in the mandate paragraphs, ` +
+      `the paragraphs that create, extend or task the body. A group named only in the body’s composition or ` +
+      `resources is not counted.`;
+    const noteLines = wrapTo(NOTE, 14, D_W - padR - L);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: L, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: L, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+  function H_TITLE() {
+    return `The texts name many groups; the mandate instructs the body to look at one: ` +
+      `${H_FOCUS} (${H_DATA.focus.mandate} of ${H_DATA.total} texts)`;
+  }
+  function H_SUBTITLE() {
+    const never = H_DATA.never;
+    const most = never.reduce((a, r) => (!a || r.anywhere > a.anywhere ? r : a), null);
+    return `${never.map(r => r.group).join(", ")} are named in up to ${most.anywhere} texts ` +
+      `and instructed in none.`;
+  }
+
+  /* ---------------- chart I: how texts were adopted ---------------- */
+  const I_NOVOTE = "#c9c8c3", I_VOTE = "#2a78d6";
+  const I_DATA = (() => {
+    const per = new Map(YEARS.map(y => {
+      const ty = TEXTS.filter(r => (r.year || +String(r.date_adopted || "").slice(0, 4)) === y);
+      const voted = ty.filter(r => r.adoption_mode === "Recorded vote").length;
+      return [y, { n: ty.length, voted, novote: ty.length - voted }];
+    }));
+    const share = (from, to) => {
+      const a = TEXTS.filter(r => r.year >= from && r.year <= to);
+      const v = a.filter(r => r.adoption_mode === "Recorded vote");
+      return { n: a.length, v: v.length, pct: a.length ? Math.round(100 * v.length / a.length) : 0 };
+    };
+    const voted = TEXTS.filter(r => r.adoption_mode === "Recorded vote");
+    return {
+      per, voted: voted.length, novote: TEXTS.length - voted.length, total: TEXTS.length,
+      early: share(YEARS[0], 2015), late: share(2016, YEARS[YEARS.length - 1]),
+    };
+  })();
+
+  function drawI(host, mode) {
+    const shares = mode === "shares";
+    const padL = 72, padR = 40;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const titleLines = wrapTo(I_TITLE(), 26, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 44 + i * 32, "font-size": 26, "font-weight": 650, fill: PAL.ink }));
+
+    const legendY = 44 + titleLines.length * 32 + 22;
+    let lx = padL - 4;
+    [["Recorded vote", I_VOTE], ["Adopted without a vote", I_NOVOTE]].forEach(([lbl, c]) => {
+      svg.appendChild(el("rect", { x: lx, y: legendY - 11, width: 13, height: 13, rx: 2.5, fill: c }));
+      text(svg, lbl, { x: lx + 19, y: legendY, "font-size": 15, fill: PAL.ink2 });
+      lx += 19 + textW(lbl, 15) + 26;
+    });
+
+    const plotT = legendY + 34, plotB = 556;
+    const ih = plotB - plotT;
+    const totals = YEARS.map(y => I_DATA.per.get(y).n);
+    const yMax = shares ? 100 : Math.max(4, Math.ceil((Math.max(...totals) + 1) / 2) * 2);
+    for (let t = 0; t <= 4; t++) {
+      const yy = plotT + ih - ih * t / 4;
+      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: yy, y2: yy, stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, shares ? Math.round(100 * t / 4) + "%" : Math.round(yMax * t / 4),
+        { x: padL - 10, y: yy + 5, "text-anchor": "end", "font-size": 14, fill: PAL.muted });
+    }
+    const slot = iw / YEARS.length, bw = Math.min(34, slot - 20);
+    YEARS.forEach((yr, i) => {
+      const d = I_DATA.per.get(yr);
+      const x = padL + slot * i + (slot - bw) / 2;
+      let yCur = plotB;
+      [["novote", I_NOVOTE], ["voted", I_VOTE]].forEach(([k, c]) => {
+        const v = d[k];
+        if (!v) return;
+        const h = shares ? (d.n ? ih * v / d.n : 0) : ih * v / yMax;
+        svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c }));
+        if (h >= 17) {
+          const lbl = shares ? Math.round(100 * v / d.n) + "%" : String(v);
+          if (textW(lbl, 14) < bw - 4) {
+            text(svg, lbl, { x: x + bw / 2, y: yCur - h / 2 + 5, "text-anchor": "middle", "font-size": 14,
+              "font-weight": 600, fill: k === "voted" ? "#ffffff" : "#0b0b0b" });
+          }
+        }
+        yCur -= h;
+      });
+      if (!shares && d.n) {
+        text(svg, d.n, { x: x + bw / 2, y: plotB - ih * d.n / yMax - 8, "text-anchor": "middle",
+          "font-size": 14, "font-weight": 650, fill: PAL.ink });
+      }
+      text(svg, yr, { x: x + bw / 2, y: plotB + 24, "text-anchor": "middle", "font-size": 14, fill: PAL.ink2 });
+      if (shares) {
+        text(svg, `n = ${d.n}`, { x: x + bw / 2, y: plotB + 42, "text-anchor": "middle",
+          "font-size": 12.5, fill: PAL.muted });
+      }
+    });
+    svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+
+    const NOTE = `Each bar: the texts of that year that create, renew, expand or task a body. ` +
+      `‘Adopted without a vote’ means no member requested a recorded vote; it does not mean every member agreed.`;
+    const noteLines = wrapTo(NOTE, 14, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+  function I_TITLE() {
+    return `About two in three texts are put to a vote, before 2016 and since ` +
+      `(${I_DATA.early.pct}% and ${I_DATA.late.pct}%)`;
+  }
+
+  /* ---------------- chart J: how States voted ---------------- */
+  const J_YES = "#2a78d6", J_ABS = "#c9c8c3", J_NO = "#eb6834";
+  const J_SEATS = 47, J_MAJORITY = 24;
+  const J_DATA = (() => {
+    const per = new Map(YEARS.map(y => {
+      const v = TEXTS.filter(r => (r.year || 0) === y && r.adoption_mode === "Recorded vote");
+      const avg = (f) => v.length ? v.reduce((a, r) => a + (r[f] || 0), 0) / v.length : 0;
+      return [y, { n: v.length, yes: avg("votes_yes"), no: avg("votes_no"), abs: avg("votes_abstain") }];
+    }));
+    const win = (from, to) => {
+      const v = TEXTS.filter(r => r.year >= from && r.year <= to && r.adoption_mode === "Recorded vote");
+      const avg = (f) => v.length ? v.reduce((a, r) => a + (r[f] || 0), 0) / v.length : 0;
+      return { n: v.length, yes: avg("votes_yes"), abs: avg("votes_abstain"),
+        below: v.filter(r => (r.votes_yes || 0) < J_MAJORITY).length };
+    };
+    return { per, early: win(YEARS[0], 2015), late: win(2016, YEARS[YEARS.length - 1]) };
+  })();
+
+  function drawJ(host) {
+    const padL = 72, padR = 40;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const titleLines = wrapTo(J_TITLE(), 26, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 44 + i * 32, "font-size": 26, "font-weight": 650, fill: PAL.ink }));
+
+    const legendY = 44 + titleLines.length * 32 + 22;
+    let lx = padL - 4;
+    [["average Yes", J_YES], ["abstentions", J_ABS], ["No", J_NO]].forEach(([lbl, c]) => {
+      svg.appendChild(el("rect", { x: lx, y: legendY - 11, width: 13, height: 13, rx: 2.5, fill: c }));
+      text(svg, lbl, { x: lx + 19, y: legendY, "font-size": 15, fill: PAL.ink2 });
+      lx += 19 + textW(lbl, 15) + 26;
+    });
+
+    const plotT = legendY + 34, plotB = 540;
+    const ih = plotB - plotT;
+    const yAt = (v) => plotB - ih * v / J_SEATS;
+    [0, 12, 24, 36, J_SEATS].forEach(v => {
+      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: yAt(v), y2: yAt(v), stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, v, { x: padL - 10, y: yAt(v) + 5, "text-anchor": "end", "font-size": 14, fill: PAL.muted });
+    });
+    text(svg, `members (of ${J_SEATS} seats)`, { x: padL, y: yAt(J_SEATS) - 10, "font-size": 12.5, fill: PAL.muted });
+
+    const slot = iw / YEARS.length, bw = Math.min(34, slot - 20);
+    YEARS.forEach((yr, i) => {
+      const d = J_DATA.per.get(yr);
+      const x = padL + slot * i + (slot - bw) / 2;
+      if (d.n) {
+        let yCur = plotB;
+        [["yes", J_YES], ["abs", J_ABS], ["no", J_NO]].forEach(([k, c]) => {
+          const h = ih * d[k] / J_SEATS;
+          if (h <= 0) return;
+          svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c }));
+          if (k === "yes" && h >= 18) {
+            text(svg, d.yes.toFixed(1), { x: x + bw / 2, y: yCur - h / 2 + 5, "text-anchor": "middle",
+              "font-size": 13.5, "font-weight": 650, fill: "#ffffff" });
+          }
+          yCur -= h;
+        });
+      }
+      text(svg, yr, { x: x + bw / 2, y: plotB + 22, "text-anchor": "middle", "font-size": 14, fill: d.n ? PAL.ink2 : PAL.muted });
+      text(svg, d.n ? `n = ${d.n}` : "n = 0", { x: x + bw / 2, y: plotB + 40, "text-anchor": "middle",
+        "font-size": 12, fill: PAL.muted });
+    });
+    svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+
+    svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: yAt(J_MAJORITY), y2: yAt(J_MAJORITY),
+      stroke: PAL.ink, "stroke-width": 1.4, "stroke-dasharray": "6 4", opacity: 0.75 }));
+    const emptyIdx = YEARS.findIndex(y => !J_DATA.per.get(y).n);
+    const labX = emptyIdx >= 0 ? padL + slot * emptyIdx : padL + 8;
+    text(svg, `${J_MAJORITY} = more than half of the ${J_SEATS} seats`,
+      { x: labX, y: yAt(J_MAJORITY) - 9, "font-size": 14, "font-weight": 600, fill: PAL.ink });
+
+    const NOTE = `Averages per voted text in each year (n under the bars). Abstentions do not count as votes: ` +
+      `a text passes with more Yes than No among those voting, so it can be adopted with fewer than ${J_MAJORITY} in ` +
+      `favour — ${J_DATA.late.below} of the ${J_DATA.late.n} texts voted since 2016 were. The gap to ${J_SEATS} is ` +
+      `members absent or not voting.`;
+    const noteLines = wrapTo(NOTE, 14, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 614 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL - 4, y: 614 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
+    host.textContent = "";
+    host.appendChild(svg);
+  }
+
+  function J_TITLE() {
+    const e = J_DATA.early, l = J_DATA.late;
+    return `Since 2016 the average Yes has fallen from ${e.yes.toFixed(1)} to ${l.yes.toFixed(1)} of ${J_SEATS} seats, ` +
+      `and abstentions have risen from ${e.abs.toFixed(1)} to ${l.abs.toFixed(1)}`;
   }
 
   /* ---------------- PNG export ---------------- */
@@ -619,6 +1541,56 @@
       modes: [["counts", "Counts"], ["shares", "Shares"]],
       file: (mode) => `chart-d-mandate-terms-${mode}.png`,
       draw: drawD,
+    },
+    {
+      id: "E",
+      head: "Task verbs in each founding mandate",
+      selfContained: true,
+      file: "chart-e-verbs-per-founding-text.png",
+      draw: drawE,
+    },
+    {
+      id: "F",
+      head: "Four features of each founding mandate",
+      selfContained: true,
+      file: "chart-f-founding-mandate-features.png",
+      draw: drawF,
+    },
+    {
+      id: "G",
+      head: "The fifteen task verbs",
+      selfContained: true,
+      file: "table-g-task-verbs.png",
+      draw: drawG,
+    },
+    {
+      id: "H",
+      head: "Groups named, and groups the body is told to look at",
+      selfContained: true,
+      file: "chart-h-groups-named-vs-instructed.png",
+      draw: drawH,
+    },
+    {
+      id: "I",
+      head: "How texts were adopted",
+      selfContained: true,
+      modes: [["counts", "Counts"], ["shares", "Shares"]],
+      file: (mode) => `chart-i-adoption-by-year-${mode}.png`,
+      draw: drawI,
+    },
+    {
+      id: "J",
+      head: "How States voted",
+      selfContained: true,
+      file: "chart-j-votes-by-year.png",
+      draw: drawJ,
+    },
+    {
+      id: "E2",
+      head: "Task verbs: what rose is the floor",
+      selfContained: true,
+      file: "chart-e2-verbs-floor.png",
+      draw: drawE2,
     },
   ];
 
