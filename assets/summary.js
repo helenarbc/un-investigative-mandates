@@ -1592,7 +1592,169 @@
       file: "chart-e2-verbs-floor.png",
       draw: drawE2,
     },
+    {
+      id: "K",
+      head: "How each regional group votes, year by year",
+      selfContained: true,
+      modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
+      file: (mode) => mode === "noisrael"
+        ? "chart-k-regional-groups-by-year-without-israel-docket.png"
+        : "chart-k-regional-groups-by-year-all.png",
+      draw: drawK,
+    },
   ];
+
+
+  /* ---------------- K. How each regional group votes, year by year ---------------- */
+  const K_GROUPS = [
+    ["African Group", "African Group"],
+    ["Asia-Pacific Group", "Asia-Pacific Group"],
+    ["GRULAC (Latin America & Caribbean)", "Latin America and Caribbean"],
+    ["Eastern European Group", "Eastern European Group"],
+    ["WEOG (Western Europe & Others)", "WEOG"],
+  ];
+  // Body countries that make a text part of the Israel docket, plus Lebanon 2006 by symbol.
+  const K_ISRAEL_COUNTRY = "OPT and Israel";
+  const K_ISRAEL_SYMBOL = "A/HRC/RES/S-2/1";
+  const K_DATA = (() => {
+    const idx = new Map();           // regional group -> indices into D.states
+    D.states.forEach((s, i) => {
+      if (!idx.has(s.regional_group)) idx.set(s.regional_group, []);
+      idx.get(s.regional_group).push(i);
+    });
+    const bodyCountry = new Map(D.bodies.map(b => [b.short_name, b.country]));
+    const isIsrael = (r) => r.symbol === K_ISRAEL_SYMBOL ||
+      (r.bodies || []).some(n => bodyCountry.get(n) === K_ISRAEL_COUNTRY);
+    const voted = TEXTS.filter(r => r.adoption_mode === "Recorded vote" && D.votes[r.symbol]);
+    let absent = 0;
+    voted.forEach(r => { for (const ch of D.votes[r.symbol]) if (ch === "X") absent++; });
+    const build = (texts) => K_GROUPS.map(([key, label]) => {
+      const cols = idx.get(key) || [];
+      const per = new Map(YEARS.map(y => [y, { y: 0, a: 0, n: 0 }]));
+      texts.forEach(r => {
+        const v = D.votes[r.symbol], d = per.get(r.year);
+        if (!v || !d) return;
+        cols.forEach(i => {
+          const c = v[i];
+          if (c === "Y") d.y++; else if (c === "A") d.a++; else if (c === "N") d.n++;
+        });
+      });
+      const win = (from, to) => {
+        const t = { y: 0, a: 0, n: 0 };
+        YEARS.filter(x => x >= from && x <= to).forEach(x => {
+          const d = per.get(x); t.y += d.y; t.a += d.a; t.n += d.n;
+        });
+        t.tot = t.y + t.a + t.n;
+        return t;
+      };
+      return { key, label, per, early: win(YEARS[0], 2015), late: win(2016, YEARS[YEARS.length - 1]) };
+    });
+    return {
+      all: build(voted),
+      noIsrael: build(voted.filter(r => !isIsrael(r))),
+      nVoted: voted.length,
+      nIsrael: voted.filter(isIsrael).length,
+      absent,
+    };
+  })();
+  const K_PCT = (part, tot) => (tot ? Math.round(100 * part / tot) : 0);
+
+  function K_TITLE(mode) {
+    const rows = mode === "noisrael" ? K_DATA.noIsrael : K_DATA.all;
+    const yesLate = (r) => K_PCT(r.late.y, r.late.tot);
+    const absLate = (r) => K_PCT(r.late.a, r.late.tot);
+    const abstainers = rows.filter(r => absLate(r) > yesLate(r)).map(r => r.label.replace(" Group", ""));
+    const yesers = rows.filter(r => yesLate(r) >= 60).map(r => r.label.replace(" Group", ""));
+    const list = (a) => a.length < 2 ? (a[0] || "") :
+      a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+    if (abstainers.length && yesers.length) {
+      return `Since 2016 the ${list(abstainers)} groups mostly abstain; ` +
+        `the ${list(yesers)} groups vote Yes`;
+    }
+    return "How each regional group voted, year by year";
+  }
+
+  function drawK(host, mode) {
+    const rows = mode === "noisrael" ? K_DATA.noIsrael : K_DATA.all;
+    const padL = 58, padR = 34;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const titleLines = wrapTo(K_TITLE(mode), 24, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 36 + i * 29, "font-size": 24,
+      "font-weight": 650, fill: PAL.ink }));
+
+    const legendY = 36 + titleLines.length * 29 + 20;
+    let lx = padL - 4;
+    [["Yes", J_YES], ["Abstain", J_ABS], ["No", J_NO]].forEach(([lbl, c]) => {
+      svg.appendChild(el("rect", { x: lx, y: legendY - 10, width: 12, height: 12, rx: 2.5, fill: c }));
+      text(svg, lbl, { x: lx + 17, y: legendY, "font-size": 14, fill: PAL.ink2 });
+      lx += 17 + textW(lbl, 14) + 22;
+    });
+
+    const top = legendY + 20;
+    const axisH = 22;                       // shared year axis under the bottom panel
+    const bottom = 612 - axisH;
+    const panelH = (bottom - top) / rows.length;
+    const headH = 24;                       // room for the panel title inside each panel
+    const slot = iw / YEARS.length;
+    const bw = Math.min(26, slot * 0.68);
+
+    rows.forEach((row, pi) => {
+      const pTop = top + pi * panelH;
+      const plotT = pTop + headH, plotB = pTop + panelH - 8;
+      const ih = plotB - plotT;
+
+      const e = K_PCT(row.early.y, row.early.tot), l = K_PCT(row.late.y, row.late.tot);
+      text(svg, `${row.label} — Yes ${e}% → ${l}%`, { x: padL - 4, y: pTop + 15,
+        "font-size": 15, "font-weight": 650, fill: PAL.ink });
+      const detail = `abstain ${K_PCT(row.early.a, row.early.tot)}% → ${K_PCT(row.late.a, row.late.tot)}%, ` +
+        `No ${K_PCT(row.early.n, row.early.tot)}% → ${K_PCT(row.late.n, row.late.tot)}%`;
+      text(svg, detail, { x: D_W - padR, y: pTop + 15, "text-anchor": "end",
+        "font-size": 14, fill: PAL.muted });
+
+      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB,
+        stroke: PAL.baseline, "stroke-width": 1 }));
+      ["0%", "100%"].forEach((lbl, i) => text(svg, lbl, { x: padL - 10,
+        y: i ? plotT + 5 : plotB + 4, "text-anchor": "end", "font-size": 11.5, fill: PAL.muted }));
+
+      YEARS.forEach((yr, i) => {
+        const d = row.per.get(yr), tot = d.y + d.a + d.n;
+        const x = padL + slot * i + (slot - bw) / 2;
+        if (!tot) return;
+        let yCur = plotB;
+        [["y", J_YES], ["a", J_ABS], ["n", J_NO]].forEach(([k, c]) => {
+          const h = ih * d[k] / tot;
+          if (h <= 0) return;
+          svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: h, fill: c }));
+          yCur -= h;
+        });
+      });
+
+      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotT + ih / 2, y2: plotT + ih / 2,
+        stroke: PAL.ink, "stroke-width": 1, "stroke-dasharray": "5 4", opacity: 0.45 }));
+
+      if (pi === rows.length - 1) {
+        YEARS.forEach((yr, i) => {
+          text(svg, yr, { x: padL + slot * i + slot / 2, y: plotB + 17, "text-anchor": "middle",
+            "font-size": 14, fill: PAL.ink2 });
+        });
+      }
+    });
+
+    const NOTE = `Shares of each group's members voting or abstaining on the texts put to a vote that ` +
+      `year (absences excluded). Council membership changes every year. ‘Israel docket’: texts on the ` +
+      `Occupied Palestinian Territory and Israel, and Lebanon 2006.`;
+    const noteLines = wrapTo(NOTE, 13.5, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 640 + i * 18,
+      "font-size": 13.5, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL - 4, y: 640 + noteLines.length * 18 + 6,
+      "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+  }
 
   /* ---------------- render ---------------- */
   let built = false;
