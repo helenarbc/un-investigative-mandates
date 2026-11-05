@@ -59,9 +59,23 @@
   /* ---------------- svg helpers ---------------- */
   function el(name, attrs) {
     const n = document.createElementNS(NS, name);
-    for (const k in attrs) if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    let tip = null;
+    for (const k in attrs) {
+      if (k === "_tip") { tip = attrs[k]; continue; }
+      if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    }
+    // "_tip" attaches a native SVG <title>: the browser shows it on hover, it needs
+    // no library and it survives into the downloaded SVG. Used on every data mark so
+    // the figures behind the chart can be read without opening the data tabs.
+    if (tip) {
+      const t = document.createElementNS(NS, "title");
+      t.textContent = tip;
+      n.appendChild(t);
+      n.setAttribute("cursor", "help");
+    }
     return n;
   }
+  const plural = (n, one, many) => n + " " + (n === 1 ? one : (many || one + "s"));
   function svgRoot(W, H) {
     return el("svg", {
       xmlns: NS, viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img",
@@ -142,6 +156,12 @@
 
   /* ---------------- derived series ---------------- */
   const ROLES = ["founding", "renewal", "expansion", "tasking"];
+  const ROLE_TIP = {
+    founding: "create a mechanism",
+    renewal: "extend one without new tasks",
+    expansion: "add new tasks to one",
+    tasking: "task an existing one",
+  };
 
   const A_DATA = (() => {
     const per = new Map(YEARS.map(y => [y, [0, 0, 0, 0]]));
@@ -248,7 +268,9 @@
       vals.forEach((v, k) => {
         if (!v) return;
         const h = ih * v / yMax;
-        svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: ROLE_COLOR[ROLES[k]] }));
+        svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5,
+          fill: ROLE_COLOR[ROLES[k]],
+          _tip: `${yr} — ${plural(v, "text")} that ${ROLE_TIP[ROLES[k]]}\n${totals[i]} in ${yr} in all` }));
         if (showSeg && h >= segFont * 1.5) {
           text(svg, v, {
             x: x + bw / 2, y: yCur - h / 2 + segFont * 0.36, "text-anchor": "middle",
@@ -315,6 +337,8 @@
         svg.appendChild(el("rect", {
           x: labelW, y: y + k * sh, width: Math.max(2, w), height: sh,
           rx: regs.length === 1 ? 2 : 0, fill: REGION_COLOR[rg] || PAL.baseline,
+          _tip: `${label(r.situation)}\n${plural(r.texts, "text")}, ${plural(r.bodies, "body", "bodies")}` +
+            (rg ? `\nRegional group: ${rg}` : ""),
         }));
       });
       text(svg, r.texts, {
@@ -326,6 +350,7 @@
         svg.appendChild(el("circle", {
           cx: bx + (narrow ? 14 : 18) + dotR + k * dotPitch, cy, r: dotR,
           fill: REGION_COLOR[r.regions[0]] || PAL.baseline, opacity: 0.75,
+          _tip: `${label(r.situation)} — ${plural(r.bodies, "body", "bodies")} in all`,
         }));
       }
     });
@@ -357,6 +382,7 @@
       svg.appendChild(el("rect", {
         x, y: padT + ih - h, width: bw, height: Math.max(1, h), rx: 1.5,
         fill: yr >= 2021 ? C_RECENT : C_EARLY,
+        _tip: `${yr} — ${plural(v, "body", "bodies")} running at some point that year`,
       }));
       text(svg, v, {
         x: x + bw / 2, y: padT + ih - h - 5, "text-anchor": "middle",
@@ -385,6 +411,14 @@
     "12 months": "#86b6ef",
     "24 months": "#2a78d6",
     "ongoing": "#1d3f73",
+  };
+  const D_TIP = (yr, term, v, tot, shares) => {
+    const share = tot ? Math.round(100 * v / tot) + "% of " + tot : "";
+    const what = term === "not stated" ? "state no term"
+      : term === "ongoing" ? "give the body no end date"
+      : term === "other set term" ? "set a term in another form"
+      : "set a term of " + term;
+    return `${yr} — ${plural(v, "text")} that ${what}` + (shares && share ? `\n${share} that year` : "");
   };
   const ONGOING_LABEL = {
     "IIMM Myanmar": "Myanmar mechanism, no end date",
@@ -460,7 +494,8 @@
         if (!v) return;
         const share = tot ? v / tot : 0;
         const h = shares ? ih * share : ih * v / yMax;
-        svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: TERM_COLOR[TERMS[k]] }));
+        svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5,
+          fill: TERM_COLOR[TERMS[k]], _tip: D_TIP(yr, TERMS[k], v, tot, shares) }));
         if (h >= 17) {
           const lbl = shares ? Math.round(share * 100) + "%" : String(v);
           if (textW(lbl, 14) < bw - 4) {
@@ -502,7 +537,8 @@
         x1: cx, x2: cx, y1: ry + 6, y2: Math.max(ry + 10, top - (shares ? 6 : 26)),
         stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "2 3",
       }));
-      if (n.dot) svg.appendChild(el("circle", { cx, cy: Math.max(ry + 12, top - (shares ? 6 : 26)), r: 3.5, fill: TERM_COLOR.ongoing }));
+      if (n.dot) svg.appendChild(el("circle", { cx, cy: Math.max(ry + 12, top - (shares ? 6 : 26)), r: 3.5,
+        fill: TERM_COLOR.ongoing, _tip: `${n.year} — ${n.label}` }));
     });
 
     // note, wrapped on word boundaries so it never runs off the canvas
@@ -603,6 +639,7 @@
             cx, cy: yAt(t.n), r: 5,
             fill: yr >= 2021 ? E_DOT_LATE : E_DOT,
             stroke: "#ffffff", "stroke-width": 1.2,
+            _tip: `${t.symbol} (${yr})\n${t.body}\n${plural(t.n, "task verb")} in the founding mandate`,
           }));
         });
       });
@@ -787,9 +824,10 @@
       rows.forEach((t, k) => {
         const cx = x0 + colW * (k + 0.5);
         t.f.forEach((on, i) => {
+          const fTip = `${t.symbol} (${yr})\n${t.body}\n${F_ROWS[i][0]}: ${on ? "yes" : "no"}`;
           svg.appendChild(el("circle", on
-            ? { cx, cy: rowY(i), r: 5, fill: F_ON }
-            : { cx, cy: rowY(i), r: 3.6, fill: "none", stroke: F_OFF, "stroke-width": 1.3 }));
+            ? { cx, cy: rowY(i), r: 5, fill: F_ON, _tip: fTip }
+            : { cx, cy: rowY(i), r: 3.6, fill: "none", stroke: F_OFF, "stroke-width": 1.3, _tip: fTip }));
         });
       });
       // year label and separator
@@ -939,6 +977,14 @@
       text(svg, family, { x: cVerb, y: y - 5, "font-size": 12.5, "font-weight": 650, fill: PAL.accent || "#1c5cab" });
       rows.forEach(r => {
         const mid = y + 13;
+        // invisible hit area so the whole row carries its figures on hover
+        svg.appendChild(el("rect", {
+          x: L - 6, y: y, width: R - L + 12, height: ROW_H, fill: "transparent",
+          _tip: `${r.label}\n${plural(r.texts, "text")} of ${G_DATA.total} in the corpus` +
+            `\n${r.founding} of ${G_DATA.totalFounding} founding texts` +
+            (r.first ? `\nFirst used: ${r.first.sym} (${r.first.year})` : "") +
+            (r.top && r.top.length ? `\nMost common wording: “${r.top[0].s}”` : ""),
+        }));
         text(svg, r.label, { x: cVerb, y: mid, "font-size": 13.5, fill: PAL.ink });
         text(svg, r.texts, { x: cTexts + 40, y: mid, "font-size": 13.5, "text-anchor": "end", fill: PAL.ink });
         text(svg, r.founding, { x: cFound + 58, y: mid, "font-size": 13.5, "text-anchor": "end", fill: PAL.ink2 });
@@ -1091,6 +1137,7 @@
             cx, cy: yAt(t.n), r: 5.5,
             fill: yr >= E2_LATE_START ? E2_LATE : (yr <= E2_EARLY_END ? E2_EARLY : E2_MID),
             stroke: "#ffffff", "stroke-width": 1.2,
+            _tip: `${t.symbol} (${yr})\n${t.body}\n${plural(t.n, "task verb")} in the founding mandate`,
           }));
         });
       });
@@ -1223,10 +1270,13 @@
         "font-weight": focus ? 650 : 400, fill: focus ? H_FOCUS_DARK : PAL.ink,
       });
       const yA = mid - barH - 2, yM = mid + 2;
-      svg.appendChild(el("rect", { x: gridL, y: yA, width: Math.max(1, xAt(r.anywhere) - gridL), height: barH, rx: 2, fill: H_LIGHT }));
+      svg.appendChild(el("rect", { x: gridL, y: yA, width: Math.max(1, xAt(r.anywhere) - gridL), height: barH, rx: 2,
+        fill: H_LIGHT, _tip: `${r.group}\nNamed anywhere in the text: ${plural(r.anywhere, "text")}` }));
       text(svg, r.anywhere, { x: xAt(r.anywhere) + 7, y: yA + barH - 3, "font-size": 14, fill: PAL.ink2 });
       if (r.mandate > 0) {
-        svg.appendChild(el("rect", { x: gridL, y: yM, width: Math.max(1, xAt(r.mandate) - gridL), height: barH, rx: 2, fill: focus ? H_FOCUS_DARK : H_DARK }));
+        svg.appendChild(el("rect", { x: gridL, y: yM, width: Math.max(1, xAt(r.mandate) - gridL), height: barH, rx: 2,
+          fill: focus ? H_FOCUS_DARK : H_DARK,
+          _tip: `${r.group}\nIn the instruction to the body: ${plural(r.mandate, "text")}\nNamed anywhere: ${r.anywhere}` }));
         text(svg, r.mandate, {
           x: xAt(r.mandate) + 7, y: yM + barH - 3, "font-size": 14, "font-weight": 650,
           fill: focus ? H_FOCUS_DARK : PAL.ink,
@@ -1320,7 +1370,9 @@
         const v = d[k];
         if (!v) return;
         const h = shares ? (d.n ? ih * v / d.n : 0) : ih * v / yMax;
-        svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c }));
+        svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c,
+          _tip: `${yr} — ${plural(v, "text")} ${k === "voted" ? "put to a recorded vote" : "adopted without a vote"}` +
+            (d.n ? `\n${Math.round(100 * v / d.n)}% of the ${plural(d.n, "text")} that year` : "") }));
         if (h >= 17) {
           const lbl = shares ? Math.round(100 * v / d.n) + "%" : String(v);
           if (textW(lbl, 14) < bw - 4) {
@@ -1409,7 +1461,10 @@
         [["yes", J_YES], ["abs", J_ABS], ["no", J_NO]].forEach(([k, c]) => {
           const h = ih * d[k] / J_SEATS;
           if (h <= 0) return;
-          svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c }));
+          svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c,
+            _tip: `${yr} — average ${k === "yes" ? "Yes" : k === "abs" ? "abstentions" : "No"}: ${d[k].toFixed(1)} of ${J_SEATS} seats` +
+              `\nacross ${plural(d.n, "recorded vote")} that year` +
+              `\nYes ${d.yes.toFixed(1)} · abstain ${d.abs.toFixed(1)} · No ${d.no.toFixed(1)}` }));
           if (k === "yes" && h >= 18) {
             text(svg, d.yes.toFixed(1), { x: x + bw / 2, y: yCur - h / 2 + 5, "text-anchor": "middle",
               "font-size": 13.5, "font-weight": 650, fill: "#ffffff" });
@@ -1734,7 +1789,10 @@
         [["y", J_YES], ["a", J_ABS], ["n", J_NO]].forEach(([k, c]) => {
           const h = ih * d[k] / tot;
           if (h <= 0) return;
-          svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: h, fill: c }));
+          svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: h, fill: c,
+            _tip: `${row.label}, ${yr}\n${k === "y" ? "Yes" : k === "a" ? "Abstain" : "No"}: ` +
+              `${d[k]} of ${tot} positions (${Math.round(100 * d[k] / tot)}%)\n` +
+              `Yes ${d.y} · abstain ${d.a} · No ${d.n}` }));
           yCur -= h;
         });
       });
@@ -1767,6 +1825,7 @@
   /* ---------------- L. The eight habitual opponents ---------------- */
   const L_MIN_VOTES = 20, L_TOP = 8;
   const L_NO = "#eb6834", L_ABS = "#c9c8c3", L_YES_ISR = "#86b6ef", L_YES_OTH = "#2a78d6";
+  const L_SEG_LABEL = { no: "No", abs: "Abstain", yesIsr: "Yes on texts concerning Israel", yesOther: "Yes on other texts" };
   const L_SHORT = {
     "Venezuela (Bolivarian Republic of)": "Venezuela",
     "Bolivia (Plurinational State of)": "Bolivia",
@@ -1852,7 +1911,10 @@
        ["yesIsr", L_YES_ISR, "#0b0b0b"], ["yesOther", L_YES_OTH, "#ffffff"]].forEach(([k, c, ink]) => {
         const v = d[k], w = v * scale;
         if (w <= 0) return;
-        svg.appendChild(el("rect", { x, y: cy - bh / 2, width: w, height: bh, fill: c }));
+        svg.appendChild(el("rect", { x, y: cy - bh / 2, width: w, height: bh, fill: c,
+          _tip: `${L_SHORT[d.state] || d.state}\n${L_SEG_LABEL[k]}: ${v} of ${d.cast} votes cast ` +
+            `(${Math.round(100 * v / d.cast)}%)\nNo ${d.no} · abstain ${d.abs} · Yes ${d.yes} ` +
+            `(${d.yesIsr} on texts concerning Israel, ${d.yesOther} on other texts)` }));
         if (textW(String(v), 14) + 8 <= w) {
           text(svg, v, { x: x + w / 2, y: cy + 5, "text-anchor": "middle", "font-size": 14,
             "font-weight": 600, fill: ink });

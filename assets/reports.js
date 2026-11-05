@@ -623,4 +623,25 @@
   }
 
   window.HRCReports = { activate, showMechanism, openDoc, wsItem, loadAll: () => loadAllShards() };
+
+  /* app.js is parsed BEFORE this file, and its boot() calls
+     window.HRCReports.activate() for a page opened straight at #/reports —
+     at which point this object does not exist yet, so the tab was left showing
+     "Loading the reports corpus…" for ever. Clicking the tab worked because that
+     happens after every script has loaded. Catch the direct-entry case here. */
+  (function () {
+    const open = () => {
+      const v = document.getElementById("view-reports");
+      if (v && v.classList.contains("active")) activate();
+    };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", open, { once: true });
+    } else {
+      open();
+    }
+    // the first-visit tour can switch tabs after boot; re-check when it ends
+    window.addEventListener("hashchange", () => {
+      if (location.hash === "#/reports") setTimeout(open, 0);
+    });
+  })();
 })();
