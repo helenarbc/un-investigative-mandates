@@ -527,7 +527,7 @@
         if (ba !== bb) {
           const A = bodyByName.get(ba), B = bodyByName.get(bb);
           if (A && B) {
-            const act = (A.end_date ? 1 : 0) - (B.end_date ? 1 : 0);
+            const act = (bodyIsRunning(A) ? 0 : 1) - (bodyIsRunning(B) ? 0 : 1);
             if (act) return act;
             const sd = (B.start_date || "").localeCompare(A.start_date || "");
             if (sd) return sd;
@@ -1025,7 +1025,7 @@
       const parts = [];
       if (y) parts.push(`${y} year${y > 1 ? "s" : ""}`);
       if (m || !y) parts.push(`${m} month${m === 1 ? "" : "s"}`);
-      return `${parts.join(" and ")} (${running ? (b.end_date ? "in force" : "ongoing") : "ended"})`;
+      return `${parts.join(" and ")} (${running ? (b.end_date ? "in force" : "ongoing") : (STATUS_WORD[b.mandate_status] || "ended")})`;
     };
     const nHere = [...grouped.values()].reduce((a, g) => a + g.rows.length, 0);
     const intro = isOther ? `
@@ -1166,6 +1166,11 @@
   const PREDECESSOR_NOTE = {
     "IIM Afghanistan (2025)": "Predecessor: Special Rapporteur with document-and-preserve mandate, 2021–2026 (reference only)",
   };
+  // mandate_status as the dataset records it. "lapsed (not renewed)" is a real value
+  // and is reported as such: a mandate that ended because no renewal was tabled is not
+  // the same event as a term that ran out, and the corpus holds no text for either.
+  const STATUS_WORD = { "lapsed (not renewed)": "lapsed, not renewed", "ended": "ended" };
+
   function openMechanism(name) {
     const b = bodyByName.get(name);
     if (!b) return;
@@ -1173,7 +1178,12 @@
     const predecessor = b.predecessor_note || PREDECESSOR_NOTE[name];
     const mres = (isRef ? REFRES : RES).filter(r => (r.bodies || []).includes(name));
     const y0 = (b.start_date || "").slice(0, 4), y1 = (b.end_date || "").slice(0, 4);
-    const active = y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "—";
+    const running = bodyIsRunning(b);
+    const years = y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "—";
+    // y1 on a running body is the expiry of the current period, so say which it is
+    const active = y0 && !isRef
+      ? `${years} · ${running ? (b.end_date ? "in force" : "ongoing") : (STATUS_WORD[b.mandate_status] || "ended")}`
+      : years;
     $("#modal").innerHTML = `
       <div class="modal-head">
         <div><h3>${esc(b.full_name || name)}</h3>
@@ -1777,6 +1787,11 @@
       route(h);
     });
   }
+  // One definition of "still running", used by every view. An active fixed-term body
+  // has an End Date in the future: that is the expiry of its CURRENT period, not the
+  // day it stopped. Testing for the mere presence of an End Date reported eleven
+  // running mandates as finished.
+  const bodyIsRunning = (b) => !b || !b.end_date || new Date(b.end_date) > new Date();
   const yearsOf = (b) => {
     const y0 = (b.start_date || "").slice(0, 4), y1 = (b.end_date || "").slice(0, 4);
     return y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "";
