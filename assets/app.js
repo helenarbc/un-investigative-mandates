@@ -1030,31 +1030,21 @@
     const nHere = [...grouped.values()].reduce((a, g) => a + g.rows.length, 0);
     const intro = isOther ? `
       <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
-        <b style="color:var(--ink)">${nHere} mechanisms that are not counted anywhere on this site.</b>
-        They are kept here because the material is useful, but none of them is included in the dataset:
-        <b>no figure, chart, percentage or filter on any other tab counts them</b>. They have no Human Rights
-        Council resolutions or votes of their own${REFRES.length ? `, except the Special Rapporteur on Afghanistan, whose
-        ${REFRES.length} resolutions are listed for reference and excluded from every count` : ""}.
-        Their reports are searchable in the Reports tab.
+        <b style="color:var(--ink)">${nHere} mechanisms and ${(D.excluded_texts || []).length} resolutions that
+        no figure on this site counts.</b> They are listed so the inclusion test can be checked against what it
+        leaves out, and so the material stays available: open any mechanism for its mandate and dates, and its
+        reports are searchable in the Reports tab. Mechanisms first, then the resolutions.
         <details class="more"><summary>Why each one is out</summary>
           <div>Bodies mandated by the Secretary-General, the General Assembly or the Security Council are outside the
           Council's own practice, which is what this dataset measures; the list of them is a selection, not a complete one.
           The Special Rapporteur on Afghanistan is a country special procedure: the Council gave it fact-finding support
           (2021) and a task to document and preserve information (2022–2026) until the Independent Investigative Mechanism
           for Afghanistan, created in October 2025, is operational — close enough to an investigative mandate to be worth
-          showing, not close enough to count. None of these bodies' mandates are coded for action verbs or legal
-          frameworks, by design.</div></details>
+          showing, not close enough to count; its ${REFRES.length} resolutions are listed on its own profile and
+          counted nowhere. None of these bodies' mandates are coded for action verbs or legal frameworks, by design.
+          </div></details>
       </div></div>
-      ${(D.excluded_texts || []).length ? `
-      <div class="panel">
-        <div class="panel-head"><h2>Texts excluded from the corpus</h2><span class="count">${(D.excluded_texts || []).length}</span></div>
-        <div class="tblwrap"><table class="data"><thead><tr><th class="no-sort">Resolution</th><th class="no-sort">Why it is excluded</th></tr></thead>
-        <tbody>${(D.excluded_texts || []).map(x => `<tr>
-          <td style="white-space:nowrap"><a href="${esc(unLink(x.symbol))}" target="_blank" rel="noopener">${esc(x.symbol)}</a></td>
-          <td>${esc(x.reason)}</td></tr>`).join("")}</tbody></table></div>
-        <div class="panel-note">These texts were adopted by the Council but fall outside the inclusion test in
-          About &amp; method. They are not in the ${RES.length} resolutions counted anywhere on this site.</div>
-      </div>` : ""}` : `
+` : `
       <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
         <b style="color:var(--ink)">${nHere} country-specific investigative and accountability mechanisms mandated by the
         Human Rights Council</b> (including OHCHR investigations at the Council's request). These are the bodies every
@@ -1062,7 +1052,8 @@
         <details class="more"><summary>What is and is not included</summary>
           <div>Their resolutions and votes are what the Resolutions and Votes tabs show. Bodies mandated by the
           Secretary-General, the General Assembly or the Security Council, the Special Rapporteur on Afghanistan, and
-          texts excluded from the corpus are all on the <b>Excluded mechanisms</b> tab and are counted nowhere.
+          resolutions excluded from the corpus are all in <b>Mechanisms this dataset does not count</b>, at the foot
+          of this tab, and are counted nowhere.
           Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
           HRC mandating resolutions — renewals inherit the founding language.</div></details>
       </div></div>`;
@@ -1129,6 +1120,16 @@
           </tr>`;
         }).join("")}</tbody></table></div>
       </div>`).join("")}
+      ${isOther && (D.excluded_texts || []).length ? `
+      <div class="panel">
+        <div class="panel-head"><h2>Resolutions excluded from the corpus</h2><span class="count">${(D.excluded_texts || []).length}</span></div>
+        <div class="tblwrap"><table class="data"><thead><tr><th class="no-sort">Resolution</th><th class="no-sort">Why it is excluded</th></tr></thead>
+        <tbody>${(D.excluded_texts || []).map(x => `<tr>
+          <td style="white-space:nowrap"><a href="${esc(unLink(x.symbol))}" target="_blank" rel="noopener">${esc(x.symbol)}</a></td>
+          <td>${esc(x.reason)}</td></tr>`).join("")}</tbody></table></div>
+        <div class="panel-note">Adopted by the Council, but they fail one of the four criteria on the
+          Methodology tab. They are not among the ${RES.length} resolutions counted anywhere on this site.</div>
+      </div>` : ""}
 `;
     host.onclick = (e) => {
       const pb = e.target.closest("#period-seg button");
@@ -1573,45 +1574,42 @@
       <button class="icon-btn" onclick="window.HRCTour && HRCTour.start()">? One-minute tour</button></p>
 
       <h2>What qualifies</h2>
-      <p class="prose">A text enters the corpus only if it meets all four criteria. Each one excludes
-      something, and the second column is what it excludes.</p>
+      <p class="prose">A text is counted only if it meets all four. Each criterion rules something out,
+      and the right-hand column is what it rules out.</p>
       <table class="data criteria">
-        <thead><tr><th>A text is counted if…</th><th>…which leaves out</th></tr></thead>
+        <thead><tr><th>Counted</th><th>Not counted</th></tr></thead>
         <tbody>
           <tr>
-            <td><b>1. The Human Rights Council adopted it, 2006–2026.</b> In regular session, special
-              session or organizational meeting.</td>
-            <td>Texts of the General Assembly, the Security Council and the Secretary-General. Their
-              bodies are listed for context at the foot of Mechanisms and their reports are searchable,
-              but they are counted in no figure.</td>
+            <td><b>1 · The Human Rights Council adopted it, 2006&#8211;2026.</b><br>
+              Regular session, special session or organizational meeting.</td>
+            <td>Anything the General Assembly, the Security Council or the Secretary-General mandated.</td>
           </tr>
           <tr>
-            <td><b>2. It acts on a country-specific mechanism</b> — establishes, renews, expands, or
-              gives it new tasks.</td>
-            <td>Thematic mechanisms. Country special procedures — Special Rapporteurs and Independent
-              Experts — unless the same text also does one of those four things. Resolutions that only
-              welcome a report or urge cooperation. UPR outcome decisions.</td>
+            <td><b>2 · It acts on a country-specific mechanism.</b><br>
+              It establishes one, renews it, widens what it investigates, or gives it new tasks.</td>
+            <td>Thematic mechanisms. Country special procedures &#8212; Special Rapporteurs, Independent
+              Experts &#8212; unless the same text also does one of those four things. Texts that only welcome a
+              report or urge cooperation. UPR outcome decisions.</td>
           </tr>
           <tr>
-            <td><b>3. The mechanism investigates or preserves evidence.</b> A commission of inquiry,
-              fact-finding mission, group, team or committee of experts, or an OHCHR investigation,
-              examination, monitoring or accountability mandate run at the Council's request.</td>
-            <td>A request to OHCHR for a report where no body exists and no investigative or evidence
-              function is given — S-23/1 (Boko Haram, 2015) is the case in point, and is excluded.</td>
+            <td><b>3 · That mechanism investigates, or preserves evidence.</b><br>
+              A commission of inquiry, fact-finding mission, group, team or committee of experts; or OHCHR
+              running an investigation, examination, monitoring or accountability mandate for the Council.</td>
+            <td>A request to OHCHR for a report where no body exists and nothing investigative is asked of it.</td>
           </tr>
           <tr>
-            <td><b>4. It contains a paragraph addressed to the body itself.</b> An instruction the body
-              is meant to carry out.</td>
-            <td>Welcoming its report, urging States to cooperate with it, transmitting its reports to
-              other organs. The first is an assessment; the others address States and the Council's own
-              organs. This is what removes seven general Syria resolutions that had looked like taskings.</td>
+            <td><b>4 · It speaks to the body itself.</b><br>
+              At least one paragraph instructs the body, rather than someone else.</td>
+            <td>Welcoming its report &#8212; that is an assessment of the body. Urging States to cooperate, or
+              transmitting its reports onward &#8212; those address States and other organs.</td>
           </tr>
         </tbody>
       </table>
-      <p class="prose">One deliberate exception: the <b>Special Rapporteur on Afghanistan</b> is shown for
-      reference and counted nowhere. The Council gave it fact-finding support in 2021 and a task to document
-      and preserve information from 2022 until the Independent Investigative Mechanism for Afghanistan,
-      created in October 2025, is operational.</p>
+      <p class="prose"><b>Check it against what it excludes.</b> Every mechanism and every resolution the test
+      leaves out is listed, with the reason, under <a href="#/other" id="meth-excluded">Mechanisms this dataset
+      does not count</a> at the foot of the Mechanisms tab. Nothing there enters any figure, chart or
+      percentage, but each one keeps its profile, its dates and its reports, so the test can be audited rather
+      than taken on trust.</p>
 
       <h2>How the coding is applied</h2>
       <ul class="prose">
@@ -1659,6 +1657,16 @@
       · build ${esc((D.built || "").slice(0, 10))}
       · <a href="#/about" id="foot-about">Methodology</a>`;
     $("#foot-about").addEventListener("click", (e) => { e.preventDefault(); setTab("about"); });
+    const mx = $("#meth-excluded");
+    if (mx) mx.addEventListener("click", (e) => {
+      e.preventDefault();
+      setTab("mechs", false);
+      const fold = $("#excluded-fold");
+      if (fold) {
+        fold.open = true;
+        requestAnimationFrame(() => fold.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+    });
   }
 
   /* ---------- theme ---------- */
