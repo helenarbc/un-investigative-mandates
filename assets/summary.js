@@ -1893,14 +1893,15 @@
         const c = v[i];
         if (c !== "Y" && c !== "A" && c !== "N") return;
         if (!rec.has(s.state)) rec.set(s.state, { state: s.state, yes: 0, abs: 0, no: 0, yesIsr: 0,
-          other: [], noItems: [], absItems: [], yesIsrItems: [] });
+          other: [], noItems: [], absItems: [], yesIsrItems: [], yesOthItems: [] });
         const d = rec.get(s.state);
         const lbl = shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body");
         if (c === "N") { d.no++; d.noItems.push(lbl); }
         else if (c === "A") { d.abs++; d.absItems.push(lbl); }
         else {
           d.yes++;
-          if (isr) { d.yesIsr++; d.yesIsrItems.push(lbl); } else d.other.push(r.symbol);
+          if (isr) { d.yesIsr++; d.yesIsrItems.push(lbl); }
+          else { d.other.push(r.symbol); d.yesOthItems.push(lbl); }
         }
       });
     });
@@ -1913,17 +1914,6 @@
     return { rows, maxCast: Math.max(...rows.map(d => d.cast)),
       yesIsr: rows.reduce((a, d) => a + d.yesIsr, 0) };
   })();
-  // Short right-hand label naming the texts behind the "Yes on other texts" segment.
-  function L_OTHER_LABEL(d) {
-    if (!d.other.length) return "";
-    const nums = d.other.map(s => s.replace("A/HRC/RES/", "").replace("A/HRC/DEC/", ""));
-    const burundi = nums.filter(n => n === "36/2");
-    const rest = nums.filter(n => n !== "36/2");
-    if (burundi.length && rest.length) return `36/2 + ${rest.length === 4 ? "four" : rest.length} texts in 2026`;
-    if (burundi.length) return "36/2 Burundi (2017)";
-    return nums.join(", ");
-  }
-
   function drawL(host) {
     const padL = 40, padR = 34;
     const iw = D_W - padL - padR;
@@ -1948,7 +1938,7 @@
     const nameR = padL + 150;          // state names end here
     const pctR = nameR + 54;           // share of No ends here
     const barL = pctR + 18;
-    const barR = D_W - padR - 230;     // leave room for the right-hand label
+    const barR = D_W - padR - 40;
     const scale = (barR - barL) / L_DATA.maxCast;
     const top = legendY + 30;
     const rowH = (588 - top) / L_DATA.rows.length;
@@ -1970,16 +1960,13 @@
           _tip: `${L_SHORT[d.state] || d.state} — ${L_SEG_LABEL[k]}: ${v} of ${d.cast} votes cast ` +
             `(${Math.round(100 * v / d.cast)}%)\n` +
             listTip(k === "no" ? d.noItems : k === "abs" ? d.absItems : k === "yesIsr" ? d.yesIsrItems
-              : d.other.map(x => shortSymbol(x))) }));
+              : d.yesOthItems) }));
         if (textW(String(v), 14) + 8 <= w) {
           text(svg, v, { x: x + w / 2, y: cy + 5, "text-anchor": "middle", "font-size": 14,
             "font-weight": 600, fill: ink });
         }
         x += w;
       });
-
-      const lab = L_OTHER_LABEL(d);
-      if (lab) text(svg, lab, { x: x + 10, y: cy + 5, "font-size": 14, fill: PAL.ink2 });
     });
 
     const NOTE = `Council members with ${L_MIN_VOTES} or more votes cast on the ` +

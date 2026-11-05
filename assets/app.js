@@ -1516,7 +1516,11 @@
         special inquiry into specific new events (as for El-Houleh and Aleppo in Syria);
         <i>tasking</i> — gives it additional work, such as extra reports, briefings or operational
         steps, without widening what it investigates. A resolution can renew and expand at once;
-        it is coded by its strongest effect on the mandate.</li>
+        it is coded by its strongest effect on the mandate. A tasking must contain a paragraph
+        addressed to the body itself. Welcoming or taking note of its report, urging States to
+        cooperate with it, and transmitting its reports to other United Nations organs are not
+        taskings: the first is an assessment, the others are addressed to States and to the
+        Council's own organs.</li>
         <li>Vote tallies follow the official adoption record; the roll-call lists shown are the
         official annexes.</li>
         <li>"Without a vote" is the UN category (the data value in the base is "Consensus"): no member asked for a vote; it does not imply that every member agreed, and several such texts carry explanations of position or disassociations.</li>
@@ -1534,6 +1538,13 @@
         <li><b>4 November 2026:</b> S-23/1 (Boko Haram, 2015) excluded from the corpus. It requests
         an OHCHR report compiled from information supplied by the affected States, gives no
         investigative or evidence mandate and creates no body.</li>
+        <li><b>5 November 2026:</b> seven Syria texts excluded from the corpus — 20/22, 24/22,
+        26/23, 27/16, 29/16, 36/20 and 47/18. Each had been coded <i>tasking</i>, but none of them
+        contains a paragraph addressed to the commission of inquiry: they welcome its reports, urge
+        States to cooperate with it, or transmit its reports onward. Because the Council adopted a
+        general Syria resolution at almost every session, counting these texts overstated both the
+        number of mandate texts on Syria and the share of the corpus adopted by recorded vote: all
+        seven were voted. The reason for each is on the <b>Excluded mechanisms</b> tab.</li>
         <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
         resolutions no sponsor list has been recorded yet.</li>
         <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates
