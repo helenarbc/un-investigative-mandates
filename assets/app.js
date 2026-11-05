@@ -21,9 +21,6 @@
   };
   const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const unLink = (sym) => `https://docs.un.org/en/${sym}`;
-  const wsOn = (k) => !!(window.HRCWorkspace && window.HRCWorkspace.has(k));
-  const wsBtn = (key, off, on) => `<button class="icon-btn ws-btn" data-ws-key="${esc(key)}" data-ws-off="${off}" data-ws-on="${on}" aria-pressed="${wsOn(key)}">${wsOn(key) ? on : off}</button>`;
-
   /* ---------- indices ---------- */
   // Reference-only bodies (special procedures with investigative tasks, e.g. the Special
   // Rapporteur on Afghanistan 2021–2026): kept on the site for context, but their
@@ -1186,7 +1183,6 @@
       <div class="modal-head">
         <div><h3>${esc(b.full_name || name)}</h3>
           <div class="sym">${esc(name)} · ${esc(countryName(b.country) || "")} · ${active}</div></div>
-        ${wsBtn("m:" + name, "☆ Save", "★ Saved")}
         <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
@@ -1389,7 +1385,6 @@
       <div class="modal-head">
         <div><h3>${esc(r.title)}</h3>
           <div class="sym">${esc(r.symbol)} · ${fmtDate(r.date_adopted)} · session ${esc(r.session || "—")}</div></div>
-        ${wsBtn("r:" + r.symbol, "☆ Save", "★ Saved")}
         <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
@@ -1468,7 +1463,7 @@
 
   /* ---------- tabs, subnav, router ---------- */
   let lastRoutedHash = null;
-  let currentTab = "mechs", currentSub = "matrix";
+  let currentTab = "overview", currentSub = "matrix";
   function setTab(tab, push) {
     currentTab = tab;
     $$(".tabbar .tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
@@ -1488,6 +1483,7 @@
     if (tab === "reports" && window.HRCReports) window.HRCReports.activate();
     // the excluded list lives at the foot of Mechanisms, so it renders with it
     if (tab === "mechs") { renderMechs(); renderOther(); }
+    if (tab === "overview") { renderOverviewTiles(); if (window.HRCSummary) window.HRCSummary.activate(); }
   }
   function setSub(sub) {
     currentSub = sub;
@@ -1528,6 +1524,39 @@
     }
   }
 
+  /* ---------- overview tiles ---------- */
+  // The headline figures of the whole corpus. They never follow the filter bar:
+  // the Overview describes the dataset, Resolutions and Votes interrogate it.
+  function renderOverviewTiles() {
+    const host = $("#overview-tiles");
+    if (!host) return;
+    const voted = RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol));
+    let positions = 0;
+    voted.forEach(r => {
+      const row = votesOf(r.symbol) || [];
+      for (let i = 0; i < row.length; i++) if (row[i] !== ".") positions++;
+    });
+    const situations = new Set();
+    D.bodies.forEach(b => { if (b.scope !== REF_SCOPE && b.country) situations.add(b.country); });
+    host.innerHTML = `
+      <div class="tiles overview-tiles">
+        <div class="tile"><div class="t-label">Mandating texts</div><div class="t-value">${RES.length}</div>
+          <div class="t-sub">${YEARS.min}–${YEARS.max}</div></div>
+        <div class="tile clickable" data-go="mechs"><div class="t-label">Mechanisms</div><div class="t-value">${COUNCIL_BODIES}</div>
+          <div class="t-sub">across ${situations.size} situations</div></div>
+        <div class="tile clickable" data-go="votes"><div class="t-label">Recorded votes</div><div class="t-value">${voted.length}</div>
+          <div class="t-sub">${RES.length - voted.length} adopted without a vote</div></div>
+        <div class="tile clickable" data-go="votes"><div class="t-label">Positions recorded</div><div class="t-value">${positions.toLocaleString("en-GB")}</div>
+          <div class="t-sub">one per state, per vote</div></div>
+        <div class="tile clickable" data-go="reports"><div class="t-label">Reports searchable</div><div class="t-value">${D.documents.length}</div>
+          <div class="t-sub">paragraph by paragraph</div></div>
+      </div>`;
+    host.onclick = (e) => {
+      const t = e.target.closest("[data-go]");
+      if (t) setTab(t.dataset.go);
+    };
+  }
+
   /* ---------- about + footer ---------- */
   // Bodies on the site that the Council did not mandate (GA-, UNSC- and SG-mandated),
   // shown for context in the Mechanisms and Reports tabs and counted in no figure.
@@ -1546,11 +1575,6 @@
       gender and children. The <b>Reports</b> tab searches the mechanisms' own reports paragraph
       by paragraph and returns only verbatim text with citations.</p>
       <p><button class="icon-btn" onclick="window.HRCTour && HRCTour.start()">? Take the one-minute tour</button></p>
-      <h2>Your workspace</h2>
-      <p>While you read, save paragraphs (Reports tab), resolutions and mechanisms with the <b>Save</b> buttons.
-      They collect in the <b>☆ Workspace</b> (top right), where you can add a note to each item, copy all the
-      citations, download the selection as a text file or a spreadsheet, or copy a link that opens the same
-      selection for a colleague. The workspace lives only in your browser — nothing is sent anywhere.</p>
       <h2>What is included</h2>
       <p>Every HRC resolution or decision adopted 2006–2026 (in regular session, special session
       or organizational meeting) that <b>(a) establishes</b> a country-specific investigative or
@@ -1758,9 +1782,6 @@
     } else if (h.startsWith("#/reports/")) {
       // deep link into a document/paragraph: keep the hash for reports.js
       setTab("reports", false);
-    } else if (h.startsWith("#/workspace")) {
-      // shared selection or the drawer itself: workspace.js reads the hash
-      setTab("mechs", false);
     } else if (h === "#/about") {
       setTab("about");
     } else if (h === "#/other") {
@@ -1772,10 +1793,13 @@
         fold.open = true;
         requestAnimationFrame(() => fold.scrollIntoView({ behavior: "smooth", block: "start" }));
       }
-    } else if (h === "#/summary") {
-      setTab("summary");
-    } else {
+    } else if (h === "#/mechs") {
       setTab("mechs");
+    } else if (h === "#/overview" || h === "#/summary") {
+      // "#/summary" is the old name of this tab; links shared before the rename still work
+      setTab("overview");
+    } else {
+      setTab("overview");
     }
   }
 
@@ -1802,21 +1826,6 @@
     return y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "";
   };
   // items the Workspace can save from this module (keyed "r:<symbol>", "m:<short name>")
-  const wsItems = {
-    r: (sym) => {
-      const r = bySym.get(sym);
-      if (!r) return null;
-      return { sym, title: r.title || "", date: fmtDate(r.date_adopted), mode: r.adoption_mode || "",
-        tally: r.tally || "", bodies: r.bodies || [], role: r.resolution_role || "", unlink: unLink(sym) };
-    },
-    m: (name) => {
-      const b = bodyByName.get(name);
-      if (!b) return null;
-      return { name, full_name: b.full_name || "", country: countryName(b.country) || "", years: yearsOf(b),
-        verbs: (b.mandate_action_verbs || []).join(", "), frameworks: (b.mandate_legal_frameworks || []).join(", "),
-        link: b.links || "" };
-    },
-  };
-  window.HRCApp = { openResolution, openMechanism, setTab, esc, fmtDate, unLink, downloadCSV, bySym, bodyByName, wsItems };
+  window.HRCApp = { openResolution, openMechanism, setTab, esc, fmtDate, unLink, downloadCSV, bySym, bodyByName };
   boot();
 })();

@@ -15,7 +15,6 @@
     <h1 id="site-title">UN Investigative Mandates</h1>
     <div class="masthead-actions">
       <button class="icon-btn" id="tour-btn" title="A one-minute tour of the site">? Tour</button>
-      <button class="icon-btn" id="ws-toggle" title="Your saved paragraphs, resolutions and mechanisms — export them or share the selection">☆ Workspace <b class="ws-count" id="ws-count" hidden>0</b></button>
       <button class="icon-btn" id="theme-toggle" title="Switch light/dark">◐ Theme</button>
       <button class="icon-btn" id="qr-btn" title="Show a QR code linking to this dashboard — for projecting at a talk">▣ QR</button>
       <a class="icon-btn" id="site-link" href="https://helenarbc.com" target="_blank" rel="noopener" title="Helena Rodríguez-Bronchú — helenarbc.com">helenarbc.com</a>
@@ -31,12 +30,12 @@
 </header>
 
 <nav class="tabbar" role="tablist" aria-label="Main sections">
-  <button class="tab" role="tab" data-tab="mechs" aria-selected="true">Mechanisms</button>
+  <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+  <button class="tab" role="tab" data-tab="mechs" aria-selected="false">Mechanisms</button>
   <button class="tab" role="tab" data-tab="res" aria-selected="false">Resolutions</button>
   <button class="tab" role="tab" data-tab="votes" aria-selected="false">Votes</button>
   <button class="tab" role="tab" data-tab="reports" aria-selected="false">Reports</button>
   <button class="tab" role="tab" data-tab="about" aria-selected="false">About &amp; method</button>
-  <button class="tab" role="tab" data-tab="summary" aria-selected="false">Summary graphs</button>
 </nav>
 
 <main class="wrap">
@@ -81,11 +80,10 @@
   </section>
 
   <!-- ============ TAB: SUMMARY GRAPHS (presentation charts; assets/summary.js) ============ -->
-  <section class="view" id="view-summary">
+  <section class="view active" id="view-overview">
+    <div id="overview-tiles"><!-- rendered by app.js --></div>
     <div id="summary-content"><!-- rendered by summary.js --></div>
   </section>
-
-  <!-- ============ TAB: OTHER MECHANISMS (everything the figures do not count) ============ -->
 
 
 </main>
@@ -105,7 +103,6 @@
 <script src="assets/summary.js?v=56"></script>
 <script src="assets/app.js?v=56"></script>
 <script src="assets/reports.js?v=56"></script>
-<script src="assets/workspace.js?v=56"></script>
 <script src="assets/tour.js?v=56"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 /* HRC Investigative Mandates — first-visit tour: six short steps that point at
    the tabs, a mechanism card, the filter bar, the votes matrix, the Ask box and
-   the workspace. Runs once (remembered in localStorage); "? Tour" replays it.
+   the site. Runs once (remembered in localStorage); "? Tour" replays it.
    Original code for this project (2026). */
 (function () {
   "use strict";
@@ -21,8 +21,6 @@
       text: "The matrix shows every recorded vote — one row per state, one column per resolution. Click a state for its profile and alignments, a column for the resolution, or switch to Sponsorship." },
     { tab: "reports", sel: ".ask-box", title: "Ask the reports",
       text: "Type keywords or a question and you get the matching paragraphs verbatim, with citations — nothing is generated. “Browse documents” opens any report paragraph by paragraph." },
-    { tab: null, sel: "#ws-toggle", title: "Collect and export",
-      text: "Save paragraphs, resolutions and mechanisms as you go. Your workspace lets you add notes, copy the citations, download the selection as text or CSV, or share it as a link." },
   ];
 
   let idx = -1, els = null, posTimer = null;
@@ -61,7 +59,6 @@
   function schedulePos() { clearTimeout(posTimer); posTimer = setTimeout(position, 60); }
 
   function start() {
-    if (window.HRCWorkspace) window.HRCWorkspace.close();
     const ov = $("#overlay"); if (ov) ov.classList.remove("open");
     mount();
     show(0);
