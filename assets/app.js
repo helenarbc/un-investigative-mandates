@@ -1579,6 +1579,16 @@
         Its verbs differ from the earlier DRC renewals because the mandate changed: OP15 asks the team for
         technical support, transitional-justice design and concrete measures, so it is coded <i>provide guidance</i>
         and <i>make recommendations</i>, with no instruction to investigate or report.</li>
+        <li><b>Paragraphs addressed to OHCHR as an office carry no verbs.</b> Decided 5 November 2026.
+        A country text often asks the High Commissioner's Office to give the Government technical assistance —
+        forensic expertise for its own judicial authorities, capacity-building, experts deployed to support a
+        national process. Those paragraphs neither create nor task an investigative body, and the investigating
+        they refer to is done by national courts, so they contribute no action verbs. Applied to the Democratic
+        Republic of the Congo series: 45/34, 48/20 and 54/34 lose the verbs that had been read from them.
+        This is <i>not</i> a rule about OHCHR-led bodies, which remain fully in the corpus: where the Council
+        asks the Office to run an investigation, examination or accountability project — the DPRK project, the
+        Belarus examination, Sri Lanka, Libya 2015, Iraq 2014 — OHCHR <i>is</i> the body and its paragraphs are
+        the mandate. The distinction is between a mandate <i>to</i> the Office and a mandate <i>through</i> it.</li>
         <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
         resolutions no sponsor list has been recorded yet.</li>
         <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates
