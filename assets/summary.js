@@ -578,7 +578,7 @@
 
     // the key carries the numbers, so the ring itself stays uncluttered
     const kx = narrow ? 18 : cx + R + 46;
-    const kyTop = narrow ? cy + R + 34 : cy - (rows.length * 34 + (empty.length ? 30 : 0)) / 2 + 10;
+    const kyTop = narrow ? cy + R + 34 : cy - (rows.length * 34 + (empty.length ? 44 : 0)) / 2 + 10;
     rows.forEach((r, i) => {
       const y = kyTop + i * 34;
       svg.appendChild(el("rect", { x: kx, y: y - 9, width: 11, height: 11, rx: 2.5,
@@ -590,13 +590,15 @@
         { x: kx + 18, y: y + 15, "font-size": 12, fill: PAL.ink2 });
     });
     empty.forEach((r, i) => {
-      const y = kyTop + rows.length * 34 + i * 30;
+      const y = kyTop + rows.length * 34 + i * 44;
       svg.appendChild(el("rect", { x: kx, y: y - 9, width: 11, height: 11, rx: 2.5,
         fill: "none", stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "2.5 2.5" }));
       text(svg, BR_SHORT[r.region] || r.region, { x: kx + 18, y, "font-size": 14,
         "font-weight": 600, fill: PAL.muted });
-      text(svg, "no situation in this group has ever been investigated", { x: kx + 18, y: y + 15,
-        "font-size": 12, fill: PAL.muted });
+      text(svg, "no situation placed in this group on geography; the only WEOG member",
+        { x: kx + 18, y: y + 15, "font-size": 12, fill: PAL.muted });
+      text(svg, "concerned is Israel, counted above under OPT / Israel",
+        { x: kx + 18, y: y + 30, "font-size": 12, fill: PAL.muted });
     });
 
     host.textContent = "";
@@ -1942,45 +1944,35 @@
      The dataset's ICL code is defined by naming crimes or criminal proceedings, so it
      is the same variable as the right panel's top segment; it is therefore drawn once,
      on the right, and the left panel carries only IHRL, IHL and "neither". */
-  const M_BANDS = [["2006–10", 2006, 2010], ["2011–15", 2011, 2015],
-                   ["2016–20", 2016, 2020], ["2021–" + String(YEAR_MAX).slice(2), 2021, 9999]];
   const M_FW = [["IHRL", "international human rights law", "#2a78d6"],
                 ["IHL", "international humanitarian law", "#6fc096"],
-                ["neither", "names no body of law", "#c9c8c3"]];
-  // the ladder, lowest rung first; labels are the dataset's own codes
-  const M_REG = [
-    ["none", "no accountability language", "#c9c8c3"],
-    ["ambiguous accountability", "ambiguous", "#adc6e0"],
-    ["accountability or perpetrators wording only", "accountability or perpetrators only", "#86b6ef"],
-    ["names crimes or criminal proceedings", "names crimes or criminal proceedings", "#eb6834"],
-  ];
+                ["neither", "names violations or the situation directly", "#c9c8c3"]];
+  // Terms that show a mandate naming the wrong done rather than the law it falls under.
+  const M_HARM = /torture|enforced disappearance|summary execution|sexual violence|arbitrary (?:arrest|detention)|extrajudicial|killing/gi;
   const M_DATA = (() => {
     const found = TEXTS.filter(r => r.resolution_role === "founding");
-    const rows = M_BANDS.map(([lbl, a, b]) => {
-      const S = found.filter(r => (r.year || 0) >= a && (r.year || 0) <= b);
-      const fwN = (k) => k === "neither"
-        ? S.filter(r => !(r.legal_frameworks || []).length).length
-        : S.filter(r => (r.legal_frameworks || []).includes(k)).length;
-      const fwItems = (k) => (k === "neither"
+    const rows = YEARS.map(y => {
+      const S = found.filter(r => (r.year || 0) === y);
+      const pick = (k) => k === "neither"
         ? S.filter(r => !(r.legal_frameworks || []).length)
-        : S.filter(r => (r.legal_frameworks || []).includes(k)))
-        .map(r => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body"));
-      const regN = (k) => S.filter(r => r.criminal_accountability === k).length;
-      const regItems = (k) => S.filter(r => r.criminal_accountability === k)
-        .map(r => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body"));
+        : S.filter(r => (r.legal_frameworks || []).includes(k));
+      const lbl = (r) => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body");
       return {
-        label: lbl, n: S.length,
-        fw: M_FW.map(([k]) => ({ k, v: fwN(k), items: fwItems(k) })),
-        reg: M_REG.map(([k]) => ({ k, v: regN(k), items: regItems(k) })),
+        year: y, n: S.length,
+        fw: M_FW.map(([k]) => { const L = pick(k); return { k, v: L.length, items: L.map(lbl) }; }),
       };
     });
-    const crimes = (r) => r.reg[3].v;
+    const none = found.filter(r => !(r.legal_frameworks || []).length);
+    const named = none.filter(r => { M_HARM.lastIndex = 0; return M_HARM.test(String(r.verbatim_mandate || "")); });
     return {
       rows, n: found.length,
-      firstCrimeYear: Math.min(...found.filter(r => r.criminal_accountability === "names crimes or criminal proceedings")
-        .map(r => r.year || 9999)),
-      lastCrimes: crimes(rows[rows.length - 1]), lastN: rows[rows.length - 1].n,
-      silentEarly: rows[0].reg[0].v, earlyN: rows[0].n,
+      maxV: Math.max(1, ...rows.map(r => Math.max(...r.fw.map(f => f.v)))),
+      noneN: none.length, noneHarm: named.length,
+      harmItems: named.map(r => shortSymbol(r.symbol)),
+      harmTerms: [...new Set(named.flatMap(r => {
+        M_HARM.lastIndex = 0;
+        return (String(r.verbatim_mandate || "").match(M_HARM) || []).map(t => t.toLowerCase());
+      }))].sort(),
     };
   })();
 
@@ -1996,105 +1988,64 @@
       x: padL - 4, y: 44 + i * 32, "font-size": T_SIZE, "font-weight": 650, fill: PAL.ink,
     }));
 
-    const headY = 44 + titleLines.length * 32 + 30;
-    const plotT = headY + 76, plotB = 556;
-    const ih = plotB - plotT;
-    const gap = 64;
-    const pw = (iw - gap) / 2;                 // panel width
-    const xA = padL, xB = padL + pw + gap;
+    const headY = 44 + titleLines.length * 32 + 28;
+    text(svg, "Which body of law the mandate paragraph names, by year",
+      { x: padL, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
 
-    // panel headings
-    text(svg, "Which body of law it names", { x: xA, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
-    text(svg, "How far it goes toward criminal accountability", { x: xB, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
-
-    // panel legends
-    let lx = xA;
-    M_FW.forEach(([k, lbl, c]) => {
+    // legend
+    let lx = padL;
+    M_FW.forEach(([k, , c]) => {
+      const lbl = k === "neither" ? "names violations or the situation directly, not a body of law" : k;
       svg.appendChild(el("rect", { x: lx, y: headY + 16, width: 12, height: 12, rx: 2.5, fill: c }));
-      text(svg, k === "neither" ? "names no body of law" : k, { x: lx + 17, y: headY + 26, "font-size": 14, fill: PAL.ink2 });
-      lx += 17 + textW(k === "neither" ? "names no body of law" : k, 14) + 20;
-    });
-    let lxb = xB, lyb = headY + 16;
-    M_REG.slice().reverse().forEach(([k, lbl, c]) => {
-      if (lxb > xB + pw - 170) { lxb = xB; lyb += 20; }
-      svg.appendChild(el("rect", { x: lxb, y: lyb, width: 12, height: 12, rx: 2.5, fill: c }));
-      text(svg, lbl, { x: lxb + 17, y: lyb + 10, "font-size": 13, fill: PAL.ink2 });
-      lxb += 17 + textW(lbl, 13) + 18;
+      text(svg, lbl, { x: lx + 17, y: headY + 26, "font-size": 14, fill: PAL.ink2 });
+      lx += 17 + textW(lbl, 14) + 22;
     });
 
-    /* ---- left panel: grouped bars, share of founding mandates in the band ---- */
-    const maxShare = 100;
-    for (let t = 0; t <= 4; t++) {
-      const yy = plotT + ih - ih * t / 4;
-      svg.appendChild(el("line", { x1: xA, x2: xA + pw, y1: yy, y2: yy, stroke: PAL.grid, "stroke-width": 1 }));
-      text(svg, Math.round(maxShare * t / 4) + "%", { x: xA - 10, y: yy + 5, "text-anchor": "end",
-        "font-size": 13, fill: PAL.muted });
+    const plotT = headY + 58, plotB = 540;
+    const ih = plotB - plotT;
+    const maxV = M_DATA.maxV;
+    const slot = iw / M_DATA.rows.length;
+    const bw = Math.min(14, (slot - 10) / 3);
+
+    // gridlines, one per whole mandate
+    for (let t = 0; t <= maxV; t++) {
+      const yy = plotB - ih * t / maxV;
+      svg.appendChild(el("line", { x1: padL, x2: padL + iw, y1: yy, y2: yy,
+        stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, t, { x: padL - 10, y: yy + 5, "text-anchor": "end", "font-size": 13, fill: PAL.muted });
     }
-    const slotA = pw / M_DATA.rows.length;
-    const bwA = Math.min(26, (slotA - 26) / 3);
+    text(svg, "founding mandates", { x: padL - 10, y: plotT - 14, "text-anchor": "end",
+      "font-size": 12.5, fill: PAL.muted });
+
     M_DATA.rows.forEach((r, i) => {
-      const x0 = xA + slotA * i + (slotA - bwA * 3 - 10) / 2;
+      const x0 = padL + slot * i + (slot - bw * 3 - 4) / 2;
       r.fw.forEach((f, j) => {
-        const sh = r.n ? 100 * f.v / r.n : 0;
-        const h = ih * sh / maxShare;
-        const x = x0 + j * (bwA + 5);
-        if (h > 0) {
-          svg.appendChild(el("rect", { x, y: plotB - h, width: bwA, height: Math.max(1, h), rx: 1.5,
-            fill: M_FW[j][2],
-            _tip: `${r.label} — ${M_FW[j][1]}\n${plural(f.v, "founding mandate")} of ${r.n} (${Math.round(sh)}%)\n` +
-              listTip(f.items) }));
-        }
+        const x = x0 + j * (bw + 2);
+        const h = ih * f.v / maxV;
         if (f.v) {
-          text(svg, f.v, { x: x + bwA / 2, y: plotB - h - 6, "text-anchor": "middle", "font-size": 13,
-            "font-weight": 650, fill: PAL.ink });
+          svg.appendChild(el("rect", { x, y: plotB - h, width: bw, height: Math.max(2, h), rx: 1.5,
+            fill: M_FW[j][2],
+            _tip: `${r.year} — ${M_FW[j][1]}\n${plural(f.v, "founding mandate")} of ${r.n} that year\n` +
+              listTip(f.items) }));
+          text(svg, f.v, { x: x + bw / 2, y: plotB - h - 5, "text-anchor": "middle",
+            "font-size": 11.5, "font-weight": 650, fill: PAL.ink2 });
         }
       });
-      text(svg, r.label, { x: xA + slotA * i + slotA / 2, y: plotB + 24, "text-anchor": "middle",
-        "font-size": 14, fill: PAL.ink2 });
-      text(svg, `n = ${r.n}`, { x: xA + slotA * i + slotA / 2, y: plotB + 42, "text-anchor": "middle",
-        "font-size": 12.5, fill: PAL.muted });
+      // year label, every year, rotated so all twenty-one fit
+      text(svg, String(r.year), { x: padL + slot * (i + 0.5), y: plotB + 20,
+        "text-anchor": "middle", "font-size": 12, fill: r.n ? PAL.ink2 : PAL.muted });
+      text(svg, r.n ? "n=" + r.n : "—", { x: padL + slot * (i + 0.5), y: plotB + 36,
+        "text-anchor": "middle", "font-size": 11, fill: PAL.muted });
     });
-    svg.appendChild(el("line", { x1: xA, x2: xA + pw, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+    svg.appendChild(el("line", { x1: padL, x2: padL + iw, y1: plotB, y2: plotB,
+      stroke: PAL.baseline, "stroke-width": 1 }));
 
-    /* ---- right panel: 100% stacked ladder per band ---- */
-    for (let t = 0; t <= 4; t++) {
-      const yy = plotT + ih - ih * t / 4;
-      svg.appendChild(el("line", { x1: xB, x2: xB + pw, y1: yy, y2: yy, stroke: PAL.grid, "stroke-width": 1 }));
-      text(svg, Math.round(100 * t / 4) + "%", { x: xB - 10, y: yy + 5, "text-anchor": "end",
-        "font-size": 13, fill: PAL.muted });
-    }
-    const slotB = pw / M_DATA.rows.length;
-    const bwB = Math.min(64, slotB - 40);
-    M_DATA.rows.forEach((r, i) => {
-      const x = xB + slotB * i + (slotB - bwB) / 2;
-      let yCur = plotB;
-      r.reg.forEach((g, j) => {
-        if (!g.v || !r.n) return;
-        const sh = 100 * g.v / r.n;
-        const h = ih * sh / 100;
-        svg.appendChild(el("rect", { x, y: yCur - h, width: bwB, height: Math.max(1, h - 1), rx: 1.5,
-          fill: M_REG[j][2],
-          _tip: `${r.label} — ${M_REG[j][1]}\n${plural(g.v, "founding mandate")} of ${r.n} (${Math.round(sh)}%)\n` +
-            listTip(g.items) }));
-        if (h >= 18) {
-          const lbl = g.v + " of " + r.n;
-          if (textW(lbl, 13) < bwB - 6) {
-            text(svg, lbl, { x: x + bwB / 2, y: yCur - h / 2 + 5, "text-anchor": "middle", "font-size": 13,
-              "font-weight": 600, fill: j === 3 ? "#ffffff" : "#0b0b0b" });
-          } else {
-            text(svg, g.v, { x: x + bwB / 2, y: yCur - h / 2 + 5, "text-anchor": "middle", "font-size": 13,
-              "font-weight": 600, fill: j === 3 ? "#ffffff" : "#0b0b0b" });
-          }
-        }
-        yCur -= h;
-      });
-      text(svg, r.label, { x: x + bwB / 2, y: plotB + 24, "text-anchor": "middle", "font-size": 14, fill: PAL.ink2 });
-      text(svg, `n = ${r.n}`, { x: x + bwB / 2, y: plotB + 42, "text-anchor": "middle",
-        "font-size": 12.5, fill: PAL.muted });
-    });
-    svg.appendChild(el("line", { x1: xB, x2: xB + pw, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+    // what the third category actually contains, stated rather than left as a negative
+    text(svg, `Of the ${M_DATA.noneN} mandates naming no body of law, ${M_DATA.noneHarm} name the wrong itself ` +
+      `(${M_DATA.harmTerms.join(", ")}); the other ${M_DATA.noneN - M_DATA.noneHarm} speak of the human rights situation.`,
+      { x: padL - 4, y: plotB + 62, "font-size": 13.5, fill: PAL.ink2 });
 
-    const NOTE = `Founding mandates only (${M_DATA.n} texts); each band is read against its own n.`;
+    const NOTE = `Founding mandates only (${M_DATA.n} texts). A text may name both bodies of law, so the bars are not a division of the year.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -2104,7 +2055,7 @@
   }
 
   function M_TITLE() {
-    return `Applicable law and criminal-accountability language in founding mandates`;
+    return `Which body of law founding mandates name, year by year`;
   }
 
   /* ---------------- cards ---------------- */
@@ -2233,8 +2184,8 @@
     },
     {
       id: "13",
-      long: () => `A text may name both bodies of law, so the left bars are not a division of the band. “Names no body of law” means the mandate paragraph names none of IHRL, IHL or international criminal law — not that the text is unconcerned with human rights: most such mandates speak of violations, victims or accountability in plain terms, as S-3/1 (Beit Hanoun, 2006) and 42/25 (Venezuela, 2019) do. The right panel is a ladder: each text sits on one rung only, its highest.`,
-      head: "Applicable law and criminal-accountability language in founding mandates",
+      long: () => `A text may name both bodies of law, so the bars are not a division of the year. The third category means the mandate paragraph names none of IHRL, IHL or international criminal law, and reaches for the conduct instead — 42/25 (Venezuela, 2019) and 4/8 (Darfur, 2007) name torture and extrajudicial killing without naming the law they breach.`,
+      head: "Which body of law founding mandates name, year by year",
       selfContained: true,
       file: "chart-13-law-named-and-criminal-register.png",
       draw: drawM,
@@ -2400,7 +2351,7 @@
 
 
   /* ---------------- L. The eight habitual opponents ---------------- */
-  const L_MIN_VOTES = 20, L_TOP = 10;
+  const L_MIN_VOTES = 20, L_TOP = 15;
   const L_NO = "#eb6834", L_ABS = "#c9c8c3", L_YES_ISR = "#86b6ef", L_YES_OTH = "#2a78d6";
   const L_SEG_LABEL = { no: "No", abs: "Abstain", yesIsr: "Yes on texts concerning Israel", yesOther: "Yes on other texts" };
   const L_SHORT = {
@@ -2497,14 +2448,17 @@
     const scale = (barR - barL) / L_DATA.maxCast;
     const top = legendY + 30;
     const rowH = (588 - top) / L_DATA.rows.length;
-    const bh = Math.min(34, rowH - 14);
+    const bh = Math.min(34, rowH - 9);
+    // 15 rows is tighter than 10, so the type steps down with the row
+    const fsName = rowH < 36 ? 13 : 15;
+    const fsCell = Math.max(10, Math.min(14, Math.round(bh - 6)));
 
     L_DATA.rows.forEach((d, i) => {
       const cy = top + rowH * i + rowH / 2;
       text(svg, L_SHORT[d.state] || d.state, { x: nameR, y: cy + 5, "text-anchor": "end",
-        "font-size": 15, "font-weight": 600, fill: PAL.ink });
+        "font-size": fsName, "font-weight": 600, fill: PAL.ink });
       text(svg, d.pctNo + "%", { x: pctR, y: cy + 5, "text-anchor": "end",
-        "font-size": 15, "font-weight": 650, fill: L_NO });
+        "font-size": fsName, "font-weight": 650, fill: L_NO });
 
       let x = barL;
       [["no", L_NO, "#ffffff"], ["abs", L_ABS, "#0b0b0b"],
@@ -2516,9 +2470,9 @@
             `(${Math.round(100 * v / d.cast)}%)\n` +
             listTip(k === "no" ? d.noItems : k === "abs" ? d.absItems : k === "yesIsr" ? d.yesIsrItems
               : d.yesOthItems) }));
-        if (textW(String(v), 14) + 8 <= w) {
-          text(svg, v, { x: x + w / 2, y: cy + 5, "text-anchor": "middle", "font-size": 14,
-            "font-weight": 600, fill: ink });
+        if (textW(String(v), fsCell) + 8 <= w) {
+          text(svg, v, { x: x + w / 2, y: cy + fsCell / 2 - 1, "text-anchor": "middle",
+            "font-size": fsCell, "font-weight": 600, fill: ink });
         }
         x += w;
       });
@@ -2548,22 +2502,69 @@
     "consolidate", "preserve", "analyse evidence", "document", "verify", "monitor",
     "assess", "report", "make recommendations", "provide guidance", "engage"];
   const V_CELL = "#86b6ef", V_FIRST = "#1d3f73", V_GRID = "#eceae4";
-  const V_OBJECT = {
-    "investigate": "alleged violations and abuses",
-    "establish facts": "the facts and circumstances",
-    "identify perpetrators": "those responsible",
-    "collect": "information and evidence",
-    "consolidate": "information and evidence",
-    "preserve": "information and evidence",
-    "analyse evidence": "information and evidence",
-    "document": "violations, and what is gathered",
-    "verify": "information and evidence",
-    "monitor": "the human rights situation",
-    "assess": "the situation and national processes",
-    "report": "to the Council, on the situation",
-    "make recommendations": "on accountability and assistance",
-    "provide guidance": "to national and transitional processes",
-    "engage": "authorities, victims and civil society",
+  // The objects each verb actually takes, read off the founding texts themselves rather
+  // than glossed by hand: the surface forms below locate the verb in the verbatim mandate
+  // and the clause that follows is kept as written, up to the next semicolon. The list is
+  // long and repeats little, which is the point — it belongs in a tooltip, not a label.
+  const V_SURFACE = {
+    "investigate": /\binvestigat(?:e|es|ing|ions? into|ion of)\b/gi,
+    "establish facts": /\b(?:establish(?:ing|es)?|determin(?:e|ing))\s+(?:all\s+)?(?:the\s+)?facts?\b/gi,
+    "identify perpetrators": /\bidentif(?:y|ies|ying)\b/gi,
+    "collect": /\bcollect(?:s|ing)?\b/gi,
+    "consolidate": /\bconsolidat(?:e|es|ing)\b/gi,
+    "preserve": /\bpreserv(?:e|es|ing)\b/gi,
+    "analyse evidence": /\banal(?:y|i)[sz](?:e|es|ing|se|ses|sing)\b/gi,
+    "document": /\bdocument(?:s|ing)?\b/gi,
+    "verify": /\bverif(?:y|ies|ying|ication of)\b/gi,
+    "monitor": /\bmonitor(?:s|ing)?\b/gi,
+    "assess": /\bassess(?:es|ing|ment of)?\b/gi,
+    "report": /\breport(?:s|ing)?\b/gi,
+    "make recommendations": /\brecommend(?:ations? (?:on|for|regarding)|ations?|s|ing)?\b/gi,
+    "provide guidance": /\b(?:guidance|advice|advis(?:e|es|ing))\b/gi,
+    "engage": /\bengag(?:e|es|ing|ement with)\b/gi,
+  };
+  const V_PHRASES = (() => {
+    const founding = TEXTS.filter(r => r.resolution_role === "founding");
+    const bank = {};
+    Object.keys(V_SURFACE).forEach(v => {
+      const seen = new Map();
+      founding.forEach(r => {
+        if ((r.action_verbs || []).indexOf(v) < 0) return;
+        const t = String(r.verbatim_mandate || "").replace(/\s+/g, " ");
+        const rx = V_SURFACE[v]; rx.lastIndex = 0;
+        let m;
+        while ((m = rx.exec(t))) {
+          const from = m.index + m[0].length;
+          const win = t.slice(from, from + 100);
+          const cut = win.split(";")[0];
+          // only drop a trailing part-word when the window itself cut the sentence short
+          const clipped = cut.length === win.length && from + 100 < t.length;
+          let tail = cut.replace(/^[\s,:]+/, "").replace(/\s+and\s+to\s+.*$/, "");
+          if (clipped) tail = tail.replace(/\s+\S*$/, "");
+          tail = tail.replace(/[.,]$/, "").trim();
+          if (tail.length < 10) continue;
+          if (tail.length > 78) tail = tail.slice(0, 76).replace(/\s+\S*$/, "") + "…";
+          const key = tail.toLowerCase();
+          if (!seen.has(key)) seen.set(key, { phrase: tail, syms: [] });
+          const e = seen.get(key);
+          if (e.syms.indexOf(r.symbol) < 0) e.syms.push(r.symbol);
+        }
+      });
+      bank[v] = [...seen.values()].sort((a, b) => b.syms.length - a.syms.length ||
+        a.phrase.localeCompare(b.phrase));
+    });
+    return bank;
+  })();
+  // tooltip body for one verb: the wording as the resolutions have it
+  const vTip = (verb) => {
+    const list = V_PHRASES[verb] || [];
+    if (!list.length) return `${verb}\nno object recorded in the verbatim mandates`;
+    const show = list.slice(0, 10)
+      .map(e => "· " + e.phrase + "  [" + shortSymbol(e.syms[0]) +
+        (e.syms.length > 1 ? ` +${e.syms.length - 1}` : "") + "]");
+    const more = list.length > 10 ? `\n… and ${list.length - 10} other formulations` : "";
+    return `${verb} — what follows the verb, as the founding texts have it\n` +
+      `${list.length} distinct formulations\n\n` + show.join("\n") + more;
   };
 
   const V_DATA = (() => {
@@ -2618,14 +2619,17 @@
     const scale = (barR - barL) / L_DATA.maxCastYes;
     const top = legendY + 30;
     const rowH = (588 - top) / L_DATA.rowsYes.length;
-    const bh = Math.min(34, rowH - 14);
+    const bh = Math.min(34, rowH - 9);
+    // 15 rows is tighter than 10, so the type steps down with the row
+    const fsName = rowH < 36 ? 13 : 15;
+    const fsCell = Math.max(10, Math.min(14, Math.round(bh - 6)));
 
     L_DATA.rowsYes.forEach((d, i) => {
       const cy = top + rowH * i + rowH / 2;
       text(svg, L_SHORT[d.state] || d.state, { x: nameR, y: cy + 5, "text-anchor": "end",
-        "font-size": 15, "font-weight": 600, fill: PAL.ink });
+        "font-size": fsName, "font-weight": 600, fill: PAL.ink });
       text(svg, d.pctYes + "%", { x: pctR, y: cy + 5, "text-anchor": "end",
-        "font-size": 15, "font-weight": 650, fill: L_YES_OTH });
+        "font-size": fsName, "font-weight": 650, fill: L_YES_OTH });
 
       let x = barL;
       [["yesOther", L_YES_OTH, "#ffffff"], ["yesIsr", L_YES_ISR, "#0b0b0b"],
@@ -2637,9 +2641,9 @@
             `(${Math.round(100 * v / d.cast)}%)\n` +
             listTip(k === "no" ? d.noItems : k === "abs" ? d.absItems : k === "yesIsr" ? d.yesIsrItems
               : d.yesOthItems) }));
-        if (textW(String(v), 14) + 8 <= w) {
-          text(svg, v, { x: x + w / 2, y: cy + 5, "text-anchor": "middle", "font-size": 14,
-            "font-weight": 600, fill: ink });
+        if (textW(String(v), fsCell) + 8 <= w) {
+          text(svg, v, { x: x + w / 2, y: cy + fsCell / 2 - 1, "text-anchor": "middle",
+            "font-size": fsCell, "font-weight": 600, fill: ink });
         }
         x += w;
       });
@@ -2647,12 +2651,12 @@
       // when it was not Yes
       const ox = barR + 14;
       if (!d.notYes) {
-        text(svg, "no exceptions", { x: ox, y: cy + 5, "font-size": 13, fill: PAL.muted });
+        text(svg, "no exceptions", { x: ox, y: cy + 5, "font-size": fsName - 2, fill: PAL.muted });
       } else {
         const syms = d.noItems.map(t => t.split(" — ")[0] + " N")
           .concat(d.absItems.map(t => t.split(" — ")[0] + " A"));
         const shown = syms.slice(0, 3).join(", ") + (syms.length > 3 ? ` +${syms.length - 3}` : "");
-        text(svg, shown, { x: ox, y: cy + 5, "font-size": 13, fill: PAL.ink2,
+        text(svg, shown, { x: ox, y: cy + 5, "font-size": fsName - 2, fill: PAL.ink2,
           _tip: `${L_SHORT[d.state] || d.state} — ${plural(d.notYes, "position")} that were not Yes\n` +
             listTip(d.notYesItems) });
       }
@@ -2697,12 +2701,15 @@
       if (ri % 2 === 0) {
         svg.appendChild(el("rect", { x: gridL, y: y0, width: gridR - gridL, height: rowH, fill: V_GRID }));
       }
-      text(svg, r.verb, { x: gridL - 10, y: mid - 1, "text-anchor": "end",
-        "font-size": 14, fill: PAL.ink });
-      if (V_OBJECT[r.verb]) {
-        text(svg, "(" + V_OBJECT[r.verb] + ")", { x: gridL - 10, y: mid + 11,
-          "text-anchor": "end", "font-size": 10.5, fill: PAL.muted });
-      }
+      // the verb label carries its objects on hover; printing them crowded the axis
+      svg.appendChild(el("rect", { x: gridL - labelW, y: y0, width: labelW, height: rowH,
+        fill: "transparent", _tip: vTip(r.verb) }));
+      text(svg, r.verb, { x: gridL - 10, y: mid + 4, "text-anchor": "end",
+        "font-size": 14.5, fill: PAL.ink, "pointer-events": "none" });
+      // a dotted rule under the verb signals that it carries more on hover
+      svg.appendChild(el("line", { x1: gridL - 10 - textW(r.verb, 14.5), y1: mid + 8,
+        x2: gridL - 10, y2: mid + 8, stroke: PAL.baseline, "stroke-width": 1,
+        "stroke-dasharray": "1.5 2", "pointer-events": "none" }));
       text(svg, r.firstYear || "—", { x: gridR + 50, y: mid + 5, "text-anchor": "end",
         "font-size": 13.5, "font-weight": 650, fill: V_FIRST });
 
