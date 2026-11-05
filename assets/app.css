@@ -21,7 +21,8 @@
   --no: #e34948;
   --abstain: #eda100;
   --absent: #dedcd5;
-  --absent-ink: #898781;
+  --absent-ink: #5c5a55;
+  --absent-rule: rgba(11, 11, 11, 0.28);
 
   /* categorical slots (fixed order) */
   --c1: #2a78d6; --c2: #1baf7a; --c3: #eda100; --c4: #008300;
@@ -56,6 +57,7 @@
   --abstain: #c98500;
   --absent: #3a3a37;
   --absent-ink: #898781;
+  --absent-rule: rgba(255, 255, 255, 0.30);
   --c1: #3987e5; --c2: #199e70; --c3: #c98500; --c4: #008300;
   --c5: #9085e9; --c6: #e66767; --c7: #d55181; --c8: #d95926;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.35);
@@ -190,7 +192,7 @@ button { font: inherit; color: inherit; }
 .tblwrap { overflow: auto; max-width: 100%; }
 .tblwrap.tall { max-height: 560px; }
 table.data { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-table.data th, table.data td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+table.data th, table.data td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--grid); vertical-align: top; }
 table.data th {
   position: sticky; top: 0; background: var(--surface); z-index: 2;
   font-size: 12px; color: var(--ink-2); font-weight: 600; white-space: nowrap;
@@ -267,7 +269,12 @@ table.matrix td.cell i {
 table.matrix td.cell.vY i { background: var(--yes); opacity: 1; }
 table.matrix td.cell.vN i { background: var(--no); opacity: 1; }
 table.matrix td.cell.vA i { background: var(--abstain); opacity: 1; }
-table.matrix td.cell.vX i { background: var(--absent); opacity: 1; }
+table.matrix td.cell.vX i {
+  background: var(--absent); opacity: 1;
+  /* distinguishes a member that was absent from a State that was not on the
+     Council at all, which is the faint default cell above */
+  box-shadow: inset 0 0 0 2px var(--absent-rule);
+}
 table.matrix td.cell:hover i { outline: 2px solid var(--ink); outline-offset: -1px; }
 table.matrix tr.group-row th {
   position: sticky; left: 0; z-index: 3; background: var(--page);
@@ -405,7 +412,7 @@ blockquote.verbatim {
 .para-card .pc-section { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
 /* ---------- about ---------- */
-.prose { max-width: 76ch; font-size: 14.5px; }
+.prose { max-width: 72ch; font-size: 14.5px; }
 .prose h2 { font-size: 17px; margin: 22px 0 6px; }
 .prose h3 { font-size: 14.5px; margin: 16px 0 4px; }
 .prose p, .prose li { color: var(--ink-2); }
