@@ -439,6 +439,21 @@ details.menu > .menu-list {
 }
 .menu-item:hover { background: var(--wash); }
 .menu-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 4px 0; }
+
+/* the excluded-mechanisms disclosure at the foot of the Mechanisms tab */
+.excluded-fold { display: block; margin: 18px 0 8px; border-top: 1px solid var(--grid); padding-top: 14px; }
+.excluded-fold > summary {
+  display: block; cursor: pointer; list-style: none; color: var(--ink-2); font-size: 13.5px;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface);
+}
+.excluded-fold > summary::-webkit-details-marker { display: none; }
+.excluded-fold > summary::before { content: "\25B8  "; color: var(--muted); }
+.excluded-fold[open] > summary::before { content: "\25BE  "; }
+.excluded-fold > summary:hover { border-color: var(--accent); color: var(--ink); }
+.excluded-fold > summary b { color: var(--ink); font-weight: 650; }
+.excluded-fold > div { margin-top: 14px; }
+
 details.more { display: inline; }
 details.more > summary { display: inline; cursor: pointer; color: var(--accent-ink); list-style: none; }
 details.more > summary::-webkit-details-marker { display: none; }

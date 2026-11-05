@@ -1486,8 +1486,8 @@
       update();
     }
     if (tab === "reports" && window.HRCReports) window.HRCReports.activate();
-    if (tab === "mechs") renderMechs();
-    if (tab === "other") renderOther();
+    // the excluded list lives at the foot of Mechanisms, so it renders with it
+    if (tab === "mechs") { renderMechs(); renderOther(); }
   }
   function setSub(sub) {
     currentSub = sub;
@@ -1764,7 +1764,14 @@
     } else if (h === "#/about") {
       setTab("about");
     } else if (h === "#/other") {
-      setTab("other");
+      // kept so links shared before the fold still work: open Mechanisms with the
+      // excluded disclosure expanded and scrolled to
+      setTab("mechs", false);
+      const fold = $("#excluded-fold");
+      if (fold) {
+        fold.open = true;
+        requestAnimationFrame(() => fold.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
     } else if (h === "#/summary") {
       setTab("summary");
     } else {
