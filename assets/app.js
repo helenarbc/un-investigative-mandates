@@ -1336,6 +1336,14 @@
           <div class="m"><b>Mechanism</b>${esc(r.mechanism_type || "—")}</div>
           <div class="m"><b>Bodies</b>${esc((r.bodies || []).join(", ") || "—")}</div>
           <div class="m"><b>Mandate paragraphs</b>${esc(r.mandate_paragraphs || "—")}</div>
+          ${r.agenda_item ? `<div class="m"><b>Agenda item</b>${r.agenda_item === "special session"
+              ? "special session" : r.agenda_item === "not recorded" ? "not recorded in the UN record"
+              : esc(r.agenda_item) + (r.agenda_item_title ? ` — ${esc(r.agenda_item_title)}` : "")}</div>` : ""}
+          ${r.vote_requested_by ? `<div class="m"><b>Vote requested by</b>${esc(r.vote_requested_by)}</div>` : ""}
+          ${r.state_concerned_position ? `<div class="m" style="grid-column:1/-1"><b>Position of the State concerned</b>
+              <span class="badge ${r.state_concerned_position === "objected" ? "" : "on"}">${esc(r.state_concerned_position)}</span>
+              ${r.investigated_conduct_state_position ? `<span class="badge">State whose conduct is investigated: ${esc(r.investigated_conduct_state_position)}</span>` : ""}
+              ${r.state_concerned_source ? `<div style="font-size:11.5px;color:var(--ink-2);margin-top:3px">${esc(r.state_concerned_source)}</div>` : ""}</div>` : ""}
           ${(r.action_verbs || []).length
             ? `<div class="m"><b>Action verbs (this text)</b>${esc(r.action_verbs.join(", "))}</div>`
             : `<div class="m"><b>Action verbs (mechanism-level)</b>${esc(mechVerbs(r).join(", ") || "—")}
@@ -1545,6 +1553,20 @@
         general Syria resolution at almost every session, counting these texts overstated both the
         number of mandate texts on Syria and the share of the corpus adopted by recorded vote: all
         seven were voted. The reason for each is on the <b>Excluded mechanisms</b> tab.</li>
+        <li><b>Agenda item, and the position of the State concerned.</b> Added 5 November 2026 for the 52 texts
+        adopted without a vote, plus Ukraine 49/1 and Lebanon S-2/1. The agenda item is taken from the UN Digital
+        Library catalogue record (MARC field 991, Agenda information) and needs no judgement: item 4 nineteen
+        times, item 10 thirteen, item 2 seven, item 1 three, special sessions nine, and one text (4/8, 2007)
+        for which the record carries no item. The <i>position of the State concerned</i> is coded only where a
+        source supports it: <i>requested</i> where the State introduced or co-sponsored the text;
+        <i>accepted</i> where the text was taken under item 10, technical assistance and capacity-building,
+        which the Council uses with the agreement of the State concerned; <i>objected</i> where the State
+        disassociated itself from the consensus or spoke against; <i>not recorded</i> where it did not speak.
+        It is left empty otherwise. That is deliberate: summary records exist for the early and special sessions
+        and again systematically from the forty-eighth session (September 2021), but for the regular sessions
+        between roughly 2009 and 2021 there are none, so for those years the session report shows that the State
+        concerned spoke but not what it said. <i>Vote requested by</i> is coded only where a record names the
+        requesting delegation.</li>
         <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
         resolutions no sponsor list has been recorded yet.</li>
         <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates
