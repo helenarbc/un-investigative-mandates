@@ -970,13 +970,13 @@
   // a closed episode, everything since a stated date, or no period at all.
   const PERIOD_ORDER = ["bounded episode", "open since a date", "none stated"];
   const PERIOD_LABEL = {
-    "bounded episode": "A closed episode",
-    "open since a date": "Open since a date",
-    "none stated": "No period stated",
+    "bounded episode": "A specific episode",
+    "open since a date": "From a date, no end",
+    "none stated": "Not stated",
   };
   const PERIOD_TITLE = {
     "bounded episode": "The founding resolution names an event or a bounded stretch of time — a particular election, an attack, a set of protests.",
-    "open since a date": "The founding resolution names a start date and no end: everything from that date onwards.",
+    "open since a date": "The founding resolution names a start date and no closing date: everything from that date to the present.",
     "none stated": "The founding resolution sets no period at all. The body is told what to investigate, not when it happened.",
   };
 
@@ -1625,8 +1625,13 @@
         <li>The action verbs those paragraphs use, from a fixed list of fifteen. A text carries between
           none and thirteen of them.</li>
         <li>The term the text sets: ongoing, 24 months, 12 months, another set term, or none stated.</li>
-        <li>The period it tells the body to examine: a closed episode, open since a date, or none stated,
-          with the wording.</li>
+        <li>The period it tells the body to examine, read off the founding resolution in its own words and
+          carried to the body; renewals do not change it. One of three: <b>a specific episode</b>, where the
+          text names an event or a bounded stretch of time &#8212; an election, an attack, a set of protests;
+          <b>from a date, no end</b>, where it names a start and no closing date; or <b>not stated</b>, where
+          it sets no period at all and the body is told what to investigate but not when it happened. A
+          mandate bounded by place or by actor rather than by time counts as not stated. The text's own
+          wording is shown beside the label.</li>
         <li>The bodies of law the mandate paragraphs name: international human rights law, international
           humanitarian law, international criminal law, or none.</li>
         <li>Its criminal-accountability register, on four values from naming crimes down to no mandate text.</li>
