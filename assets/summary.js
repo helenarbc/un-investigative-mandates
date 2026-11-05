@@ -2391,6 +2391,23 @@
     const isIsrael = (r) => r.symbol === K_ISRAEL_SYMBOL ||
       (r.bodies || []).some(n => bodyCountry.get(n) === K_ISRAEL_COUNTRY);
     const voted = TEXTS.filter(r => r.adoption_mode === "Recorded vote" && D.votes[r.symbol]);
+    // The mirror image of the habitual opponents: how often a Western group member did
+    // NOT vote Yes, and on which texts. The point of the chart is that both tails have
+    // the same exceptions, so the note needs the other tail's figures.
+    const K_WEOG = "WEOG (Western Europe & Others)";
+    let wNot = 0, wIsr = 0;
+    const wOther = new Map();
+    voted.forEach(r => {
+      const v = D.votes[r.symbol], isr = isIsrael(r);
+      D.states.forEach((s, i) => {
+        if (s.regional_group !== K_WEOG) return;
+        const c = v[i];
+        if (c !== "A" && c !== "N") return;
+        wNot++;
+        if (isr) wIsr++;
+        else wOther.set(r.symbol, (wOther.get(r.symbol) || 0) + 1);
+      });
+    });
     const rec = new Map();
     voted.forEach(r => {
       const v = D.votes[r.symbol], isr = isIsrael(r);
@@ -2417,7 +2434,8 @@
       .sort((a, b) => (b.no / b.cast) - (a.no / a.cast))
       .slice(0, L_TOP);
     return { rows, maxCast: Math.max(...rows.map(d => d.cast)),
-      yesIsr: rows.reduce((a, d) => a + d.yesIsr, 0) };
+      yesIsr: rows.reduce((a, d) => a + d.yesIsr, 0),
+      weog: { not: wNot, isr: wIsr, other: [...wOther.keys()] } };
   })();
   function drawL(host) {
     const padL = 40, padR = 34;
@@ -2474,9 +2492,16 @@
       });
     });
 
+    const W = L_DATA.weog;
+    const wRest = W.other.length === 1
+      ? `the remaining ${W.not - W.isr} are all on one text, ${shortSymbol(W.other[0])} (Burundi, 2017)`
+      : `${W.not - W.isr} are on other texts`;
     const NOTE = `Council members with ${L_MIN_VOTES} or more votes cast on the ` +
       `${TEXTS.filter(r => r.adoption_mode === "Recorded vote").length} recorded votes. Years of membership ` +
-      `differ, so totals are not comparable across States. ‘Texts concerning Israel’: OPT/Israel and Lebanon 2006.`;
+      `differ, so totals are not comparable across States. ‘Texts concerning Israel’: OPT/Israel and Lebanon 2006. ` +
+      `The same exceptions appear at the other end of the Council: Western group members cast ${W.not} votes ` +
+      `that were not Yes, ${W.isr} of them (${Math.round(100 * W.isr / W.not)}%) on those same texts, and ` +
+      `${wRest} — the one text on which the two camps swap sides.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 626 + i * 19, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL, y: 626 + noteLines.length * 19 + 8, "font-size": 13, fill: PAL.muted });
