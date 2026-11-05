@@ -437,7 +437,7 @@
   }
 
   /* ---------- view: matrix ---------- */
-  let matrixRows = "states";      // states | groups
+  let matrixRows = "groups";      // groups | states — groups is the readable default
   let matrixCols = "mechanism";   // mechanism (default) | date
   function voteTotals(row, idxs) {
     const t = { Y: 0, N: 0, A: 0, X: 0 };
@@ -522,20 +522,11 @@
           <span class="count">${recorded.length} recorded votes · ${active.size} states</span>
           ${filterChip()}
           <span class="spacer"></span>
-          <details class="menu"><summary class="icon-btn">Display options ▾</summary>
-            <div class="menu-list">
-              <div class="menu-label">Rows</div>
-              <div class="seg" id="mx-rows">
-                <button data-v="states" aria-pressed="${matrixRows === "states"}">states</button>
-                <button data-v="groups" aria-pressed="${matrixRows === "groups"}">regional groups</button>
-              </div>
-              <div class="menu-label">Columns</div>
-              <div class="seg" id="mx-cols">
-                <button data-v="mechanism" aria-pressed="${matrixCols === "mechanism"}">by mechanism</button>
-                <button data-v="date" aria-pressed="${matrixCols === "date"}">by date</button>
-              </div>
-            </div>
-          </details>
+          <span class="ctl-label">Columns</span>
+          <div class="seg" id="mx-cols">
+            <button data-v="mechanism" aria-pressed="${matrixCols === "mechanism"}">by mechanism</button>
+            <button data-v="date" aria-pressed="${matrixCols === "date"}">by date</button>
+          </div>
           <span class="legend">
             <span class="lg"><span class="sw" style="background:var(--yes)"></span>Yes</span>
             <span class="lg"><span class="sw" style="background:var(--no)"></span>No</span>
@@ -546,14 +537,10 @@
         </div>
         <div class="matrix-wrap" id="matrix-host"></div>
         <div class="panel-note">${matrixRows === "states"
-          ? `Rows: Council members that cast at least one vote in the selection, by regional group; the three
-             numbers after each name are that state's Yes · No · Abstain totals in the selection. Faint cells:
-             the state was not a Council member for that vote.`
-          : `Rows: the five UN regional groups; each cell splits the group's members' votes on that resolution
-             proportionally (hover for the exact numbers). The three numbers after the group name are its
-             Yes · No · Abstain totals in the selection.`}
-        Columns: resolutions ${matrixCols === "date" ? "in chronological order" : "grouped by mechanism (in mechanism order)"} —
-        hover for the title, click for details.</div>
+          ? `One row per Council member that cast a vote here; a faint cell means it was not a member for that vote.`
+          : `One row per UN regional group; each cell splits that group's votes proportionally.`}
+        The three figures after each name are its Yes · No · Abstain totals. Columns are resolutions
+        ${matrixCols === "date" ? "in date order" : "grouped by mechanism"} — hover for the title, click for details.</div>
       </div>`;
 
     const nCols = recorded.length;
@@ -627,10 +614,6 @@
     html += `</tbody></table>`;
     const mh = $("#matrix-host");
     mh.innerHTML = html;
-    $("#mx-rows").addEventListener("click", (e) => {
-      const v = e.target.dataset && e.target.dataset.v;
-      if (v) { matrixRows = v; viewMatrix(filtered()); }
-    });
     $("#mx-cols").addEventListener("click", (e) => {
       const v = e.target.dataset && e.target.dataset.v;
       if (v) { matrixCols = v; viewMatrix(filtered()); }
@@ -1433,12 +1416,23 @@
   function setSub(sub) {
     currentSub = sub;
     if (currentTab !== "votes") { setTab("votes"); }
-    $$("#votes-subnav button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sub === sub)));
+    $$("#votes-subnav > button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sub === sub)));
+    const rn = $("#mx-rows-nav"); if (rn) rn.hidden = sub !== "matrix";
     history.replaceState(null, "", "#/votes/" + sub);
     update();
   }
   $$(".tabbar .tab").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
-  $$("#votes-subnav button").forEach(b => b.addEventListener("click", () => setSub(b.dataset.sub)));
+  $$("#votes-subnav > button").forEach(b => b.addEventListener("click", () => setSub(b.dataset.sub)));
+  function paintRowsNav() {
+    $$("#mx-rows-nav button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.v === matrixRows)));
+  }
+  paintRowsNav();
+  $$("#mx-rows-nav button").forEach(b => b.addEventListener("click", () => {
+    matrixRows = b.dataset.v;
+    paintRowsNav();
+    if (currentSub !== "matrix") setSub("matrix"); else viewMatrix(filtered());
+  }));
 
   function filterSummary() {
     const bits = [];
@@ -1683,7 +1677,8 @@
     } else if ((m = /^#\/votes\/(\w+)(?:\/(.+))?$/.exec(h))) {
       currentSub = ["matrix", "states", "sponsors"].includes(m[1]) ? m[1] : "matrix";
       if (m[2]) currentState = decodeURIComponent(m[2]);
-      $$("#votes-subnav button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sub === currentSub)));
+      $$("#votes-subnav > button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sub === currentSub)));
+      const rn2 = $("#mx-rows-nav"); if (rn2) rn2.hidden = currentSub !== "matrix";
       setTab("votes", false);
     } else if (h === "#/reports") {
       setTab("reports");
