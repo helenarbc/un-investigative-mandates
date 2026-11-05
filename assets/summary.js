@@ -1496,7 +1496,7 @@
   const CARDS = [
     {
       id: "A",
-      file: "resolutions-per-year-by-role.png",
+      file: "chart-a-resolutions-per-year-by-role.png",
       title: () => `${A_DATA.total} texts, 2006–${YEAR_MAX}: ${A_DATA.totals[1]} extend an existing mechanism, ` +
         `${A_DATA.totals[0]} create one`,
       legend: () => legendHTML(A_LEGEND),
@@ -1505,7 +1505,7 @@
     },
     {
       id: "B",
-      file: "texts-and-bodies-per-situation.png",
+      file: "chart-b-texts-and-bodies-per-situation.png",
       title: () => `${word(B_DATA.rows.length)} situations — four account for ` +
         `${Math.round(100 * B_DATA.top4Texts / TEXTS.length)}% of all texts (${B_DATA.top4Texts} of ${TEXTS.length})`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
@@ -1521,7 +1521,7 @@
     },
     {
       id: "C",
-      file: "bodies-running-per-year.png",
+      file: "chart-c-bodies-running-per-year.png",
       title: () => `Council-mandated bodies running at the same time: ${C_DATA.first} in ${C_DATA.firstYear}, ` +
         `${C_DATA.recentMin}–${C_DATA.recentMax} every year since 2021`,
       legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
@@ -1560,7 +1560,7 @@
       id: "G",
       head: "The fifteen task verbs",
       selfContained: true,
-      file: "table-g-task-verbs.png",
+      file: "chart-g-task-verbs-table.png",
       draw: drawG,
     },
     {
