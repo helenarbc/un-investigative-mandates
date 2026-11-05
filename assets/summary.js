@@ -300,7 +300,7 @@
   const SOURCE_LINE = `Source: HRC investigative mandates dataset, build of ${BUILD_DATE} ` +
     `(${TEXTS.length} texts, ${BODIES.length} bodies, ${SITUATIONS.length} situations).`;
 
-  /* ---------------- chart A ---------------- */
+  /* ---------------- chart 1 ---------------- */
   function drawA(host) {
     const W = Math.max(host.clientWidth || 960, 300);
     const padL = 34, padR = 10, padT = 24, padB = 26;
@@ -365,7 +365,7 @@
     ["tasking", "tasking — adds work without widening what is investigated"],
   ];
 
-  /* ---------------- chart B ---------------- */
+  /* ---------------- chart 2 ---------------- */
   function drawB(host) {
     const W = Math.max(host.clientWidth || 960, 300);
     const narrow = W < 560;
@@ -423,7 +423,7 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart C ---------------- */
+  /* ---------------- chart 3 ---------------- */
   function drawC(host) {
     const W = Math.max(host.clientWidth || 960, 300);
     const padL = 32, padR = 10, padT = 22, padB = 26;
@@ -466,7 +466,7 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart D: the term each mandate sets ---------------- */
+  /* ---------------- chart 4: the term each mandate sets ---------------- */
   // Every text that creates a body or extends its mandate in time, whatever its coded
   // role: foundings, renewals, and expansions that also extend (43/28, Syria 2020).
   // Pure taskings set no term and carry no mandate_term, so they drop out here.
@@ -1108,7 +1108,7 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart E2: the floor rose (alternative reading of E) ---------------- */
+  /* ---------------- chart 5: the floor rose (alternative reading of E) ---------------- */
   // Same texts as chart E, read a different way. No mean line: with one to five
   // founding texts a year a mean invents a trajectory. The claim here is about the
   // range the Council works inside, which is what the two bands show.
@@ -1265,7 +1265,7 @@
     return `Task verbs in each founding mandate, with the range before ${E2_EARLY_END + 1} and since ${E2_LATE_START}`;
   }
 
-  /* ---------------- chart H: groups named vs groups instructed ---------------- */
+  /* ---------------- chart 7: groups named vs groups instructed ---------------- */
   // "Named anywhere" = differentiated_analysis_whole_text; "in the instruction to the
   // body" = differentiated_analysis_mandate, i.e. the paragraphs that create, extend
   // or task the body. "age" is counted but not charted.
@@ -1386,7 +1386,7 @@
     return `Each group, as a count of the ${H_DATA.total} texts in the corpus.`;
   }
 
-  /* ---------------- chart I: how texts were adopted ---------------- */
+  /* ---------------- chart 8: how texts were adopted ---------------- */
   const I_NOVOTE = "#c9c8c3", I_VOTE = "#2a78d6";
   const I_DATA = (() => {
     const per = new Map(YEARS.map(y => {
@@ -1486,7 +1486,7 @@
     return `How texts were adopted, by year`;
   }
 
-  /* ---------------- chart J: how States voted ---------------- */
+  /* ---------------- chart 9: how States voted ---------------- */
   const J_YES = "#2a78d6", J_ABS = "#c9c8c3", J_NO = "#eb6834";
   const J_SEATS = 47, J_MAJORITY = 24;
   const J_DATA = (() => {
@@ -1627,8 +1627,8 @@
 
   const CARDS = [
     {
-      id: "A",
-      file: "chart-a-resolutions-per-year-by-role.png",
+      id: "1",
+      file: "chart-01-resolutions-per-year-by-role.png",
       title: () => `Resolutions and decisions per year, by role`,
       legend: () => legendHTML(A_LEGEND),
       note: () => `Each column is one calendar year, split by the role of the text; the figure above is the year's total. ` +
@@ -1636,8 +1636,8 @@
       draw: drawA,
     },
     {
-      id: "B",
-      file: "chart-b-texts-and-bodies-per-situation.png",
+      id: "2",
+      file: "chart-02-texts-and-bodies-per-situation.png",
       title: () => `Texts and bodies per situation`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         B_DATA.regionCounts.map(({ region, n }) =>
@@ -1648,8 +1648,8 @@
       draw: drawB,
     },
     {
-      id: "C",
-      file: "chart-c-bodies-running-per-year.png",
+      id: "3",
+      file: "chart-03-bodies-running-per-year.png",
       title: () => `Council-mandated bodies running in each year`,
       legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
         `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
@@ -1659,66 +1659,66 @@
       draw: drawC,
     },
     {
-      id: "D",
+      id: "4",
       head: "The term each mandate sets",
       // the SVG carries its own title, legend, note and source so the PNG is
       // a finished slide; the card head only holds the controls
       selfContained: true,
       modes: [["counts", "Counts"], ["shares", "Shares"]],
-      file: (mode) => `chart-d-mandate-terms-${mode}.png`,
+      file: (mode) => `chart-04-mandate-terms-${mode}.png`,
       draw: drawD,
     },
     {
-      id: "E2",
+      id: "5",
       head: "Task verbs in each founding mandate: the range in each period",
       selfContained: true,
-      file: "chart-e2-verbs-floor.png",
+      file: "chart-05-task-verbs-per-founding-text.png",
       draw: drawE2,
     },
     {
-      id: "V",
+      id: "6",
       head: "Task verbs in founding mandates: when each one first appears",
       selfContained: true,
-      file: "chart-v-task-verbs-first-use.png",
+      file: "chart-06-task-verbs-first-use.png",
       draw: drawV,
     },
     {
-      id: "H",
+      id: "7",
       head: "Groups named in the text, and groups the body is instructed to examine",
       selfContained: true,
-      file: "chart-h-groups-named-vs-instructed.png",
+      file: "chart-07-groups-named-vs-instructed.png",
       draw: drawH,
     },
     {
-      id: "I",
+      id: "8",
       head: "How texts were adopted",
       selfContained: true,
       modes: [["counts", "Counts"], ["shares", "Shares"]],
-      file: (mode) => `chart-i-adoption-by-year-${mode}.png`,
+      file: (mode) => `chart-08-adoption-by-year-${mode}.png`,
       draw: drawI,
     },
     {
-      id: "J",
+      id: "9",
       head: "Average Yes, abstentions and No per recorded vote",
       selfContained: true,
-      file: "chart-j-votes-by-year.png",
+      file: "chart-09-votes-by-year.png",
       draw: drawJ,
     },
     {
-      id: "K",
+      id: "10",
       head: "How each regional group voted, by year",
       selfContained: true,
       modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
       file: (mode) => mode === "noisrael"
-        ? "chart-k-regional-groups-by-year-without-israel-docket.png"
-        : "chart-k-regional-groups-by-year-all.png",
+        ? "chart-10-regional-groups-by-year-without-israel-docket.png"
+        : "chart-10-regional-groups-by-year-all.png",
       draw: drawK,
     },
     {
-      id: "L",
+      id: "11",
       head: "Members with the highest share of No",
       selfContained: true,
-      file: "chart-l-habitual-opponents.png",
+      file: "chart-11-habitual-opponents.png",
       draw: drawL,
     },
   ];
@@ -2095,7 +2095,7 @@
     PAL = screenPalette();
     host.innerHTML = CARDS.map(c => `
       <div class="panel sg-card" data-card="${c.id}">
-        <div class="panel-head"><h2>${esc(c.head || c.title())}</h2>
+        <div class="panel-head"><h2><span class="sg-num">${esc(c.id)}</span>${esc(c.head || c.title())}</h2>
           <span class="spacer"></span>
           ${c.modes ? `<div class="seg sg-seg" data-card="${c.id}">${c.modes.map((m, i) =>
             `<button data-mode="${m[0]}" aria-pressed="${i === 0}">${esc(m[1])}</button>`).join("")}</div>` : ""}

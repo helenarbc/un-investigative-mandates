@@ -544,3 +544,12 @@ details.more > div { margin-top: 6px; }
 /* the masthead website link sits in the action row and must match the buttons */
 a.icon-btn#site-link{text-decoration:none;display:inline-flex;align-items:center}
 a.icon-btn#site-link:hover{text-decoration:underline}
+
+/* Summary graphs: the number that fixes each chart's place in the sequence */
+.sg-card .panel-head h2 .sg-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.55em; height: 1.55em; margin-right: 0.55em; padding: 0 0.3em;
+  border-radius: 999px; background: var(--grid); color: var(--ink-2);
+  font-size: 0.78em; font-weight: 650; font-variant-numeric: tabular-nums;
+  vertical-align: 0.05em;
+}
