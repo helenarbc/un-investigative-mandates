@@ -1577,8 +1577,8 @@
         <li><b>5 November 2026, three coding decisions.</b> (a) <i>Terms set by reference to a session.</i>
         25/23 (Syria, 2014) extends the commission "through to the twenty-eighth session" and S-35/1 (Iran, 2022)
         establishes the fact-finding mission "until the end of the fifty-fifth session". A session reference is a
-        real end point, so both are now counted as <i>other set term</i> rather than <i>not stated</i>. No other
-        text in the corpus sets its term this way. (b) <i>Special-Rapporteur paragraphs carry no verbs.</i> The
+        real end point, so both ceased to be counted as <i>not stated</i>. No other text in the corpus sets its
+        term this way. <b>Superseded in part the same evening — see the note on measured terms below.</b> (b) <i>Special-Rapporteur paragraphs carry no verbs.</i> The
         three Belarus texts each extend both the Special Rapporteur and the Group of Independent Experts in
         separate paragraphs. Only the paragraphs addressed to the Group are coded, so the Special Rapporteur's
         tasks in 55/27 and 58/19 have been removed: 55/27 loses <i>monitor</i> and 58/19, a renewal by reference
@@ -1596,6 +1596,38 @@
         asks the Office to run an investigation, examination or accountability project — the DPRK project, the
         Belarus examination, Sri Lanka, Libya 2015, Iraq 2014 — OHCHR <i>is</i> the body and its paragraphs are
         the mandate. The distinction is between a mandate <i>to</i> the Office and a mandate <i>through</i> it.</li>
+        <li><b>Terms written as a condition are measured, not guessed.</b> Decided 5 November 2026.
+        Where a text sets its term by reference to a session or to the delivery of a final report, the term is
+        measured against the record: the closing date of the session named, or the date of the next renewal.
+        Three such texts ran to within days of twelve months and are counted under <i>12 months</i>:
+        <b>25/23</b> (Syria, 2014; the twenty-eighth session closed on 27 March 2015, 12.0 months),
+        <b>39/14</b> (Burundi, 2018; 12.0 months to the next renewal) and
+        <b>42/26</b> (Burundi, 2019; 12.3 months). <b>S-35/1</b> (Iran, 2022) stays under <i>other set term</i>:
+        the fifty-fifth session closed on 5 April 2024, so it set a term of 16.3 months. The band
+        <i>other set term</i> therefore holds five texts, not eight, and <i>12 months</i> holds sixty-one.</li>
+        <li><b>ITE Kasai (2017) and the team of experts on the DRC (2018) are kept as two records.</b>
+        Reviewed 5 November 2026 and deliberately left as they are. The Council itself treats them as one
+        continuing team across 35/33, 38/20, 41/26, 45/34, 48/20, 54/34 and 57/34, and merging them would
+        give one clean chain. They are kept separate because their mandates are not the same instrument:
+        the 2017 body was confined to the Kasai provinces, and 48/20 (2021) extended the later team from
+        Kasai to the entire national territory — the only text in the corpus that widens a body's
+        geographic scope in those terms. Treating them as one body would erase that change and would also
+        merge two different reporting lines. The consequence is that the DRC shows four bodies rather than
+        three, and the corpus total is 47 rather than 46. Anyone preferring the merged reading should
+        subtract one body from both figures; no other figure on this site is affected.</li>
+        <li><b>End Date, and what it means.</b> For a body whose mandate has finished, <i>End Date</i> is the
+        date it ceased. For a body still running under a fixed renewable term, it is the expiry of its
+        <b>current</b> period, which is a future date — not the date the body ended. Read it with
+        <i>Mandate status</i>. The duration chart therefore draws a body that is still running to the build
+        date rather than to its End Date, which would otherwise count time it has not yet worked.</li>
+        <li><b>DPRK accountability project, 52/28 and 58/17.</b> Corrected 5 November 2026. OP15 of each text
+        contains a single clause about examining collected material — experts in legal accountability
+        "assess all information and testimonies" — which had been coded twice, as both <i>assess</i> and
+        <i>analyse evidence</i>. The material named in the same sentence is the central information and
+        evidence repository, so this is analysis of evidence rather than assessment of a situation, and
+        <i>assess</i> has been removed from both texts. <i>monitor</i> and <i>document</i> are unaffected;
+        they are coded from "monitoring and documentation efforts" earlier in the paragraph. Both are
+        renewals, so no founding-mandate figure changes.</li>
         <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
         resolutions no sponsor list has been recorded yet.</li>
         <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates

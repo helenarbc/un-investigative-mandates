@@ -1,0 +1,114 @@
+"""Dashboard data build. export/*.json -> dashboard/data/*.js script payloads.
+
+The site must work from file:// (offline), where fetch() of local JSON fails,
+so all data ships as plain <script> files setting window globals. Votes and
+sponsorships are re-encoded compactly (per-resolution code strings / state
+index lists); everything else passes through lean.
+
+Run after scripts/export.py (and scripts/build_paragraphs.py for the reports
+corpus; paragraph shards are wrapped separately by this script if present).
+"""
+import hashlib
+import json
+import os
+import re
+from datetime import datetime, timezone
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EXP = os.path.join(REPO, "export")
+OUT = os.path.join(REPO, "dashboard", "data")
+
+VOTE_CODE = {"Yes": "Y", "No": "N", "Abstain": "A", "Did not vote / absent": "X"}
+
+
+def load(name):
+    return json.load(open(os.path.join(EXP, name), encoding="utf-8"))["rows"]
+
+
+def dump_js(path, var, obj):
+    payload = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("window.%s=%s;" % (var, payload))
+    return len(payload)
+
+
+def main():
+    os.makedirs(OUT, exist_ok=True)
+    resolutions = load("resolutions.json")
+    votes = load("votes.json")
+    sponsorships = load("sponsorships.json")
+    states = load("states.json")
+    bodies = load("bodies.json")
+    documents = load("documents.json")
+
+    state_idx = {s["state"]: i for i, s in enumerate(states)}
+
+    # votes: per resolution, one char per state (state-array order).
+    # Y yes / N no / A abstain / X absent / . not a Council member that vote
+    vmat = {}
+    for v in votes:
+        sym, st = v["resolution"], v["state"]
+        if sym not in vmat:
+            vmat[sym] = ["."] * len(states)
+        if st in state_idx:
+            vmat[sym][state_idx[st]] = VOTE_CODE.get(v["position"], "?")
+    vmat = {k: "".join(row) for k, row in vmat.items()}
+
+    # sponsorships: per resolution, {m: [state indices], c: [state indices]}
+    smat = {}
+    for s in sponsorships:
+        sym, st = s["resolution"], s["state"]
+        if st not in state_idx:
+            continue
+        d = smat.setdefault(sym, {"m": [], "c": []})
+        d["m" if s["role"].startswith("Main") else "c"].append(state_idx[st])
+
+    # documents: lean manifest for the Reports tab
+    docs = [{
+        "rec_id": d["id"], "doc_id": d["doc_id"], "title": d["title"],
+        "type": d["type"], "date": d["date"], "year": d["year"],
+        "un_ref": d["un_ref"], "bodies": d["bodies"], "status": d["status"],
+    } for d in documents]
+
+    excluded = []
+    exc_path = os.path.join(EXP, "excluded.json")
+    if os.path.exists(exc_path):
+        excluded = json.load(open(exc_path, encoding="utf-8"))["rows"]
+
+    core = {
+        "built": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "excluded_texts": excluded,
+        "resolutions": resolutions,
+        "states": states,
+        "bodies": bodies,
+        "documents": docs,
+        "votes": vmat,
+        "sponsorships": smat,
+    }
+    n = dump_js(os.path.join(OUT, "core.js"), "HRC_DATA", core)
+    print(f"dashboard/data/core.js: {n/1024:.0f} KB "
+          f"({len(resolutions)} resolutions, {len(vmat)} recorded votes, "
+          f"{len(docs)} documents)")
+
+    # paragraph shards (if the extractor has run): wrap JSON -> lazy-loadable JS
+    pdir = os.path.join(EXP, "paragraphs")
+    outp = os.path.join(OUT, "paragraphs")
+    if os.path.isdir(pdir) and os.path.exists(os.path.join(pdir, "manifest.json")):
+        os.makedirs(outp, exist_ok=True)
+        for old in os.listdir(outp):
+            os.remove(os.path.join(outp, old))
+        manifest = json.load(open(os.path.join(pdir, "manifest.json"), encoding="utf-8"))
+        for name in sorted(manifest.get("shards", {})):
+            shard = json.load(open(os.path.join(pdir, name), encoding="utf-8"))
+            js = name[:-5] + ".js"
+            payload = json.dumps(shard, ensure_ascii=False, separators=(",", ":"))
+            with open(os.path.join(outp, js), "w", encoding="utf-8") as fh:
+                fh.write("window.__HRC_SHARD(%s);" % payload)
+        dump_js(os.path.join(outp, "manifest.js"), "HRC_PARAGRAPHS", manifest)
+        print(f"dashboard/data/paragraphs/: {len(manifest.get('shards', {}))} shards wrapped")
+    else:
+        print("export/paragraphs/ not built yet - skipped shard wrapping")
+
+
+if __name__ == "__main__":
+    main()

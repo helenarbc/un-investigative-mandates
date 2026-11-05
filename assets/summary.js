@@ -2090,7 +2090,14 @@
       title: () => `Resolutions and decisions adopted each year, by function`,
       legend: () => legendHTML(A_LEGEND),
       note: () => `Each column is one calendar year, split by the role of the text; the figure above is the year's total. ` +
-        `${A_DATA.total} texts in all, 2006–${YEAR_MAX}.`,
+        `${A_DATA.total} texts in all, 2006–${YEAR_MAX}. ` +
+        `There is no role for ending a mandate, because in twenty years the Council has never adopted a text that ` +
+        `closes an investigative body. The nearest is 50/23 (Libya, 2022), which ends one by extending it ` +
+        `“for a final, non-extendable period of nine months” and is counted as a renewal. Mandates end by the ` +
+        `absence of a decision rather than by one: a renewal defeated on the floor (Yemen, 7 October 2021, the ` +
+        `only draft ever rejected by this Council), a renewal never tabled (Ethiopia, October 2023), or a term ` +
+        `that simply expires (Eritrea, 2016). None of those produced an adopted text, so none can appear here — ` +
+        `which is why the practice looks like uninterrupted growth.`,
       draw: drawA,
     },
     {
@@ -2153,7 +2160,10 @@
         `Median ${DL_DUR(DL_DATA.median)}; median of those that have ended ${DL_DUR(DL_DATA.medianEnded)}; ` +
         `mean ${DL_DUR(DL_DATA.mean)} \u2014 the distance between mean and median is the three longest-running bodies. ` +
         DL_DATA.bands.filter(b => b.n).map(b => `${b.label} ${b.n}`).join(" · ") + `. ` +
-        `S-1/1 (2006), never implemented, is not counted.`,
+        `S-1/1 (2006), never implemented, is not counted. ` +
+        `Where a bar ends, the Council usually decided nothing: only one adopted text in the corpus sets out to ` +
+        `close a body, 50/23 (Libya, 2022), and it does so by granting a final nine months. The rest end because ` +
+        `a renewal was defeated, never tabled, or simply not sought.`,
       draw: drawDL,
     },
     {
