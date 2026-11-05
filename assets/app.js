@@ -526,10 +526,10 @@
           if (A && B) {
             const act = (bodyIsRunning(A) ? 0 : 1) - (bodyIsRunning(B) ? 0 : 1);
             if (act) return act;
-            const sd = (B.start_date || "").localeCompare(A.start_date || "");
+            const sd = (A.start_date || "").localeCompare(B.start_date || "");
             if (sd) return sd;
           }
-          return (firstDate[bb] || "").localeCompare(firstDate[ba] || "") || ba.localeCompare(bb);
+          return (firstDate[ba] || "").localeCompare(firstDate[bb] || "") || ba.localeCompare(bb);
         }
         return (a.date_adopted || "").localeCompare(b.date_adopted || "");
       });
@@ -1100,8 +1100,9 @@
           ${isOther ? "" : `<th class="no-sort" title="The stretch of time the founding resolution tells the body to examine">Period investigated</th>`}
           <th class="no-sort">Explore</th></tr></thead>
         <tbody>${g.rows.sort((a, b) =>
+          // in force first, then chronologically: oldest mandate at the top of each block
           ((isRunning(a) ? 0 : 1) - (isRunning(b) ? 0 : 1)) ||
-          (b.start_date || "").localeCompare(a.start_date || "")).map(b => {
+          (a.start_date || "").localeCompare(b.start_date || "")).map(b => {
           const nres = (b.resolutions || []).length;
           const ndocs = docCountByBody[b.short_name] || 0;
           const isRef = b.scope === REF_SCOPE;
