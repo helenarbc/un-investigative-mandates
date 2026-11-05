@@ -5,6 +5,7 @@
    CHARTS ON THIS TAB  (scroll order = the order of the AHRI script)
       1. Resolutions per year, by role          — stacked columns, 2006-2026
       2. Texts and bodies per situation         — horizontal bars + bodies column
+     2A. Texts and bodies by regional group    — the same two columns, summarised
       3. Bodies running at the same time        — columns per calendar year
       4. The term each mandate sets             — stacked columns, counts or shares
       5. Task verbs per founding mandate        — dot chart, read as two bands
@@ -277,6 +278,52 @@
     };
   })();
 
+  // Chart 2A: the same two columns as chart 2, summarised by the regional group of
+  // the situation. Each situation is counted ONCE here, so the columns reconcile with
+  // the corpus totals; OPT / Israel is placed in Asia-Pacific on geography, while
+  // chart 2 shows it in both groups because Israel sits in WEOG in Geneva.
+  const BR_ORDER = ["Africa", "Asia-Pacific (incl. Middle East)", "Eastern Europe", "Latin America"];
+  const BR_SHORT = {
+    "Africa": "Africa",
+    "Asia-Pacific (incl. Middle East)": "Asia-Pacific",
+    "Eastern Europe": "Eastern Europe",
+    "Latin America": "Latin America",
+  };
+  const BR_DATA = (() => {
+    // Primary region: the first group REGION_OF returns that is not WEOG.
+    const primary = (sit) => {
+      const regs = REGION_OF(sit) || [];
+      return regs.filter(r => r !== "Western European and others")[0] || regs[0] || null;
+    };
+    const blank = () => ({ situations: 0, bodies: 0, texts: 0, founding: 0, voted: 0, names: [], bodyNames: [] });
+    const acc = new Map(BR_ORDER.map(r => [r, blank()]));
+    const countryByBody = new Map(BODIES.map(b => [b.short_name, situationOf(b.country)]));
+    SITUATIONS.forEach(s => {
+      const r = primary(s); if (!acc.has(r)) return;
+      acc.get(r).situations++; acc.get(r).names.push(label(s));
+    });
+    BODIES.forEach(b => {
+      const r = primary(situationOf(b.country)); if (!acc.has(r)) return;
+      acc.get(r).bodies++; acc.get(r).bodyNames.push(b.short_name);
+    });
+    TEXTS.forEach(t => {
+      const s = (t.bodies || []).map(n => countryByBody.get(n)).find(Boolean);
+      const r = s ? primary(s) : null; if (!acc.has(r)) return;
+      const a = acc.get(r);
+      a.texts++;
+      if (t.resolution_role === "founding") a.founding++;
+      if (t.adoption_mode === "Recorded vote") a.voted++;
+    });
+    const rows = BR_ORDER.map(r => Object.assign({ region: r }, acc.get(r)))
+      .sort((a, b) => b.texts - a.texts);
+    return {
+      rows,
+      totalTexts: rows.reduce((a, r) => a + r.texts, 0),
+      totalBodies: rows.reduce((a, r) => a + r.bodies, 0),
+      totalSituations: rows.reduce((a, r) => a + r.situations, 0),
+    };
+  })();
+
   const C_DATA = (() => {
     const startY = (b) => +String(b.start_date || "").slice(0, 4) || null;
     const endY = (b) => (b.end_date ? +String(b.end_date).slice(0, 4) : YEAR_MAX);
@@ -430,6 +477,69 @@
           _tip: `${label(r.situation)} — ${plural(r.bodies, "body", "bodies")}\n` + listTip(r.bodyNames) + (r.bodySum > r.texts
               ? `\n(One text can create or task more than one body, so these add to ${r.bodySum}.)`
               : ""),
+        }));
+      }
+    });
+    host.textContent = "";
+    host.appendChild(svg);
+    attachTips(svg);
+  }
+
+  /* ---------------- chart 2A ---------------- */
+  // Same two columns as chart 2, one row per regional group. Texts as a bar, bodies
+  // as dots, situations as a figure, so the three reconcile with the corpus totals.
+  function drawBR(host) {
+    const W = Math.max(host.clientWidth || 960, 300);
+    const narrow = W < 560;
+    const rows = BR_DATA.rows;
+    const rowH = narrow ? 30 : 34, barH = narrow ? 14 : 16;
+    const headH = 18;
+    const H = headH + rows.length * rowH + 6;
+    const labelW = narrow ? Math.min(118, W * 0.38) : Math.min(188, W * 0.27);
+    const maxBodies = Math.max(...rows.map(r => r.bodies));
+    const dotR = narrow ? 2.4 : 3;
+    const dotPitch = dotR * 2 + 1.6;
+    const bodiesW = (narrow ? 20 : 24) + maxBodies * dotPitch + 6;
+    const valueW = narrow ? 30 : 36;
+    const iw = Math.max(40, W - labelW - valueW - bodiesW - 8);
+    const max = Math.max(...rows.map(r => r.texts));
+    const fontRow = narrow ? 11 : 13;
+    const svg = svgRoot(W, H);
+
+    text(svg, "Texts", { x: labelW + 2, y: 12, "font-size": narrow ? 9.5 : 11, fill: PAL.muted });
+    text(svg, "Bodies", { x: W - bodiesW + (narrow ? 0 : 2), y: 12, "font-size": narrow ? 9.5 : 11, fill: PAL.muted });
+
+    rows.forEach((r, i) => {
+      const y = headH + i * rowH;
+      const cy = y + barH / 2;
+      const share = Math.round(100 * r.texts / BR_DATA.totalTexts);
+      const tip = `${r.region}\n${plural(r.texts, "text")} of ${BR_DATA.totalTexts} (${share}%)` +
+        `\n${plural(r.bodies, "body", "bodies")} · ${plural(r.situations, "situation")}` +
+        `\n${r.founding} founding · ${r.voted} of ${r.texts} put to a recorded vote` +
+        ` (${Math.round(100 * r.voted / r.texts)}%)` +
+        `\nSituations:\n` + listTip(r.names.slice().sort(), 24);
+      text(svg, BR_SHORT[r.region] || r.region, {
+        x: labelW - 8, y: cy + fontRow * 0.35, "text-anchor": "end", "font-size": fontRow, fill: PAL.ink,
+      });
+      const w = iw * r.texts / max;
+      svg.appendChild(el("rect", {
+        x: labelW, y, width: Math.max(2, w), height: barH, rx: 2,
+        fill: REGION_COLOR[r.region] || PAL.baseline, _tip: tip,
+      }));
+      text(svg, `${r.texts}`, {
+        x: labelW + w + 5, y: cy + fontRow * 0.35, "font-size": fontRow, "font-weight": 600, fill: PAL.ink,
+      });
+      // second line: situations, and the share of the corpus
+      text(svg, `${plural(r.situations, "situation")} · ${share}% of the corpus`, {
+        x: labelW, y: y + barH + (narrow ? 11 : 12), "font-size": narrow ? 9.5 : 10.5, fill: PAL.muted,
+      });
+      const bx = W - bodiesW;
+      text(svg, r.bodies, { x: bx, y: cy + fontRow * 0.35, "font-size": fontRow, fill: PAL.ink2 });
+      for (let k = 0; k < r.bodies; k++) {
+        svg.appendChild(el("circle", {
+          cx: bx + (narrow ? 14 : 18) + dotR + k * dotPitch, cy, r: dotR,
+          fill: REGION_COLOR[r.region] || PAL.baseline, opacity: 0.75,
+          _tip: `${r.region} — ${plural(r.bodies, "body", "bodies")}\n` + listTip(r.bodyNames.slice().sort(), 24),
         }));
       }
     });
@@ -1838,6 +1948,20 @@
         `${B_DATA.regionCounts.reduce((a, x) => a + x.n, 0)} for ${B_DATA.rows.length} situations.` +
         (B_DATA.unassigned ? ` ${word(B_DATA.unassigned)} further text created no body and is not shown.` : ""),
       draw: drawB,
+    },
+    {
+      id: "2A",
+      file: "chart-02a-texts-and-bodies-by-region.png",
+      title: () => `Texts and bodies by regional group of the situation`,
+      legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
+        BR_DATA.rows.map(r =>
+          `<span class="lg"><span class="sw" style="background:${REGION_COLOR[r.region]}"></span>${esc(BR_SHORT[r.region] || r.region)} ${r.situations}</span>`).join(""),
+      note: () => `The same two columns as the chart above, summarised by region. Each situation is ` +
+        `counted once here, so the rows total ${BR_DATA.totalSituations} situations, ` +
+        `${BR_DATA.totalBodies} bodies and ${BR_DATA.totalTexts} texts. OPT / Israel is placed in ` +
+        `Asia-Pacific on geography; the chart above shows it in two groups because Israel has sat with ` +
+        `the Western European and others group in Geneva since 1 January 2014.`,
+      draw: drawBR,
     },
     {
       id: "3",
