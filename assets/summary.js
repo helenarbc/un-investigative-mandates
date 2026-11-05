@@ -2072,9 +2072,8 @@
      each of them, and the verdicts at the end. They carry no number and no
      Download PNG; `prose: true` gives them the plain panel shell. */
 
-  const H1_TEXT = "The number, scope and support for investigative bodies are all on the rise.";
-  const H2_TEXT = "The mandates are carefully drafted.";
-  const H3_TEXT = "Which contexts get investigated is ultimately a political decision.";
+  const H1_TEXT = "The number and scope of investigative mandates are on the rise.";
+  const H2_TEXT = "Support for them is therefore growing.";
 
   const proseCard = (id, eyebrow, title, bodyHTML) => ({
     id, prose: true,
@@ -2106,60 +2105,54 @@
     <p class="sg-prose-figs"><b>137</b> texts · <b>47</b> bodies · <b>23</b> situations · <b>87</b> recorded votes ·
       <b>4,089</b> recorded positions</p>`);
 
-  const HYPO_CARD = proseCard("hypotheses", "Three hypotheses", "What this paper sets out to test", `
-    <p class="sg-prose-lead">Three things are said with confidence in the consultations where these texts are
-      negotiated. Each is stated here as a hypothesis and tested against the whole corpus.</p>
+  const HYPO_CARD = proseCard("hypotheses", "Two hypotheses", "What this paper sets out to test", `
+    <p class="sg-prose-lead">Two things are said with confidence in the consultations where these texts are
+      negotiated. The second is usually offered as a consequence of the first. Both are stated here as hypotheses
+      and tested against the whole corpus.</p>
     <ol class="sg-hyp">
       <li><span class="sg-hyp-n">1</span><span>${H1_TEXT}</span></li>
       <li><span class="sg-hyp-n">2</span><span>${H2_TEXT}</span></li>
-      <li><span class="sg-hyp-n">3</span><span>${H3_TEXT}</span></li>
     </ol>`);
 
   const H1_CARD = proseCard("h1", "Hypothesis one", H1_TEXT, `
-    <p class="sg-prose-lead">Three limbs, and they do not travel together. The first two charts count the bodies
-      and the texts. The third measures what each founding mandate asks for. The last two ask how the Council
-      voted on them.</p>`);
+    <p class="sg-prose-lead">The first three charts count the texts, the bodies and the tasks each founding
+      resolution assigns. The four that follow ask a harder question: whether that growth was carried out with
+      any attention — whether the time given matches the work asked for, where the wording comes from, which
+      body of law is named, and which groups reach the paragraphs that actually instruct a body.</p>`);
 
   const H2_CARD = proseCard("h2", "Hypothesis two", H2_TEXT, `
-    <p class="sg-prose-lead">Two tests. Are the tasks matched by the means — the time, the continuity, the
-      resources? And do the groups named in a resolution reach the paragraphs that actually instruct the body?</p>`);
+    <p class="sg-prose-lead">If the practice has grown, the support for it should have grown too. These charts
+      ask whether a text is voted at all, by what margin, how the regional groups vote, which situations recur,
+      how mandates end, and who opposes and who supports.</p>`);
 
-  const H3_CARD = proseCard("h3", "Hypothesis three", H3_TEXT, `
-    <p class="sg-prose-lead">If selection is what decides these texts, then the wording — which is what everyone
-      in that building spends their time on — should not move the outcome much. These charts ask whether a text is
-      voted at all, how the groups vote, which situations recur, how mandates end, and who opposes.</p>`);
-
-  const VERDICT_CARD = proseCard("verdicts", "Conclusions", "The three hypotheses, and what the texts answer", `
+  const VERDICT_CARD = proseCard("verdicts", "Conclusions", "The two hypotheses, and what the texts answer", `
     <div class="sg-verdict">
       <div class="sg-v-row">
         <p class="sg-v-h"><span class="sg-hyp-n">1</span>${H1_TEXT}</p>
-        <p class="sg-v-a"><b class="sg-part">Number — yes.</b> Three bodies running at once in 2006, between
-          fourteen and sixteen every year since 2021. <b class="sg-part">Scope — yes.</b> Three task verbs in the
-          Lebanon mandate of 2006; 9.6 on average since 2021, and no founding mandate below eight since 2022.
-          <b class="sg-no">Support — no.</b> Two thirds of the members in favour before 2016, half since, and it
-          has stayed at half for ten years.</p>
+        <p class="sg-v-a"><b class="sg-yes">Yes — but it has not happened with attention.</b> Three bodies running
+          at once in 2006, between fourteen and sixteen every year since 2021. Three task verbs in the Lebanon
+          mandate of 2006; 9.6 on average since 2021, and no founding mandate below eight since 2022. But term
+          length and task load are uncorrelated (r = −0.05): more is asked without more time. Formulas travel word
+          for word across continents and six years. And groups are named where naming is free and absent where the
+          text binds — women appear in 112 texts and in seven mandates, girls in fifty-two texts and in one.</p>
       </div>
       <div class="sg-v-row">
         <p class="sg-v-h"><span class="sg-hyp-n">2</span>${H2_TEXT}</p>
-        <p class="sg-v-a"><b class="sg-no">No.</b> Term length and task load are uncorrelated (r = −0.05): more is
-          asked without more time. Formulas travel word for word across continents. And groups are named where
-          naming is free and absent where the text binds — women appear in 112 texts and in seven mandates, girls
-          in fifty-two texts and in one.</p>
-      </div>
-      <div class="sg-v-row">
-        <p class="sg-v-h"><span class="sg-hyp-n">3</span>${H3_TEXT}</p>
-        <p class="sg-v-a"><b class="sg-yes">Yes.</b> Whether a text is voted at all depends on consent; the two
-          largest groups moved to abstention rather than opposition; four situations hold forty-four per cent of
-          the texts; and both ends of the chamber reverse their position on one situation — the eight habitual
-          opponents vote yes on every text concerning Israel and on three per cent of everything else, while the
-          Western group votes yes on ninety-seven per cent of everything else and eighteen per cent of those.</p>
+        <p class="sg-v-a"><b class="sg-no">No.</b> Two thirds of the members in favour before 2016, half since, and
+          it has stayed at half for ten years. The two largest groups moved to abstention rather than to opposition.
+          Whether a text is voted at all depends on the consent of the State concerned, not on its wording. Four
+          situations hold forty-four per cent of the texts. And both ends of the chamber reverse their position on
+          one situation: the eight habitual opponents vote yes on every text concerning Israel and on three per cent
+          of everything else, while the Western group votes yes on ninety-seven per cent of everything else and
+          eighteen per cent of those.</p>
       </div>
     </div>
-    <p class="sg-prose-note"><b>What follows.</b> The language of a mandate is not the lever: identical wording has
-      drawn different coalitions, and the same Syria text passed by recorded vote twenty-nine times and then without
-      a vote once the government changed. What the wording can change is whether a body can do the work once it
-      exists — which is worth arguing about, but it is not a route to a better majority. And one asymmetry runs
-      under all three: every creation leaves a document, and almost no ending does.</p>`);
+    <p class="sg-prose-note"><b>What follows.</b> The growth and the support were never connected, because the
+      procedure does not connect them: an abstention is not a vote, so a narrower base costs the drafters nothing.
+      What decides a vote is which government is in the dock, not how the paragraph is written — which means
+      redrafting mandate language is not a route to a wider majority, whatever else it is worth. And one asymmetry
+      runs under both hypotheses: every creation leaves a document, and almost no ending does.</p>`);
+
 
   const CARDS = [
     {
@@ -2301,12 +2294,13 @@
      cards carry the structure and each chart sits under the hypothesis it
      tests. Charts keep their definitions and are renumbered 1-15 in this
      order, so the number on screen is the order it is spoken in.
-       hypothesis 1  number, scope, and how the Council voted   (1-5)
-       hypothesis 2  terms against tasks, formulas, law, groups (6-9)
-       hypothesis 3  consent, groups, docket, endings, opponents (10-15)
+       hypothesis 1  number and scope, then whether the growth was
+                     carried out with any attention              (1-7)
+       hypothesis 2  consent, margins, groups, docket, endings,
+                     opponents and supporters                    (8-15)
      PNG filenames keep their original numbers; only the on-screen id moves. */
   (() => {
-    const ORDER = ["1", "2", "3", "4", "5", "11", "12", "13", "14", "6", "7", "8", "9", "10", "10b"];
+    const ORDER = ["1", "2", "3", "11", "12", "13", "14", "4", "5", "6", "7", "8", "9", "10", "10b"];
     const byId = {};
     CARDS.forEach(c => { byId[c.id] = c; });
     const missing = ORDER.filter(id => !byId[id]);
@@ -2315,9 +2309,8 @@
     CARDS.length = 0;
     CARDS.push(
       INCLUDED_CARD, HYPO_CARD,
-      H1_CARD, ...charts.slice(0, 5),
-      H2_CARD, ...charts.slice(5, 9),
-      H3_CARD, ...charts.slice(9),
+      H1_CARD, ...charts.slice(0, 7),
+      H2_CARD, ...charts.slice(7),
       VERDICT_CARD
     );
   })();
