@@ -272,6 +272,15 @@ def main():
             "mandate_term": term[0],
             "mandate_term_op": term[1],
             "mandate_term_phrase": term[2],
+            # Added 5 November 2026. The period the founding text tells the body to
+            # examine, read off that text only: "bounded episode" (an event or a
+            # closed stretch of time), "open since a date", or "none stated". A
+            # mandate bounded by place or by actor rather than by time is "none
+            # stated" and the wording goes in the verbatim field. Renewals do not
+            # carry a value; the body inherits the founding text's (see
+            # build_dashboard_data.py).
+            "period_scope": f.get("Period under investigation"),
+            "period_phrase": f.get("Period under investigation (verbatim)"),
         })
     out_res.sort(key=lambda x: (x["date_adopted"] or "", x["symbol"] or ""))
 

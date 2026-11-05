@@ -968,6 +968,22 @@
     // so it belongs with the Council-mandated group
     b.scope || (b.resolutions.length ? "HRC investigative mandate" : "SG-mandated investigation");
 
+  // Period under investigation — the stretch of time the founding resolution tells the
+  // body to examine. Three values, read off the founding text and nothing else:
+  // a closed episode, everything since a stated date, or no period at all.
+  const PERIOD_ORDER = ["bounded episode", "open since a date", "none stated"];
+  const PERIOD_LABEL = {
+    "bounded episode": "A closed episode",
+    "open since a date": "Open since a date",
+    "none stated": "No period stated",
+  };
+  const PERIOD_TITLE = {
+    "bounded episode": "The founding resolution names an event or a bounded stretch of time — a particular election, an attack, a set of protests.",
+    "open since a date": "The founding resolution names a start date and no end: everything from that date onwards.",
+    "none stated": "The founding resolution sets no period at all. The body is told what to investigate, not when it happened.",
+  };
+  let mechPeriod = "";   // "" = all
+
   function renderMechs() { renderBodies("#mechs-content", SCOPE_GROUPS, false); }
   function renderOther() { renderBodies("#other-content", OTHER_SCOPE_GROUPS, true); }
 
@@ -975,9 +991,15 @@
     const host = $(hostSel);
     const keys = new Set(groupSpec.map(g => g[0]));
     const grouped = new Map(groupSpec.map(([k, label]) => [k, { label, rows: [] }]));
+    const periodCount = {};
     D.bodies.forEach(b => {
       const key = scopeKeyOf(b);
       if (!keys.has(key)) return;
+      if (!isOther) {
+        const ps = b.period_scope || "none stated";
+        periodCount[ps] = (periodCount[ps] || 0) + 1;
+        if (mechPeriod && ps !== mechPeriod) return;
+      }
       grouped.get(key).rows.push(b);
     });
     const yearsOf = (b) => {
@@ -1038,14 +1060,38 @@
           Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
           HRC mandating resolutions — renewals inherit the founding language.</div></details>
       </div></div>`;
+    const nAll = Object.values(periodCount).reduce((a, n) => a + n, 0);
+    const periodBar = isOther ? "" : `
+      <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;margin-bottom:6px">
+          <b style="color:var(--ink)">Period under investigation</b>
+          <span style="color:var(--muted)">— the stretch of time the founding resolution tells the body to examine</span>
+        </div>
+        <div class="seg" id="period-seg" style="display:inline-flex;flex-wrap:wrap">
+          <button data-p="" aria-pressed="${mechPeriod === ""}">All <span style="opacity:.6">${nAll}</span></button>
+          ${PERIOD_ORDER.filter(k => periodCount[k]).map(k => `
+            <button data-p="${k}" aria-pressed="${mechPeriod === k}" title="${esc(PERIOD_TITLE[k])}">
+              ${esc(PERIOD_LABEL[k])} <span style="opacity:.6">${periodCount[k]}</span></button>`).join("")}
+        </div>
+        <details class="more" style="margin-top:8px"><summary>How this is coded</summary>
+          <div>Read off the founding resolution only, in its own words, and carried to the body; renewals do not
+          change it. <b>A closed episode</b> means the text names an event or a bounded stretch of time — a particular
+          election, an attack, a set of protests. <b>Open since a date</b> means it names a start and no end.
+          <b>No period stated</b> means the text sets no period at all: the body is told what to investigate, not when
+          it happened. A mandate bounded by place or by actor rather than by time is coded as no period stated, and the
+          wording is given on the mechanism. The exact words are in the <i>Period investigated</i> column and in each
+          mechanism's profile.</div></details>
+      </div></div>`;
     host.innerHTML = `
       ${intro}
+      ${periodBar}
       ${[...grouped.values()].filter(g => g.rows.length).map(g => `
       <div class="panel">
         <div class="panel-head"><h2>${esc(g.label)}</h2><span class="count">${g.rows.length}</span></div>
         <div class="tblwrap"><table class="data"><thead><tr>
           <th class="no-sort">Mechanism</th><th class="no-sort">Situation</th><th class="no-sort">Active</th>
           <th class="no-sort" title="From the start of the mandate to its end, or to today if it is still running">Duration</th>
+          ${isOther ? "" : `<th class="no-sort" title="The stretch of time the founding resolution tells the body to examine">Period investigated</th>`}
           <th class="no-sort">Explore</th></tr></thead>
         <tbody>${g.rows.sort((a, b) =>
           ((a.end_date ? 1 : 0) - (b.end_date ? 1 : 0)) ||
@@ -1061,6 +1107,12 @@
             <td>${esc(countryName(b.country) || "—")}</td>
             <td style="white-space:nowrap">${yearsOf(b)}</td>
             <td style="white-space:nowrap">${durationOf(b)}</td>
+            ${isOther ? "" : (() => {
+              const ps = b.period_scope || "none stated";
+              return `<td title="${esc(b.period_phrase ? "\u201c" + b.period_phrase + "\u201d" : PERIOD_TITLE[ps] || "")}">
+                ${esc(PERIOD_LABEL[ps] || ps)}
+                ${b.period_phrase ? `<div style="font-size:12px;color:var(--muted);max-width:26em;white-space:normal">\u201c${esc(b.period_phrase)}\u201d</div>` : ""}</td>`;
+            })()}
             <td style="white-space:nowrap">
               ${isRef ? `<span style="color:var(--muted)">${nres} resolution${nres > 1 ? "s" : ""} (reference only)</span>`
                 : nres ? `<a class="mech-res" data-body="${esc(b.short_name)}">${nres} resolution${nres > 1 ? "s" : ""}</a>
@@ -1072,6 +1124,8 @@
       </div>`).join("")}
 `;
     host.onclick = (e) => {
+      const pb = e.target.closest("#period-seg button");
+      if (pb) { mechPeriod = pb.dataset.p || ""; renderBodies(hostSel, groupSpec, isOther); return; }
       const mo = e.target.closest("a.mech-open");
       if (mo) { openMechanism(mo.dataset.body); return; }
       const mr = e.target.closest("a.mech-res");
@@ -1135,6 +1189,9 @@
         ${predecessor ? `<div class="panel-note" style="margin:10px 0">${esc(predecessor)}</div>` : ""}
         <div class="meta-grid">
           <div class="m"><b>Mandate action verbs</b>${esc((b.mandate_action_verbs || []).join(", ") || "—")}</div>
+          ${b.period_scope ? `<div class="m"><b>Period under investigation</b>${esc(PERIOD_LABEL[b.period_scope] || b.period_scope)}${
+            b.period_phrase ? ` — \u201c${esc(b.period_phrase)}\u201d` : ""}${
+            b.period_source ? `<div style="font-size:12px;color:var(--muted)">from ${esc(b.period_source)}</div>` : ""}</div>` : ""}
           ${b.links ? (() => {
             const isRes = /undocs\.org|docs\.un\.org/i.test(b.links);
             const symFromUrl = decodeURIComponent(b.links.replace(/^https?:\/\/[^/]+\/(en\/)?/i, "").replace(/[?#].*$/, ""));

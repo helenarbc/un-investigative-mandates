@@ -70,6 +70,39 @@ def main():
         "un_ref": d["un_ref"], "bodies": d["bodies"], "status": d["status"],
     } for d in documents]
 
+    # Period under investigation: coded on the founding resolution only. Carry it
+    # to the body, so the Mechanisms tab can filter on it; renewals inherit nothing
+    # and change nothing. Where a body has several founding texts the earliest wins.
+    # TOE DRC (2018) has no founding text of its own in the corpus (it continues the
+    # ITE Kasai mandate created by 35/33), so it takes that text's value.
+    PERIOD_INHERIT = {"TOE DRC (2018)": "ITE Kasai DRC (2017)"}
+    period_by_body = {}
+    for r in resolutions:
+        if not r.get("period_scope"):
+            continue
+        for bname in (r.get("bodies") or []):
+            cur = period_by_body.get(bname)
+            if cur is None or (r.get("date_adopted") or "") < (cur.get("date_adopted") or ""):
+                period_by_body[bname] = r
+    for b in bodies:
+        src = period_by_body.get(b["short_name"])
+        inherited = False
+        if src is None and b["short_name"] in PERIOD_INHERIT:
+            src = period_by_body.get(PERIOD_INHERIT[b["short_name"]])
+            inherited = True
+        if src is None:
+            continue
+        b["period_scope"] = src["period_scope"]
+        b["period_phrase"] = src.get("period_phrase") or ""
+        b["period_source"] = src["symbol"] + (
+            " (inherited: continuation of the %s mandate)" % PERIOD_INHERIT[b["short_name"]]
+            if inherited else "")
+    missing = [b["short_name"] for b in bodies
+               if not b.get("period_scope")
+               and b.get("scope") in ("HRC investigative mandate", "OHCHR investigation (broader)")]
+    if missing:
+        print("WARNING: in-scope bodies with no period under investigation: %s" % ", ".join(missing))
+
     excluded = []
     exc_path = os.path.join(EXP, "excluded.json")
     if os.path.exists(exc_path):
