@@ -2,18 +2,19 @@
    Presentation-ready charts, drawn live from window.HRC_DATA (never pasted images),
    each with a Download PNG button (2x, white background).
 
-   CHARTS ON THIS TAB
-     A. Resolutions per year, by role          — stacked columns, 2006-2026
-     B. Texts and bodies per situation         — horizontal bars + bodies column
-     C. Bodies running at the same time        — columns per calendar year, 2006-2026
-     D. The term each mandate sets             — stacked columns, counts or shares
-     E. Task verbs per founding mandate        — dot chart with yearly means
-     F. Four features of each founding mandate — dot matrix, one column per text
-     G. The fifteen task verbs                 — table: counts, first use, wording
-     E2. Task verbs: what rose is the floor    — same texts as E, read as two bands
-     H. Groups named vs groups instructed      — paired horizontal bars
-     I. How texts were adopted                — stacked columns, counts or shares
-     J. How States voted                      — average Yes / abstentions / No per voted text
+   CHARTS ON THIS TAB  (scroll order = the order of the AHRI script)
+      1. Resolutions per year, by role          — stacked columns, 2006-2026
+      2. Texts and bodies per situation         — horizontal bars + bodies column
+      3. Bodies running at the same time        — columns per calendar year
+      4. The term each mandate sets             — stacked columns, counts or shares
+      5. Task verbs per founding mandate        — dot chart, read as two bands
+      6. Task verbs: when each one first appears
+      7. The law named, and the criminal register — two panels, five-year bands
+      8. Groups named vs groups instructed      — paired horizontal bars
+      9. How texts were adopted                 — stacked columns, counts or shares
+     10. Average Yes / abstentions / No per voted text
+     11. How each regional group voted, by year
+     12. Members with the highest share of No
 
    To add one: append an entry to CARDS at the bottom ({id, build(host)}) and a
    draw function above it. Nothing else needs touching.
@@ -1632,6 +1633,183 @@
     }
   }
 
+  /* ---------------- chart 12: the law named, and the criminal register ----------------
+     Two panels on one slide, both over founding mandates only, in five-year bands
+     whose last band opens in 2021 — the breakpoint charts 3, 5 and 6 already use.
+     Left:  which body of law the mandate paragraph names.
+     Right: how far the same paragraph goes toward crime, as an ordered ladder.
+     The dataset's ICL code is defined by naming crimes or criminal proceedings, so it
+     is the same variable as the right panel's top segment; it is therefore drawn once,
+     on the right, and the left panel carries only IHRL, IHL and "neither". */
+  const M_BANDS = [["2006–10", 2006, 2010], ["2011–15", 2011, 2015],
+                   ["2016–20", 2016, 2020], ["2021–" + String(YEAR_MAX).slice(2), 2021, 9999]];
+  const M_FW = [["IHRL", "international human rights law", "#2a78d6"],
+                ["IHL", "international humanitarian law", "#6fc096"],
+                ["neither", "names neither", "#c9c8c3"]];
+  // the ladder, lowest rung first; labels are the dataset's own codes
+  const M_REG = [
+    ["none", "no accountability language", "#c9c8c3"],
+    ["ambiguous accountability", "ambiguous", "#adc6e0"],
+    ["accountability or perpetrators wording only", "accountability or perpetrators only", "#86b6ef"],
+    ["names crimes or criminal proceedings", "names crimes or criminal proceedings", "#eb6834"],
+  ];
+  const M_DATA = (() => {
+    const found = TEXTS.filter(r => r.resolution_role === "founding");
+    const rows = M_BANDS.map(([lbl, a, b]) => {
+      const S = found.filter(r => (r.year || 0) >= a && (r.year || 0) <= b);
+      const fwN = (k) => k === "neither"
+        ? S.filter(r => !(r.legal_frameworks || []).length).length
+        : S.filter(r => (r.legal_frameworks || []).includes(k)).length;
+      const fwItems = (k) => (k === "neither"
+        ? S.filter(r => !(r.legal_frameworks || []).length)
+        : S.filter(r => (r.legal_frameworks || []).includes(k)))
+        .map(r => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body"));
+      const regN = (k) => S.filter(r => r.criminal_accountability === k).length;
+      const regItems = (k) => S.filter(r => r.criminal_accountability === k)
+        .map(r => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body"));
+      return {
+        label: lbl, n: S.length,
+        fw: M_FW.map(([k]) => ({ k, v: fwN(k), items: fwItems(k) })),
+        reg: M_REG.map(([k]) => ({ k, v: regN(k), items: regItems(k) })),
+      };
+    });
+    const crimes = (r) => r.reg[3].v;
+    return {
+      rows, n: found.length,
+      firstCrimeYear: Math.min(...found.filter(r => r.criminal_accountability === "names crimes or criminal proceedings")
+        .map(r => r.year || 9999)),
+      lastCrimes: crimes(rows[rows.length - 1]), lastN: rows[rows.length - 1].n,
+      silentEarly: rows[0].reg[0].v, earlyN: rows[0].n,
+    };
+  })();
+
+  function drawM(host) {
+    const padL = 72, padR = 40;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const T_SIZE = 26;
+    const titleLines = wrapTo(M_TITLE(), T_SIZE, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, {
+      x: padL - 4, y: 44 + i * 32, "font-size": T_SIZE, "font-weight": 650, fill: PAL.ink,
+    }));
+
+    const headY = 44 + titleLines.length * 32 + 30;
+    const plotT = headY + 76, plotB = 556;
+    const ih = plotB - plotT;
+    const gap = 64;
+    const pw = (iw - gap) / 2;                 // panel width
+    const xA = padL, xB = padL + pw + gap;
+
+    // panel headings
+    text(svg, "Which body of law it names", { x: xA, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
+    text(svg, "How far it goes toward crime", { x: xB, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
+
+    // panel legends
+    let lx = xA;
+    M_FW.forEach(([k, lbl, c]) => {
+      svg.appendChild(el("rect", { x: lx, y: headY + 16, width: 12, height: 12, rx: 2.5, fill: c }));
+      text(svg, k === "neither" ? "neither" : k, { x: lx + 17, y: headY + 26, "font-size": 14, fill: PAL.ink2 });
+      lx += 17 + textW(k === "neither" ? "neither" : k, 14) + 20;
+    });
+    let lxb = xB, lyb = headY + 16;
+    M_REG.slice().reverse().forEach(([k, lbl, c]) => {
+      if (lxb > xB + pw - 170) { lxb = xB; lyb += 20; }
+      svg.appendChild(el("rect", { x: lxb, y: lyb, width: 12, height: 12, rx: 2.5, fill: c }));
+      text(svg, lbl, { x: lxb + 17, y: lyb + 10, "font-size": 13, fill: PAL.ink2 });
+      lxb += 17 + textW(lbl, 13) + 18;
+    });
+
+    /* ---- left panel: grouped bars, share of founding mandates in the band ---- */
+    const maxShare = 100;
+    for (let t = 0; t <= 4; t++) {
+      const yy = plotT + ih - ih * t / 4;
+      svg.appendChild(el("line", { x1: xA, x2: xA + pw, y1: yy, y2: yy, stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, Math.round(maxShare * t / 4) + "%", { x: xA - 10, y: yy + 5, "text-anchor": "end",
+        "font-size": 13, fill: PAL.muted });
+    }
+    const slotA = pw / M_DATA.rows.length;
+    const bwA = Math.min(26, (slotA - 26) / 3);
+    M_DATA.rows.forEach((r, i) => {
+      const x0 = xA + slotA * i + (slotA - bwA * 3 - 10) / 2;
+      r.fw.forEach((f, j) => {
+        const sh = r.n ? 100 * f.v / r.n : 0;
+        const h = ih * sh / maxShare;
+        const x = x0 + j * (bwA + 5);
+        if (h > 0) {
+          svg.appendChild(el("rect", { x, y: plotB - h, width: bwA, height: Math.max(1, h), rx: 1.5,
+            fill: M_FW[j][2],
+            _tip: `${r.label} — ${M_FW[j][1]}\n${plural(f.v, "founding mandate")} of ${r.n} (${Math.round(sh)}%)\n` +
+              listTip(f.items) }));
+        }
+        if (f.v) {
+          text(svg, f.v, { x: x + bwA / 2, y: plotB - h - 6, "text-anchor": "middle", "font-size": 13,
+            "font-weight": 650, fill: PAL.ink });
+        }
+      });
+      text(svg, r.label, { x: xA + slotA * i + slotA / 2, y: plotB + 24, "text-anchor": "middle",
+        "font-size": 14, fill: PAL.ink2 });
+      text(svg, `n = ${r.n}`, { x: xA + slotA * i + slotA / 2, y: plotB + 42, "text-anchor": "middle",
+        "font-size": 12.5, fill: PAL.muted });
+    });
+    svg.appendChild(el("line", { x1: xA, x2: xA + pw, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+
+    /* ---- right panel: 100% stacked ladder per band ---- */
+    for (let t = 0; t <= 4; t++) {
+      const yy = plotT + ih - ih * t / 4;
+      svg.appendChild(el("line", { x1: xB, x2: xB + pw, y1: yy, y2: yy, stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, Math.round(100 * t / 4) + "%", { x: xB - 10, y: yy + 5, "text-anchor": "end",
+        "font-size": 13, fill: PAL.muted });
+    }
+    const slotB = pw / M_DATA.rows.length;
+    const bwB = Math.min(64, slotB - 40);
+    M_DATA.rows.forEach((r, i) => {
+      const x = xB + slotB * i + (slotB - bwB) / 2;
+      let yCur = plotB;
+      r.reg.forEach((g, j) => {
+        if (!g.v || !r.n) return;
+        const sh = 100 * g.v / r.n;
+        const h = ih * sh / 100;
+        svg.appendChild(el("rect", { x, y: yCur - h, width: bwB, height: Math.max(1, h - 1), rx: 1.5,
+          fill: M_REG[j][2],
+          _tip: `${r.label} — ${M_REG[j][1]}\n${plural(g.v, "founding mandate")} of ${r.n} (${Math.round(sh)}%)\n` +
+            listTip(g.items) }));
+        if (h >= 18) {
+          const lbl = g.v + " of " + r.n;
+          if (textW(lbl, 13) < bwB - 6) {
+            text(svg, lbl, { x: x + bwB / 2, y: yCur - h / 2 + 5, "text-anchor": "middle", "font-size": 13,
+              "font-weight": 600, fill: j === 3 ? "#ffffff" : "#0b0b0b" });
+          } else {
+            text(svg, g.v, { x: x + bwB / 2, y: yCur - h / 2 + 5, "text-anchor": "middle", "font-size": 13,
+              "font-weight": 600, fill: j === 3 ? "#ffffff" : "#0b0b0b" });
+          }
+        }
+        yCur -= h;
+      });
+      text(svg, r.label, { x: x + bwB / 2, y: plotB + 24, "text-anchor": "middle", "font-size": 14, fill: PAL.ink2 });
+      text(svg, `n = ${r.n}`, { x: x + bwB / 2, y: plotB + 42, "text-anchor": "middle",
+        "font-size": 12.5, fill: PAL.muted });
+    });
+    svg.appendChild(el("line", { x1: xB, x2: xB + pw, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
+
+    const NOTE = `Founding mandates only (${M_DATA.n} texts); each band is read against its own n. ` +
+      `Left: a text may name both bodies of law, so the bars are not a division of the band. ` +
+      `Right: an ordered ladder, each text on one rung only. The dataset codes international criminal law wherever a mandate ` +
+      `names crimes or criminal proceedings — the top rung — so that coding appears there, not on the left. ` +
+      `Naming a body of law is not applying it: this counts words in the mandate paragraph.`;
+    const noteLines = wrapTo(NOTE, 14, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
+    host.textContent = "";
+    host.appendChild(svg);
+    attachTips(svg);
+  }
+
+  function M_TITLE() {
+    return `The law each founding mandate names, and how far it goes toward crime`;
+  }
+
   /* ---------------- cards ---------------- */
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -1698,41 +1876,48 @@
     },
     {
       id: "7",
-      head: "Groups named in the text, and groups the body is instructed to examine",
+      head: "The law each founding mandate names, and how far it goes toward crime",
       selfContained: true,
-      file: "chart-07-groups-named-vs-instructed.png",
-      draw: drawH,
+      file: "chart-07-law-named-and-criminal-register.png",
+      draw: drawM,
     },
     {
       id: "8",
-      head: "How texts were adopted",
+      head: "Groups named in the text, and groups the body is instructed to examine",
       selfContained: true,
-      modes: [["counts", "Counts"], ["shares", "Shares"]],
-      file: (mode) => `chart-08-adoption-by-year-${mode}.png`,
-      draw: drawI,
+      file: "chart-08-groups-named-vs-instructed.png",
+      draw: drawH,
     },
     {
       id: "9",
-      head: "Average Yes, abstentions and No per recorded vote",
+      head: "How texts were adopted",
       selfContained: true,
-      file: "chart-09-votes-by-year.png",
-      draw: drawJ,
+      modes: [["counts", "Counts"], ["shares", "Shares"]],
+      file: (mode) => `chart-09-adoption-by-year-${mode}.png`,
+      draw: drawI,
     },
     {
       id: "10",
+      head: "Average Yes, abstentions and No per recorded vote",
+      selfContained: true,
+      file: "chart-10-votes-by-year.png",
+      draw: drawJ,
+    },
+    {
+      id: "11",
       head: "How each regional group voted, by year",
       selfContained: true,
       modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
       file: (mode) => mode === "noisrael"
-        ? "chart-10-regional-groups-by-year-without-israel-docket.png"
-        : "chart-10-regional-groups-by-year-all.png",
+        ? "chart-11-regional-groups-by-year-without-israel-docket.png"
+        : "chart-11-regional-groups-by-year-all.png",
       draw: drawK,
     },
     {
-      id: "11",
+      id: "12",
       head: "Members with the highest share of No",
       selfContained: true,
-      file: "chart-11-habitual-opponents.png",
+      file: "chart-12-habitual-opponents.png",
       draw: drawL,
     },
   ];
