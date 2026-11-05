@@ -22,9 +22,9 @@
   const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const unLink = (sym) => `https://docs.un.org/en/${sym}`;
   /* ---------- indices ---------- */
-  // Reference-only bodies (special procedures with investigative tasks, e.g. the Special
-  // Rapporteur on Afghanistan 2021–2026): kept on the site for context, but their
-  // resolutions, votes and sponsorships are excluded from every count, chart and filter.
+  // Reference-only bodies: special procedures with investigative tasks, kept on the site
+  // for context, but whose resolutions, votes and sponsorships are excluded from every
+  // count, chart and filter.
   const REF_SCOPE = "Special procedure with investigative tasks (reference only)";
   const REF_BODIES = new Set(D.bodies.filter(b => b.scope === REF_SCOPE).map(b => b.short_name));
   const isRefRes = (r) => (r.bodies || []).length > 0 && (r.bodies || []).every(bn => REF_BODIES.has(bn));
@@ -341,13 +341,20 @@
     const c = ca === "names crimes or criminal proceedings" ? "--seq-550" : "--seq-400";
     return `<span class="badge on" title="${esc(CA_TITLE[ca] || "Criminal-accountability wording")}" style="background:var(${c})">${esc(CA_SHORT[ca] || ca)}</span>`;
   }
+  // What the text says about gender and about children, and — for gender — whether it
+  // says it in the mandate paragraph, which is the part the body is told to carry out.
   function genderBadges(r) {
     const g = r.gender_language || {};
     const parts = [];
-    if ((g.mandate || []).length) parts.push(`<span class="badge on" style="background:var(--c5)" title="Gender language in the mandate: ${esc((g.mandate || []).join(", "))}">G·mandate</span>`);
-    else if (genderAll(r).length) parts.push(`<span class="badge" title="Gender language outside the mandate">G</span>`);
-    if ((r.children_language || []).length) parts.push(`<span class="badge" title="Children language: ${esc((r.children_language || []).join(", "))}">C</span>`);
-    return parts.join(" ");
+    if ((g.mandate || []).length) {
+      parts.push(`<span class="badge on" style="background:var(--c5)" title="Gender language in the mandate paragraph: ${esc((g.mandate || []).join(", "))}">gender · in mandate</span>`);
+    } else if (genderAll(r).length) {
+      parts.push(`<span class="badge" title="Gender language, but not in the mandate paragraph: ${esc(genderAll(r).join(", "))}">gender · elsewhere</span>`);
+    }
+    if ((r.children_language || []).length) {
+      parts.push(`<span class="badge" title="Children language: ${esc((r.children_language || []).join(", "))}">children</span>`);
+    }
+    return parts.length ? parts.join(" ") : `<span style="color:var(--muted)">—</span>`;
   }
   const resLink = (r, label) =>
     `<a class="reslink sym" data-sym="${esc(r.symbol)}">${esc(label || r.symbol)}</a>`;
@@ -369,11 +376,10 @@
         <div class="tile clickable" id="tile-mechs" title="Open the Mechanisms tab"><div class="t-label">Mechanisms concerned</div><div class="t-value">${bodiesSet.size}</div><div class="t-sub">see the Mechanisms tab</div></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h2>Resolutions</h2><span class="count">${R.length}</span>
-          ${refFiltered().length ? `<span class="count" title="Resolutions on the Special Rapporteur on Afghanistan, shown for reference only; they are not counted in any tile, chart or percentage">+ ${refFiltered().length} shown for reference, not counted</span>` : ""}
+        <div class="panel-head"><h2>Resolutions</h2>
           <span class="spacer"></span><details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-res">Download CSV</button></div></details></div>
         <div class="tblwrap tall" id="res-table"></div>
-        <div class="panel-note">Click a row for details, the vote breakdown and links to the UN documents.${refFiltered().length ? ` Rows tagged <span class="badge">reference only</span> are the texts on the Special Rapporteur on Afghanistan: listed for context, excluded from every count above.` : ""}</div>
+        <div class="panel-note">Click a row for details, the vote breakdown and links to the UN documents.${refFiltered().length ? ` Rows tagged <span class="badge">reference only</span> are listed for context and excluded from every count above.` : ""}</div>
       </div>`;
 
     $("#tile-mechs").addEventListener("click", () => setTab("mechs"));
@@ -405,18 +411,17 @@
     const cols = [
       ["symbol", "Symbol"], ["date_adopted", "Date"], ["title", "Title"],
       ["resolution_role", "Role"],
-      ["adoption_mode", "Adoption"], ["criminal_accountability", "Accountability wording"], [null, "Lang."],
+      ["adoption_mode", "Adoption"], [null, "Gender · children"],
     ];
     const rows = sortRows(R.concat(REFR || []));
     $("#res-table").innerHTML = `<table class="data"><thead><tr>${cols.map(([k, l]) =>
       `<th ${k ? `data-sort="${k}"` : 'class="no-sort"'}>${l}${k === sortKey ? ` <span class="dir">${sortDir > 0 ? "↑" : "↓"}</span>` : ""}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(r => `<tr data-sym="${esc(r.symbol)}"${r.reference_only ? ' class="ref-row" style="color:var(--muted)"' : ""}>
-        <td>${resLink(r)}${r.reference_only ? ` <span class="badge" title="Shown for reference only (Special Rapporteur on Afghanistan); not counted in any figure">reference only</span>` : ""}</td>
+        <td>${resLink(r)}${r.reference_only ? ` <span class="badge" title="Shown for reference only; not counted in any figure">reference only</span>` : ""}</td>
         <td class="num" style="white-space:nowrap">${fmtDate(r.date_adopted)}</td>
         <td>${esc(r.title)}<div style="font-size:12px;color:var(--muted)">${esc((r.bodies || []).join(" · "))}</div></td>
         <td>${roleBadge(r)}</td>
         <td style="white-space:nowrap">${tallyPills(r)}</td>
-        <td>${caBadge(r)}</td>
         <td>${genderBadges(r)}</td>
       </tr>`).join("")}</tbody></table>`;
     $("#res-table thead").addEventListener("click", (e) => {
@@ -1330,8 +1335,8 @@
       </div>
       <div class="modal-body">
         ${r.reference_only ? `<div class="panel-note" style="margin:0 0 10px;border:1px solid var(--grid);border-radius:6px;padding:8px 10px">
-          <b>Reference only.</b> This resolution concerns the Special Rapporteur on Afghanistan, a special procedure shown
-          on this site for context; it is not counted in any statistic, chart or filter.</div>` : ""}
+          <b>Reference only.</b> This resolution concerns a special procedure, shown on this site for context;
+          it is not counted in any statistic, chart or filter.</div>` : ""}
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${r.adoption_mode === "Recorded vote"
             ? `${tallyPills(r)} <span style="color:var(--muted);font-size:12.5px">yes–no–abstain</span>`

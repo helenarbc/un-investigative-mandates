@@ -704,3 +704,8 @@ table.criteria td + td { color: var(--ink-2); border-left: 1px solid var(--grid)
   display: inline-flex; align-items: center; justify-content: center;
 }
 .f-more-n[hidden] { display: none; }
+
+
+/* the gender/children badges carry words now, so they need room to sit side by side */
+#res-table td .badge { white-space: nowrap; }
+#res-table td:last-child { white-space: normal; line-height: 1.9; }
