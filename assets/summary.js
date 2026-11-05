@@ -2968,5 +2968,8 @@
     window.addEventListener("hashchange", () => { if (location.hash === "#/overview" || location.hash === "#/summary") open(); });
   }
 
-  window.HRCSummary = { activate, data: { A: A_DATA, B: B_DATA, C: C_DATA, texts: TEXTS.length, bodies: BODIES.length } };
+  // CARDS is exposed so the Presentation tab can render the same cards full screen,
+  // calling the same draw functions - so the charts there keep their tooltips.
+  window.HRCSummary = { activate, cards: () => CARDS, palette: () => PAL,
+    data: { A: A_DATA, B: B_DATA, C: C_DATA, texts: TEXTS.length, bodies: BODIES.length } };
 })();

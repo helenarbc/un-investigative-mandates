@@ -1596,6 +1596,7 @@
     // the excluded list lives at the foot of Mechanisms, so it renders with it
     if (tab === "mechs") { renderMechs(); renderOther(); }
     if (tab === "overview") { renderOverviewTiles(); if (window.HRCSummary) window.HRCSummary.activate(); }
+    if (tab === "present" && window.HRCPresent) window.HRCPresent.activate();
   }
   function setSub(sub) {
     currentSub = sub;
@@ -1854,6 +1855,8 @@
     } else if (h.startsWith("#/reports/")) {
       // deep link into a document/paragraph: keep the hash for reports.js
       setTab("reports", false);
+    } else if (h === "#/present") {
+      setTab("present");
     } else if (h === "#/about") {
       setTab("about");
     } else if (h === "#/other") {

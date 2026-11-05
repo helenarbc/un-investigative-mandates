@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UN Investigative Mandates — votes, mandates and reports</title>
 <meta name="description" content="Explorer of UN country-specific investigative mandates 2006–2026: resolutions, recorded votes, sponsorships, mandate language, and a paragraph-level search of the mechanisms' reports.">
-<link rel="stylesheet" href="assets/app.css?v=61">
+<link rel="stylesheet" href="assets/app.css?v=63">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%232a78d6'/%3E%3Crect x='3' y='8' width='2' height='5' fill='white'/%3E%3Crect x='7' y='5' width='2' height='8' fill='white'/%3E%3Crect x='11' y='3' width='2' height='10' fill='white'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -39,6 +39,7 @@
 
 <nav class="tabbar" role="tablist" aria-label="Main sections">
   <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+  <button class="tab" role="tab" data-tab="present" aria-selected="false">Presentation</button>
   <button class="tab" role="tab" data-tab="mechs" aria-selected="false">Mechanisms</button>
   <button class="tab" role="tab" data-tab="res" aria-selected="false">Resolutions</button>
   <button class="tab" role="tab" data-tab="votes" aria-selected="false">Votes</button>
@@ -70,6 +71,11 @@
   </section>
 
   <!-- ============ TAB: MECHANISMS ============ -->
+  <!-- ============ PRESENTATION ============ -->
+  <section class="view" id="view-present">
+    <div id="present-content"><!-- rendered by present.js --></div>
+  </section>
+
   <section class="view" id="view-mechs">
     <div id="mechs-content"></div>
     <!-- Excluded mechanisms used to be a tab of its own. It is a disclosure at the foot
@@ -107,14 +113,15 @@
   <div class="modal" id="modal"></div>
 </div>
 
-<script src="data/core.js?v=61"></script>
-<script src="data/paragraphs/manifest.js?v=61"></script>
-<script src="assets/synonyms.js?v=61"></script>
-<script src="assets/charts.js?v=61"></script>
-<script src="assets/qr.js?v=61"></script>
-<script src="assets/summary.js?v=61"></script>
-<script src="assets/app.js?v=61"></script>
-<script src="assets/reports.js?v=61"></script>
-<script src="assets/tour.js?v=61"></script>
+<script src="data/core.js?v=63"></script>
+<script src="data/paragraphs/manifest.js?v=63"></script>
+<script src="assets/synonyms.js?v=63"></script>
+<script src="assets/charts.js?v=63"></script>
+<script src="assets/qr.js?v=63"></script>
+<script src="assets/summary.js?v=63"></script>
+<script src="assets/present.js?v=63"></script>
+<script src="assets/app.js?v=63"></script>
+<script src="assets/reports.js?v=63"></script>
+<script src="assets/tour.js?v=63"></script>
 </body>
 </html>

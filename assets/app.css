@@ -509,6 +509,58 @@ details.menu > .menu-list {
 .sg-yes { color: var(--yes); }
 .sg-no  { color: var(--no); }
 
+
+/* ---------- Presentation tab ----------
+   One card to a slide, sized for a projector. The charts are the live SVGs
+   the Overview draws, so they keep their tooltips. */
+.pr-deck { display: flex; flex-direction: column; gap: 12px; }
+.pr-stage {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 420px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; outline: none;
+}
+.pr-stage:focus-visible { box-shadow: 0 0 0 3px var(--accent); }
+.pr-stage:fullscreen { aspect-ratio: auto; height: 100vh; border: 0; border-radius: 0; }
+.pr-slide { position: absolute; inset: 0; display: none; padding: 3.2% 4%; }
+.pr-slide.is-on { display: block; }
+.pr-inner { height: 100%; display: flex; flex-direction: column; gap: 14px; }
+.pr-title {
+  font-size: clamp(20px, 2.1vw, 34px); line-height: 1.2; font-weight: 650;
+  color: var(--ink); margin: 0;
+}
+.pr-legend { font-size: clamp(11px, 0.95vw, 16px); margin: 0; }
+.pr-legend .sw { width: clamp(10px, 0.9vw, 14px); height: clamp(10px, 0.9vw, 14px); }
+.pr-chart-host { flex: 1; min-height: 0; display: flex; align-items: center; }
+.pr-chart-host svg { width: 100%; height: auto; max-height: 100%; }
+.pr-note {
+  font-size: clamp(11px, 0.92vw, 15px); line-height: 1.5; color: var(--ink-2);
+  margin: 0; max-width: 115ch;
+}
+.pr-fail { font-size: 16px; color: var(--ink-2); }
+.pr-num {
+  position: absolute; right: 2.4%; bottom: 2.2%; margin: 0;
+  font-size: clamp(10px, 0.8vw, 13px); color: var(--muted);
+}
+/* a prose card on a slide: the same markup as the Overview, scaled up */
+.pr-prose .pr-inner { justify-content: center; }
+.pr-prose .sg-prose-in { padding: 0; max-width: none; }
+.pr-prose .sg-eyebrow { font-size: clamp(11px, 0.95vw, 15px); margin-bottom: 1.2%; }
+.pr-prose .sg-prose-h { font-size: clamp(22px, 2.5vw, 40px); margin-bottom: 1.6%; }
+.pr-prose .sg-prose-lead { font-size: clamp(13px, 1.25vw, 21px); margin-bottom: 1.4%; }
+.pr-prose .sg-crit li, .pr-prose .sg-v-a { font-size: clamp(12px, 1.05vw, 18px); }
+.pr-prose .sg-crit li { margin-bottom: 1%; padding-left: 2.6%; }
+.pr-prose .sg-crit li::before { width: 1.7vw; height: 1.7vw; min-width: 20px; min-height: 20px; font-size: clamp(10px, 0.85vw, 14px); }
+.pr-prose .sg-hyp li { font-size: clamp(14px, 1.45vw, 25px); padding: 1.1% 0; }
+.pr-prose .sg-hyp-n { min-width: 1.7vw; height: 1.7vw; font-size: clamp(10px, 0.85vw, 14px); }
+.pr-prose .sg-v-h { font-size: clamp(13px, 1.2vw, 20px); }
+.pr-prose .sg-prose-note, .pr-prose .sg-prose-figs { font-size: clamp(11px, 0.95vw, 16px); }
+.pr-bar { display: flex; align-items: center; gap: 10px; }
+.pr-bar .spacer { flex: 1; }
+.pr-pos { font-size: 13px; color: var(--ink-2); min-width: 64px; text-align: center; }
+.pr-hint { font-size: 12.5px; color: var(--muted); }
+.pr-prev[disabled], .pr-next[disabled] { opacity: 0.4; cursor: default; }
+@media (max-width: 860px) { .pr-hint { display: none; } }
+
 details.more { display: inline; }
 details.more > summary { display: inline; cursor: pointer; color: var(--accent-ink); list-style: none; }
 details.more > summary::-webkit-details-marker { display: none; }
