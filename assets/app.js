@@ -1600,12 +1600,12 @@
         that only extend the mandate "as set out in" an earlier text. The "ICL" legal-framework tag on a
         resolution follows the same rule. No mandate paragraph in the dataset contains the phrase
         "international criminal law".</li>
-        <li><b>Legal frameworks named</b> (chart 7, left panel) is coded literally from the mandate
+        <li><b>Legal frameworks named</b> (chart 13, left panel) is coded literally from the mandate
         paragraphs: <i>IHRL</i> where the text names international human rights law or human rights law,
         <i>IHL</i> where it names international humanitarian law. A text may name both, so the bars are
         not a division of the band; a text naming neither is counted in the grey bar. Naming a body of
         law is not the same as applying it — this records the words in the instruction, not the law the
-        body went on to use. Chart 7 reads founding mandates only (46 texts), in five-year bands, each
+        body went on to use. Chart 13 reads founding mandates only (46 texts), in five-year bands, each
         band against its own n.</li>
         <li><b>4 November 2026:</b> S-23/1 (Boko Haram, 2015) excluded from the corpus. It requests
         an OHCHR report compiled from information supplied by the affected States, gives no

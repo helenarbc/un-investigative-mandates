@@ -2,24 +2,34 @@
    Presentation-ready charts, drawn live from window.HRC_DATA (never pasted images),
    each with a Download PNG button (2x, white background).
 
-   CHARTS ON THIS TAB  (scroll order = the order of the AHRI script)
-      1. Resolutions per year, by role          — stacked columns, 2006-2026
-      2. Texts and bodies per situation         — horizontal bars + bodies column
-     2A. Texts and bodies by regional group    — the same two columns, summarised
-     4A. How long each body actually ran       — one bar per body, 2006-2026
-      3. Bodies running at the same time        — columns per calendar year
-      4. The term each mandate sets             — stacked columns, counts or shares
-      5. Task verbs per founding mandate        — dot chart, read as two bands
-      6. Task verbs: when each one first appears
-      7. The law named, and the criminal register — two panels, five-year bands
-      8. Groups named vs groups instructed      — paired horizontal bars
-      9. How texts were adopted                 — stacked columns, counts or shares
-     10. Average Yes / abstentions / No per voted text
-     11. How each regional group voted, by year
-     12. Members with the highest share of No
+   SCROLL ORDER = THE ORDER OF THE AHRI SCRIPT (v7), which tests three propositions
+   in turn. Each proposition draws on more than one kind of evidence, so the charts
+   are grouped by argument rather than by variable. Renumbered 1-14 on 5 November 2026;
+   the old numbering (1, 2, 2A, 3, 4, 4A, 5-12) is recorded against each entry below.
+
+   I.  "Mechanisms are on the rise, and support is rising with them."
+       1. Resolutions per year, by role            — stacked columns, 2006-2026   (was 1)
+       2. Bodies running at the same time          — columns per calendar year    (was 3)
+       3. Task verbs per founding mandate          — dot chart, read as two bands (was 5)
+       4. How texts were adopted                   — stacked columns, counts/shares (was 9)
+       5. Average Yes / abstentions / No per voted text                            (was 10)
+       6. How each regional group voted, by year                                   (was 11)
+
+   II. "The decision to create a mechanism is highly politicised."
+       7. Texts and bodies per situation           — horizontal bars + bodies col (was 2)
+       8. Texts and bodies by regional group       — the same two columns, summarised (was 2A)
+       9. How long each body actually ran          — one bar per body, 2006-2026  (was 4A)
+      10. Members with the highest share of No                                     (was 12)
+
+   III. "Mandates are carefully crafted, and the craft determines what a body can do."
+      11. The term each mandate sets               — stacked columns, counts/shares (was 4)
+      12. Task verbs: when each one first appears                                  (was 6)
+      13. The law named, and the criminal register — two panels, five-year bands   (was 7)
+      14. Groups named vs groups instructed        — paired horizontal bars        (was 8)
 
    To add one: append an entry to CARDS at the bottom ({id, build(host)}) and a
-   draw function above it. Nothing else needs touching.
+   draw function above it. Nothing else needs touching — but note that the id is the
+   visible number, and the exports/summary PNG filenames carry it too.
 
    This file registers itself: it watches #view-summary for the .active class that
    app.js toggles, so no change to app.js's router is needed.
@@ -291,10 +301,10 @@
     };
   })();
 
-  // Chart 2A: the same two columns as chart 2, summarised by the regional group of
+  // Chart 8: the same two columns as chart 7, summarised by the regional group of
   // the situation. Each situation is counted ONCE here, so the columns reconcile with
   // the corpus totals; OPT / Israel is placed in Asia-Pacific on geography, while
-  // chart 2 shows it in both groups because Israel sits in WEOG in Geneva.
+  // chart 7 shows it in both groups because Israel sits in WEOG in Geneva.
   // The Western European and others group is carried here deliberately, and it is
   // always zero: on geography no situation in the corpus sits in that group. Leaving
   // the row out would hide that, so it is drawn as an explicit zero.
@@ -441,7 +451,7 @@
     ["tasking", "tasking — adds work without widening what is investigated"],
   ];
 
-  /* ---------------- chart 2 ---------------- */
+  /* ---------------- chart 7 (was 2) ---------------- */
   function drawB(host) {
     const W = Math.max(host.clientWidth || 960, 300);
     const narrow = W < 560;
@@ -503,8 +513,8 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart 2A ---------------- */
-  // Same two columns as chart 2, one row per regional group. Texts as a bar, bodies
+  /* ---------------- chart 8 (was 2A) ---------------- */
+  // Same two columns as chart 7, one row per regional group. Texts as a bar, bodies
   // as dots, situations as a figure, so the three reconcile with the corpus totals.
   function drawBR(host) {
     const W = Math.max(host.clientWidth || 960, 300);
@@ -580,8 +590,8 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart 4A ---------------- */
-  // How long each body actually ran, against chart 4's question of how long the
+  /* ---------------- chart 9 (was 4A) ---------------- */
+  // How long each body actually ran, against chart 11's question of how long the
   // text said it could. For a body still running the bar stops at the build date,
   // not at End Date: for an active fixed-term body End Date is the expiry of its
   // CURRENT period, which is in the future and would overstate the duration.
@@ -694,7 +704,7 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart 3 ---------------- */
+  /* ---------------- chart 2 (was 3) ---------------- */
   function drawC(host) {
     const W = Math.max(host.clientWidth || 960, 300);
     const padL = 32, padR = 10, padT = 22, padB = 26;
@@ -737,7 +747,7 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart 4: the term each mandate sets ---------------- */
+  /* ---------------- chart 11 (was 4): the term each mandate sets ---------------- */
   // Every text that creates a body or extends its mandate in time, whatever its coded
   // role: foundings, renewals, and expansions that also extend (43/28, Syria 2020).
   // Pure taskings set no term and carry no mandate_term, so they drop out here.
@@ -1408,7 +1418,7 @@
     attachTips(svg);
   }
 
-  /* ---------------- chart 5: the floor rose (alternative reading of E) ---------------- */
+  /* ---------------- chart 3 (was 5): the floor rose (alternative reading of E) ---------------- */
   // Same texts as chart E, read a different way. No mean line: with one to five
   // founding texts a year a mean invents a trajectory. The claim here is about the
   // range the Council works inside, which is what the two bands show.
@@ -1565,7 +1575,7 @@
     return `Tasks assigned in each founding mandate, with the range before ${E2_EARLY_END + 1} and since ${E2_LATE_START}`;
   }
 
-  /* ---------------- chart 7: groups named vs groups instructed ---------------- */
+  /* ---------------- chart 14 (was 8): groups named vs groups instructed ---------------- */
   // "Named anywhere" = differentiated_analysis_whole_text; "in the instruction to the
   // body" = differentiated_analysis_mandate, i.e. the paragraphs that create, extend
   // or task the body. "age" is counted but not charted.
@@ -1686,7 +1696,7 @@
     return `Each group, as a count of the ${H_DATA.total} texts in the corpus.`;
   }
 
-  /* ---------------- chart 8: how texts were adopted ---------------- */
+  /* ---------------- chart 4 (was 9): how texts were adopted ---------------- */
   const I_NOVOTE = "#c9c8c3", I_VOTE = "#2a78d6";
   const I_DATA = (() => {
     const per = new Map(YEARS.map(y => {
@@ -1786,7 +1796,7 @@
     return `Mode of adoption of mandating texts, by year`;
   }
 
-  /* ---------------- chart 9: how States voted ---------------- */
+  /* ---------------- chart 5 (was 10): how States voted ---------------- */
   const J_YES = "#2a78d6", J_ABS = "#c9c8c3", J_NO = "#eb6834";
   const J_SEATS = 47, J_MAJORITY = 24;
   const J_DATA = (() => {
@@ -1918,7 +1928,7 @@
     }
   }
 
-  /* ---------------- chart 12: the law named, and the criminal register ----------------
+  /* ---------------- chart 13 (was 7): the law named, and the criminal register ----------------
      Two panels on one slide, both over founding mandates only, in five-year bands
      whose last band opens in 2021 — the breakpoint charts 3, 5 and 6 already use.
      Left:  which body of law the mandate paragraph names.
@@ -2121,7 +2131,50 @@
     },
     {
       id: "2",
-      file: "chart-02-texts-and-bodies-per-situation.png",
+      file: "chart-02-bodies-running-per-year.png",
+      title: () => `Mandates in operation in each year`,
+      legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
+        `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
+      note: () => `A body is counted in every year its mandate is in force; the ` +
+        `${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}. ` +
+        `S-1/1 (2006), never implemented, is not counted.`,
+      draw: drawC,
+    },
+    {
+      id: "3",
+      head: "Scope of mandate: tasks assigned in founding resolutions",
+      selfContained: true,
+      file: "chart-03-task-verbs-per-founding-text.png",
+      draw: drawE2,
+    },
+    {
+      id: "4",
+      head: "Mode of adoption of mandating texts",
+      selfContained: true,
+      modes: [["counts", "Counts"], ["shares", "Shares"]],
+      file: (mode) => `chart-04-adoption-by-year-${mode}.png`,
+      draw: drawI,
+    },
+    {
+      id: "5",
+      head: "Average distribution of votes per recorded vote",
+      selfContained: true,
+      file: "chart-05-votes-by-year.png",
+      draw: drawJ,
+    },
+    {
+      id: "6",
+      head: "Voting record by regional group and year",
+      selfContained: true,
+      modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
+      file: (mode) => mode === "noisrael"
+        ? "chart-06-regional-groups-by-year-without-israel-docket.png"
+        : "chart-06-regional-groups-by-year-all.png",
+      draw: drawK,
+    },
+    {
+      id: "7",
+      file: "chart-07-texts-and-bodies-per-situation.png",
       title: () => `Mandating texts and bodies, by situation`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         B_DATA.regionCounts.map(({ region, n }) =>
@@ -2132,8 +2185,8 @@
       draw: drawB,
     },
     {
-      id: "2A",
-      file: "chart-02a-texts-and-bodies-by-region.png",
+      id: "8",
+      file: "chart-08-texts-and-bodies-by-region.png",
       title: () => `Mandating texts and bodies, by regional group of the situation`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         BR_DATA.rows.map(r =>
@@ -2150,29 +2203,8 @@
       draw: drawBR,
     },
     {
-      id: "3",
-      file: "chart-03-bodies-running-per-year.png",
-      title: () => `Mandates in operation in each year`,
-      legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
-        `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
-      note: () => `A body is counted in every year its mandate is in force; the ` +
-        `${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}. ` +
-        `S-1/1 (2006), never implemented, is not counted.`,
-      draw: drawC,
-    },
-    {
-      id: "4",
-      head: "Duration of mandate as set by the establishing or extending resolution",
-      // the SVG carries its own title, legend, note and source so the PNG is
-      // a finished slide; the card head only holds the controls
-      selfContained: true,
-      modes: [["counts", "Counts"], ["shares", "Shares"]],
-      file: (mode) => `chart-04-mandate-terms-${mode}.png`,
-      draw: drawD,
-    },
-    {
-      id: "4A",
-      file: "chart-04a-how-long-each-body-ran.png",
+      id: "9",
+      file: "chart-09-how-long-each-body-ran.png",
       title: () => `Duration of mandate in practice`,
       legend: () => `<span class="lg"><span class="sw" style="background:${DL_RUNNING}"></span>Still running (${DL_DATA.live})</span>` +
         `<span class="lg"><span class="sw" style="background:${DL_ENDED}"></span>Ended (${DL_DATA.total - DL_DATA.live})</span>`,
@@ -2190,64 +2222,42 @@
       draw: drawDL,
     },
     {
-      id: "5",
-      head: "Scope of mandate: tasks assigned in founding resolutions",
-      selfContained: true,
-      file: "chart-05-task-verbs-per-founding-text.png",
-      draw: drawE2,
-    },
-    {
-      id: "6",
-      head: "First appearance of each mandated task in a founding resolution",
-      selfContained: true,
-      file: "chart-06-task-verbs-first-use.png",
-      draw: drawV,
-    },
-    {
-      id: "7",
-      head: "Applicable law and criminal-accountability language in founding mandates",
-      selfContained: true,
-      file: "chart-07-law-named-and-criminal-register.png",
-      draw: drawM,
-    },
-    {
-      id: "8",
-      head: "Groups named in the resolution and groups included in the mandate",
-      selfContained: true,
-      file: "chart-08-groups-named-vs-instructed.png",
-      draw: drawH,
-    },
-    {
-      id: "9",
-      head: "Mode of adoption of mandating texts",
-      selfContained: true,
-      modes: [["counts", "Counts"], ["shares", "Shares"]],
-      file: (mode) => `chart-09-adoption-by-year-${mode}.png`,
-      draw: drawI,
-    },
-    {
       id: "10",
-      head: "Average distribution of votes per recorded vote",
+      head: "Members with the highest proportion of votes against",
       selfContained: true,
-      file: "chart-10-votes-by-year.png",
-      draw: drawJ,
+      file: "chart-10-habitual-opponents.png",
+      draw: drawL,
     },
     {
       id: "11",
-      head: "Voting record by regional group and year",
+      head: "Duration of mandate as set by the establishing or extending resolution",
+      // the SVG carries its own title, legend, note and source so the PNG is
+      // a finished slide; the card head only holds the controls
       selfContained: true,
-      modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
-      file: (mode) => mode === "noisrael"
-        ? "chart-11-regional-groups-by-year-without-israel-docket.png"
-        : "chart-11-regional-groups-by-year-all.png",
-      draw: drawK,
+      modes: [["counts", "Counts"], ["shares", "Shares"]],
+      file: (mode) => `chart-11-mandate-terms-${mode}.png`,
+      draw: drawD,
     },
     {
       id: "12",
-      head: "Members with the highest proportion of votes against",
+      head: "First appearance of each mandated task in a founding resolution",
       selfContained: true,
-      file: "chart-12-habitual-opponents.png",
-      draw: drawL,
+      file: "chart-12-task-verbs-first-use.png",
+      draw: drawV,
+    },
+    {
+      id: "13",
+      head: "Applicable law and criminal-accountability language in founding mandates",
+      selfContained: true,
+      file: "chart-13-law-named-and-criminal-register.png",
+      draw: drawM,
+    },
+    {
+      id: "14",
+      head: "Groups named in the resolution and groups included in the mandate",
+      selfContained: true,
+      file: "chart-14-groups-named-vs-instructed.png",
+      draw: drawH,
     },
   ];
 
