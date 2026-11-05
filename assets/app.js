@@ -1007,10 +1007,16 @@
       if (!y0) return "—";
       return y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`;
     };
+    // A fixed-term body still in force has an End Date in the future: that is the expiry
+    // of its CURRENT period, not the day it stopped. Measuring to it and calling the
+    // result "ended" reported running mandates as finished (COI Syria read as
+    // "15 years and 7 months (ended)"). Measure to today and say so, as chart 9 does.
+    const isRunning = (b) => !b.end_date || new Date(b.end_date) > new Date();
     const durationOf = (b) => {
       if (/not implemented/i.test(b.short_name || "")) return "never implemented";
       if (!b.start_date) return "—";
-      const a = new Date(b.start_date), z = b.end_date ? new Date(b.end_date) : new Date();
+      const running = isRunning(b);
+      const a = new Date(b.start_date), z = running ? new Date() : new Date(b.end_date);
       if (isNaN(a) || isNaN(z)) return "—";
       let months = (z.getFullYear() - a.getFullYear()) * 12 + (z.getMonth() - a.getMonth());
       if (z.getDate() < a.getDate()) months--;
@@ -1019,7 +1025,7 @@
       const parts = [];
       if (y) parts.push(`${y} year${y > 1 ? "s" : ""}`);
       if (m || !y) parts.push(`${m} month${m === 1 ? "" : "s"}`);
-      return `${parts.join(" and ")} (${b.end_date ? "ended" : "ongoing"})`;
+      return `${parts.join(" and ")} (${running ? (b.end_date ? "in force" : "ongoing") : "ended"})`;
     };
     const nHere = [...grouped.values()].reduce((a, g) => a + g.rows.length, 0);
     const intro = isOther ? `
@@ -1089,12 +1095,12 @@
       <div class="panel">
         <div class="panel-head"><h2>${esc(g.label)}</h2><span class="count">${g.rows.length}</span></div>
         <div class="tblwrap"><table class="data"><thead><tr>
-          <th class="no-sort">Mechanism</th><th class="no-sort">Situation</th><th class="no-sort">Active</th>
+          <th class="no-sort">Mechanism</th><th class="no-sort">Situation</th><th class="no-sort" title="First and last year of the mandate as resolved; an ongoing mandate has no last year">Mandate years</th>
           <th class="no-sort" title="From the start of the mandate to its end, or to today if it is still running">Duration</th>
           ${isOther ? "" : `<th class="no-sort" title="The stretch of time the founding resolution tells the body to examine">Period investigated</th>`}
           <th class="no-sort">Explore</th></tr></thead>
         <tbody>${g.rows.sort((a, b) =>
-          ((a.end_date ? 1 : 0) - (b.end_date ? 1 : 0)) ||
+          ((isRunning(a) ? 0 : 1) - (isRunning(b) ? 0 : 1)) ||
           (b.start_date || "").localeCompare(a.start_date || "")).map(b => {
           const nres = (b.resolutions || []).length;
           const ndocs = docCountByBody[b.short_name] || 0;
@@ -1102,7 +1108,7 @@
           return `<tr>
             <td><a class="mech-open" data-body="${esc(b.short_name)}" style="cursor:pointer"><b>${esc(b.short_name)}</b></a>
               ${isRef ? `<span class="badge" style="margin-left:4px" title="Shown for reference; not counted in any statistic">reference only</span>` : ""}
-              ${!b.end_date && b.start_date ? `<span class="badge on" style="background:var(--c2);margin-left:4px">active</span>` : ""}
+              ${!isRef && b.start_date && (b.mandate_status === "active" || isRunning(b)) ? `<span class="badge on" style="background:var(--c2);margin-left:4px" title="${b.end_date ? "Fixed term, still running: the End Date is the expiry of the current period" : "No end date set — the Council's own word is ongoing"}">${b.end_date ? "in force" : "ongoing"}</span>` : ""}
               <div style="font-size:12px;color:var(--muted)">${esc(b.full_name || "")}</div></td>
             <td>${esc(countryName(b.country) || "—")}</td>
             <td style="white-space:nowrap">${yearsOf(b)}</td>
