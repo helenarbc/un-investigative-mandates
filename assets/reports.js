@@ -197,7 +197,7 @@
     }
     host.innerHTML = `
       <nav class="subnav" aria-label="Reports views">
-        <button data-rsub="ask" aria-selected="${sub === "ask"}">Ask the corpus</button>
+        <button data-rsub="ask" aria-selected="${sub === "ask"}">Search the reports</button>
         <button data-rsub="browse" aria-selected="${sub === "browse"}">Browse documents</button>
       </nav>
       <div id="reports-body"></div>`;
@@ -214,9 +214,14 @@
     return `${M.documents} documents · ${M.paragraphs.toLocaleString("en")} paragraphs`;
   }
   function filterRow(docsForOptions) {
-    const bodies = [...new Set([...docsForOptions.values()].flatMap(d => d.bodies || []))].sort();
-    const types = [...new Set([...docsForOptions.values()].map(d => d.type).filter(Boolean))].sort();
-    const years = [...new Set([...docsForOptions.values()].map(d => d.year).filter(Boolean))].sort();
+    // Fall back to the document index in core.js, which is present from the first paint;
+    // state.docs only fills once a search has pulled the shards down.
+    const src = (docsForOptions && docsForOptions.size)
+      ? [...docsForOptions.values()]
+      : (window.HRC_DATA.documents || []).filter(d => d.type !== "Press Release");
+    const bodies = [...new Set(src.flatMap(d => d.bodies || []))].sort();
+    const types = [...new Set(src.map(d => d.type).filter(Boolean))].sort();
+    const years = [...new Set(src.map(d => d.year).filter(Boolean))].sort();
     const opt = (v, l, sel) => `<option value="${esc(v)}"${String(sel) === String(v) ? " selected" : ""}>${esc(l)}</option>`;
     return `<div class="filter-row">
       <div class="f-item"><label>Mechanism</label><select id="rf-body">${opt("", "All")}${bodies.map(b => opt(b, b, state.fBody)).join("")}</select></div>
@@ -243,8 +248,9 @@
     body.innerHTML = `
       <div class="panel"><div class="panel-body">
         <div class="ask-help" style="margin:0 0 8px;font-size:13.5px;color:var(--ink-2)">
-          Type any words: you get the exact paragraphs of the mechanisms' reports that contain them, each with its
-          citation and UN source — verbatim, nothing is AI-generated.
+          Search the full text of the mechanisms' reports by keyword. You get back the paragraphs that contain
+          your words, quoted exactly as published, each with its citation and a link to the UN document. Nothing
+          here is written or summarised by a machine.
           <details class="more"><summary>How search works</summary>
             <div><b>What is searched:</b> ${M.documents} documents — the mechanisms' official reports, conference room
             papers (CRPs), annexes and terms of reference. Press releases, oral statements and hearing transcripts
@@ -273,7 +279,7 @@
     }));
     if (state.lastQuery && allLoaded()) doAsk(state.lastQuery);
     else if (!allLoaded()) {
-      $("#ask-status").textContent = `Corpus: ${corpusStats()}. Shards load on your first search and are then cached by the browser.`;
+      $("#ask-status").textContent = `Searching ${corpusStats()}. The text downloads on your first search and then stays in your browser.`;
     }
   }
 
@@ -448,7 +454,7 @@
     const shardDocCount = M.documents;
     body.innerHTML = `
       <div class="panel">
-        <div class="panel-head"><h2>${browseFocus ? esc(mechLabel(browseFocus)) + " — reports" : "Reports corpus"}</h2>
+        <div class="panel-head"><h2>${browseFocus ? esc(mechLabel(browseFocus)) + " — reports" : "All reports"}</h2>
           ${browseFocus
             ? `<span class="count">showing one mechanism</span>`
             : `<span class="count">${shardDocCount} of ${allDocs.length} documents have searchable text (${corpusStats()})</span>`}
@@ -458,8 +464,12 @@
               ${browseFocus ? `<option value="">All mechanisms</option>` : ""}
               ${allBodies.map(b => `<option value="${esc(b)}"${b === browseFocus ? " selected" : ""}>${esc(b)}</option>`).join("")}
             </select></div></div>
-        <div class="panel-note">Documents without searchable text are mostly image-only annexes and files awaiting OCR;
-        they are listed with their records but cannot be searched yet.</div>
+        <div class="panel-note">${allDocs.length - shardDocCount > 0
+          ? `${allDocs.length - shardDocCount} of these have no searchable text and are marked
+             <span class="unnumbered-flag">(no searchable text)</span> below: the build could not pull paragraphs
+             out of the file, so keyword search does not reach them. They are mostly unofficial annexes. Their
+             records and links to the UN document are here as usual.`
+          : `Every document here is searchable paragraph by paragraph.`}</div>
         <div class="panel-body">
           ${bodies.map(b => {
             const docs = byBody.get(b).slice().sort((x, y) => (y.date || "").localeCompare(x.date || ""));
