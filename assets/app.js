@@ -1643,8 +1643,12 @@
       <p class="prose">${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length}
       roll-calls. Each carries one position for every State on the roster: yes, no, abstain, absent, or not a
       member of the Council that year. ${(() => {
+        // votesOf returns the packed row as a string, one character per State
         let n = 0;
-        RES.forEach(r => { const v = votesOf(r.symbol); if (v) v.forEach(c => { if (c !== ".") n++; }); });
+        RES.forEach(r => {
+          const v = votesOf(r.symbol);
+          if (v) for (let i = 0; i < v.length; i++) if (v[i] !== ".") n++;
+        });
         return n.toLocaleString("en-GB");
       })()} positions in all.</p>
 
