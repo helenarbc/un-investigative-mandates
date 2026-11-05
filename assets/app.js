@@ -1388,6 +1388,7 @@
   });
 
   /* ---------- tabs, subnav, router ---------- */
+  let lastRoutedHash = null;
   let currentTab = "mechs", currentSub = "matrix";
   function setTab(tab, push) {
     currentTab = tab;
@@ -1395,6 +1396,9 @@
     $$(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + tab));
     if (push !== false) history.replaceState(null, "",
       tab === "res" ? "#/resolutions" : "#/" + tab + (tab === "votes" ? "/" + currentSub : ""));
+    // keep the router's guard in step: replaceState fires no hashchange, so without
+    // this the stored hash would go stale and a later Back to the same hash would be ignored
+    lastRoutedHash = location.hash;
     // the one filter bar serves both the Resolutions and the Votes tab
     if (tab === "res" || tab === "votes") {
       const slot = $(tab === "res" ? "#fb-slot-res" : "#fb-slot-votes");
@@ -1563,11 +1567,13 @@
   try { savedTheme = localStorage.getItem("hrc-theme"); } catch (e) { /* unavailable */ }
   if (savedTheme === "dark" || (!savedTheme && matchMedia("(prefers-color-scheme: dark)").matches)) applyTheme("dark");
 
-  /* ---------- boot ---------- */
-  function boot() {
-    renderFilters();
-    renderAbout();
-    const h = location.hash;
+  /* ---------- routing ---------- */
+  // Read the hash and show the matching tab. Used at boot and again on every
+  // hashchange, so an in-page #/tab link, an edited URL and the Back and Forward
+  // buttons all move the tab instead of silently leaving it where it was.
+  // setTab and friends write the hash with replaceState, which fires no
+  // hashchange, so this cannot loop; the guard is for repeated events.
+  function route(h) {
     let m;
     if ((m = /^#\/res\/(.+)$/.exec(h))) {
       setTab("res", false);
@@ -1594,9 +1600,25 @@
       setTab("about");
     } else if (h === "#/other") {
       setTab("other");
+    } else if (h === "#/summary") {
+      setTab("summary");
     } else {
       setTab("mechs");
     }
+  }
+
+  /* ---------- boot ---------- */
+  function boot() {
+    renderFilters();
+    renderAbout();
+    lastRoutedHash = location.hash;
+    route(location.hash);
+    window.addEventListener("hashchange", () => {
+      const h = location.hash;
+      if (h === lastRoutedHash) return;
+      lastRoutedHash = h;
+      route(h);
+    });
   }
   const yearsOf = (b) => {
     const y0 = (b.start_date || "").slice(0, 4), y1 = (b.end_date || "").slice(0, 4);
