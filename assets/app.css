@@ -539,3 +539,8 @@ details.more > div { margin-top: 6px; }
 .qr-card svg{display:block;margin:0 auto}
 .qr-url{display:block;margin:14px 0 2px;font-size:15px;font-weight:600;color:#1a4f9c;word-break:break-all}
 .qr-hint{margin:6px 0 0;font-size:13px;color:#555}
+
+
+/* the masthead website link sits in the action row and must match the buttons */
+a.icon-btn#site-link{text-decoration:none;display:inline-flex;align-items:center}
+a.icon-btn#site-link:hover{text-decoration:underline}

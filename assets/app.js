@@ -948,7 +948,7 @@
 
   /* ---------- view: mechanisms tab ---------- */
   // The Mechanisms tab holds only the bodies the Council mandated — the ones every
-  // figure on the site counts. Everything else lives on the Other mechanisms tab,
+  // figure on the site counts. Everything else lives on the Excluded mechanisms tab,
   // so nothing appears in the main list that the charts leave out.
   const SCOPE_GROUPS = [
     ["HRC investigative mandate", "Mandated by the Human Rights Council"],
@@ -1034,7 +1034,7 @@
         <details class="more"><summary>What is and is not included</summary>
           <div>Their resolutions and votes are what the Resolutions and Votes tabs show. Bodies mandated by the
           Secretary-General, the General Assembly or the Security Council, the Special Rapporteur on Afghanistan, and
-          texts excluded from the corpus are all on the <b>Other mechanisms</b> tab and are counted nowhere.
+          texts excluded from the corpus are all on the <b>Excluded mechanisms</b> tab and are counted nowhere.
           Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
           HRC mandating resolutions — renewals inherit the founding language.</div></details>
       </div></div>`;
@@ -1490,7 +1490,7 @@
       Special Rapporteur on Afghanistan, which the Council gave fact-finding support (2021) and a task
       to document and preserve information (2022–2026) until the Independent Investigative Mechanism for
       Afghanistan, created in October 2025, is operational.
-      The <b>Other mechanisms</b> tab lists, for context, ${OTHER_MANDATED_BODIES} investigative bodies mandated by the
+      The <b>Excluded mechanisms</b> tab lists, for context, ${OTHER_MANDATED_BODIES} investigative bodies mandated by the
       General Assembly, the Security Council or the Secretary-General (a selection, not a complete list), the
       Special Rapporteur on Afghanistan, and the texts excluded from the corpus. None of them is counted in any
       figure on this site; their reports are searchable in the Reports tab.</p>

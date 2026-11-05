@@ -34,7 +34,11 @@
 
   /* ---------------- palette ---------------- */
   // Fixed series colours (identical in light and dark mode).
-  const ROLE_COLOR = { founding: "#4a77d4", renewal: "#4faf7a", expansion: "#4d39a6", tasking: "#e0a21c" };
+  // founding stands apart in blue: it is the only role that brings a body into being.
+  // The three roles that act on a body that already exists share one hue, darkening
+  // up the stack, so the eye reads "new" against "already running" before it reads
+  // the three apart. All three take white labels.
+  const ROLE_COLOR = { founding: "#4a77d4", renewal: "#6fc096", expansion: "#2f8f63", tasking: "#17603f" };
   const REGION_COLOR = {
     "Africa": "#2a78d6",
     "Asia-Pacific (incl. Middle East)": "#eb6834",
@@ -64,23 +68,53 @@
       if (k === "_tip") { tip = attrs[k]; continue; }
       if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
     }
-    // "_tip" attaches a native SVG <title>: the browser shows it on hover, it needs
-    // no library and it survives into the downloaded SVG. Used on every data mark so
-    // the figures behind the chart can be read without opening the data tabs.
+    // "_tip" marks a data mark with the figures behind it. It is stored as an
+    // attribute rather than an SVG <title> because the native tooltip only appears
+    // after about a second, which reads as "nothing happens"; attachTips() below
+    // puts the text in the site's own tooltip the moment the pointer arrives.
     if (tip) {
-      const t = document.createElementNS(NS, "title");
-      t.textContent = tip;
-      n.appendChild(t);
-      n.setAttribute("cursor", "help");
+      n.setAttribute("data-tip", tip);
+      n.setAttribute("cursor", "pointer");
     }
     return n;
   }
   const plural = (n, one, many) => n + " " + (n === 1 ? one : (many || one + "s"));
+
+  // Show the site's tooltip for any mark carrying data-tip. One delegated set of
+  // listeners per chart, so redrawing a chart does not pile up handlers.
+  function attachTips(svg) {
+    if (!svg || svg.__tipsOn) return;
+    svg.__tipsOn = true;
+    const tipOf = (e) => {
+      const el2 = e.target && e.target.closest ? e.target.closest("[data-tip]") : null;
+      return el2 ? el2.getAttribute("data-tip") : null;
+    };
+    svg.addEventListener("pointerover", (e) => {
+      const txt = tipOf(e);
+      if (!txt || !window.HRCTooltip) return;
+      const lines = txt.split("\n");
+      window.HRCTooltip.show(e, lines[0], lines.slice(1).map(l => ({ label: l, value: "" })));
+    });
+    svg.addEventListener("pointerout", (e) => {
+      if (!window.HRCTooltip) return;
+      const to = e.relatedTarget;
+      if (to && to.closest && to.closest("[data-tip]")) return;
+      window.HRCTooltip.hide();
+    });
+    svg.addEventListener("pointerleave", () => { if (window.HRCTooltip) window.HRCTooltip.hide(); });
+  }
   function svgRoot(W, H) {
-    return el("svg", {
+    const svg = el("svg", {
       xmlns: NS, viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img",
       "font-family": FONT, style: "display:block;max-width:100%;height:auto",
     });
+    // Gridlines, bands and the labels drawn on top of the marks all sit above them
+    // and would swallow the pointer, so hovering the middle of a bar hit the number
+    // printed on it and no tooltip appeared. Only the marks themselves are hoverable.
+    const st = el("style", {});
+    st.textContent = "*{pointer-events:none}[data-tip]{pointer-events:auto}";
+    svg.appendChild(st);
+    return svg;
   }
   function text(parent, s, attrs) {
     const t = el("text", attrs);
@@ -293,6 +327,7 @@
     svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: padT + ih, y2: padT + ih, stroke: PAL.baseline, "stroke-width": 1 }));
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   const A_LEGEND = [
@@ -356,6 +391,7 @@
     });
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   /* ---------------- chart C ---------------- */
@@ -397,6 +433,7 @@
     svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: padT + ih, y2: padT + ih, stroke: PAL.baseline, "stroke-width": 1 }));
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   /* ---------------- chart D: the term each mandate sets ---------------- */
@@ -551,13 +588,12 @@
 
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   function D_TITLE() {
     const i12 = TERMS.indexOf("12 months");
-    return `Twelve months is the usual term (${D_DATA.totals[i12]} of ${D_DATA.total} texts); ` +
-      `two-year terms since ${D_DATA.first24}; ` +
-      `${lower(word(D_DATA.ongoing.length))} bodies created with no end date`;
+    return `The term set by each text that creates or extends a mandate, by year`;
   }
 
   /* ---------------- chart E: task verbs in each founding mandate ---------------- */
@@ -686,20 +722,20 @@
       }));
     });
 
-    const NOTE = `One dot per founding text, coded from its mandate paragraphs on a 15-verb taxonomy ` +
-      `(n = ${E_DATA.n}). The dash and line show the mean for each year; no founding text in ` +
-      `${E_DATA.emptyYears.join(" or ")}. With one to five founding texts a year, single texts move the yearly mean.`;
+    const NOTE = `One dot per founding text (n = ${E_DATA.n}), coded from its mandate paragraphs on a ` +
+      `15-verb taxonomy. The dash and line show each year's mean, which one text can move. ` +
+      `No founding text in ${E_DATA.emptyYears.join(" or ")}.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 626 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
 
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   function E_TITLE() {
-    return `Task verbs in each founding mandate: at most ${lower(word(E_DATA.firstMax))} in ${YEARS[0]}, ` +
-      `between ${lower(word(E_DATA.lateMin))} and ${lower(word(E_DATA.lateMax))} since 2022`;
+    return `Task verbs in each founding mandate, by year`;
   }
 
   /* ---------------- chart F: four features of each founding mandate ---------------- */
@@ -852,11 +888,11 @@
 
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   function F_TITLE() {
-    return `From ${F_DATA.firstFacts} the Council asks its bodies to establish the facts; since 2021 ` +
-      `${F_DATA.evSince2021} of ${F_DATA.nSince2021} new bodies are also asked to collect evidence`;
+    return `Four features of each founding mandate, by year`;
   }
 
   /* ---------------- table G: the fifteen task verbs ---------------- */
@@ -1034,6 +1070,7 @@
     text(svg, SOURCE_LINE, { x: L, y: D_H - 22, "font-size": 12.5, fill: PAL.muted });
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   /* ---------------- chart E2: the floor rose (alternative reading of E) ---------------- */
@@ -1177,21 +1214,20 @@
       }));
     });
 
-    const NOTE = `One dot per founding text (n = ${E_DATA.n}), coded from its mandate paragraphs on a 15-verb ` +
-      `taxonomy. No yearly average is shown: with one to five founding texts a year an average would move on ` +
-      `a single text. No founding text in ${E_DATA.emptyYears.join(" or ")}.`;
+    const NOTE = `One dot per founding text (n = ${E_DATA.n}), coded from its mandate paragraphs on a `
+      + `15-verb taxonomy. No yearly mean is shown, since one text would move it. `
+      + `No founding text in ${E_DATA.emptyYears.join(" or ")}.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 640 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 640 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
 
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   function E2_TITLE() {
-    return `What rose is the floor: before ${E2_EARLY_END + 1} no founding mandate carried more than ` +
-      `${lower(word(E2_DATA.ceiling))} task verbs; since ${E2_LATE_START} none carries fewer than ` +
-      `${lower(word(E2_DATA.floor))}`;
+    return `Task verbs in each founding mandate, with the range before ${E2_EARLY_END + 1} and since ${E2_LATE_START}`;
   }
 
   /* ---------------- chart H: groups named vs groups instructed ---------------- */
@@ -1291,26 +1327,22 @@
       }
     });
 
-    const NOTE = `Texts, of ${H_DATA.total}. ‘In the instruction to the body’: named in the mandate paragraphs, ` +
-      `the paragraphs that create, extend or task the body. A group named only in the body’s composition or ` +
-      `resources is not counted.`;
+    const NOTE = `Counts of texts, of ${H_DATA.total}. ‘In the instruction to the body’: named in the mandate ` +
+      `paragraphs. A group named only in the body’s composition or resources is not counted.`;
     const noteLines = wrapTo(NOTE, 14, D_W - padR - L);
     noteLines.forEach((ln, i) => text(svg, ln, { x: L, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: L, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
 
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   function H_TITLE() {
-    return `The texts name many groups; the mandate instructs the body to look at one: ` +
-      `${H_FOCUS} (${H_DATA.focus.mandate} of ${H_DATA.total} texts)`;
+    return `Groups named in the text, and groups the body is instructed to examine`;
   }
   function H_SUBTITLE() {
-    const never = H_DATA.never;
-    const most = never.reduce((a, r) => (!a || r.anywhere > a.anywhere ? r : a), null);
-    return `${never.map(r => r.group).join(", ")} are named in up to ${most.anywhere} texts ` +
-      `and instructed in none.`;
+    return `Each group, as a count of the ${H_DATA.total} texts in the corpus.`;
   }
 
   /* ---------------- chart I: how texts were adopted ---------------- */
@@ -1401,11 +1433,11 @@
     text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   function I_TITLE() {
-    return `About two in three texts are put to a vote, before 2016 and since ` +
-      `(${I_DATA.early.pct}% and ${I_DATA.late.pct}%)`;
+    return `How texts were adopted, by year`;
   }
 
   /* ---------------- chart J: how States voted ---------------- */
@@ -1485,21 +1517,19 @@
     text(svg, `${J_MAJORITY} = more than half of the ${J_SEATS} seats`,
       { x: labX, y: yAt(J_MAJORITY) - 9, "font-size": 14, "font-weight": 600, fill: PAL.ink });
 
-    const NOTE = `Averages per voted text in each year (n under the bars). Abstentions do not count as votes: ` +
-      `a text passes with more Yes than No among those voting, so it can be adopted with fewer than ${J_MAJORITY} in ` +
-      `favour — ${J_DATA.late.below} of the ${J_DATA.late.n} texts voted since 2016 were. The gap to ${J_SEATS} is ` +
-      `members absent or not voting.`;
+    const NOTE = `Averages per voted text in each year (n under the bars). Abstentions do not count as votes, ` +
+      `so a text can pass with fewer than ${J_MAJORITY} in favour. The gap to ${J_SEATS} is members absent or not voting.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 614 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 614 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   function J_TITLE() {
     const e = J_DATA.early, l = J_DATA.late;
-    return `Since 2016 the average Yes has fallen from ${e.yes.toFixed(1)} to ${l.yes.toFixed(1)} of ${J_SEATS} seats, ` +
-      `and abstentions have risen from ${e.abs.toFixed(1)} to ${l.abs.toFixed(1)}`;
+    return `Average Yes, abstentions and No per recorded vote, by year`;
   }
 
   /* ---------------- PNG export ---------------- */
@@ -1552,39 +1582,33 @@
     {
       id: "A",
       file: "chart-a-resolutions-per-year-by-role.png",
-      title: () => `${A_DATA.total} texts, 2006–${YEAR_MAX}: ${A_DATA.totals[1]} extend an existing mechanism, ` +
-        `${A_DATA.totals[0]} create one`,
+      title: () => `Resolutions and decisions per year, by role`,
       legend: () => legendHTML(A_LEGEND),
-      note: () => "Each column is one calendar year, split by the role of the text; the figure above the column is the year's total.",
+      note: () => `Each column is one calendar year, split by the role of the text; the figure above is the year's total. ` +
+        `${A_DATA.total} texts in all, 2006–${YEAR_MAX}.`,
       draw: drawA,
     },
     {
       id: "B",
       file: "chart-b-texts-and-bodies-per-situation.png",
-      title: () => `${word(B_DATA.rows.length)} situations — four account for ` +
-        `${Math.round(100 * B_DATA.top4Texts / TEXTS.length)}% of all texts (${B_DATA.top4Texts} of ${TEXTS.length})`,
+      title: () => `Texts and bodies per situation`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         B_DATA.regionCounts.map(({ region, n }) =>
           `<span class="lg"><span class="sw" style="background:${REGION_COLOR[region]}"></span>${esc(region)} ${n}</span>`).join(""),
-      note: () => `OPT / Israel is counted in both Asia-Pacific (the territory) and Western European and others ` +
-        `(Israel, a member of that group in Geneva since 1 January 2014). The five counts therefore add up to ` +
+      note: () => `OPT / Israel is counted in two groups, so the five counts total ` +
         `${B_DATA.regionCounts.reduce((a, x) => a + x.n, 0)} for ${B_DATA.rows.length} situations.` +
-        (B_DATA.unassigned
-          ? ` ${word(B_DATA.unassigned)} further text created no body and is not shown.`
-          : ""),
+        (B_DATA.unassigned ? ` ${word(B_DATA.unassigned)} further text created no body and is not shown.` : ""),
       draw: drawB,
     },
     {
       id: "C",
       file: "chart-c-bodies-running-per-year.png",
-      title: () => `Council-mandated bodies running at the same time: ${C_DATA.first} in ${C_DATA.firstYear}, ` +
-        `${C_DATA.recentMin}–${C_DATA.recentMax} every year since 2021`,
+      title: () => `Council-mandated bodies running in each year`,
       legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
         `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
-      note: () => `A body is counted in every calendar year in which its mandate is in force; ` +
-        `${lower(word(C_DATA.openEnded.length))} ${C_DATA.openEnded.length === 1 ? "body has" : "bodies have"} ` +
-        `no end date in the dataset and are counted through ${YEAR_MAX}. ` +
-        `The OPT fact-finding mission of July 2006 (S-1/1), never implemented, is not counted.`,
+      note: () => `A body is counted in every year its mandate is in force; the ` +
+        `${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}. ` +
+        `S-1/1 (2006), never implemented, is not counted.`,
       draw: drawC,
     },
     {
@@ -1620,7 +1644,7 @@
     },
     {
       id: "H",
-      head: "Groups named, and groups the body is told to look at",
+      head: "Groups named in the text, and groups the body is instructed to examine",
       selfContained: true,
       file: "chart-h-groups-named-vs-instructed.png",
       draw: drawH,
@@ -1635,21 +1659,21 @@
     },
     {
       id: "J",
-      head: "How States voted",
+      head: "Average Yes, abstentions and No per recorded vote",
       selfContained: true,
       file: "chart-j-votes-by-year.png",
       draw: drawJ,
     },
     {
       id: "E2",
-      head: "Task verbs: what rose is the floor",
+      head: "Task verbs in each founding mandate: the range in each period",
       selfContained: true,
       file: "chart-e2-verbs-floor.png",
       draw: drawE2,
     },
     {
       id: "K",
-      head: "How each regional group votes, year by year",
+      head: "How each regional group voted, by year",
       selfContained: true,
       modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
       file: (mode) => mode === "noisrael"
@@ -1659,7 +1683,7 @@
     },
     {
       id: "L",
-      head: "The eight habitual opponents",
+      head: "Members with the highest share of No",
       selfContained: true,
       file: "chart-l-habitual-opponents.png",
       draw: drawL,
@@ -1722,18 +1746,9 @@
   const K_PCT = (part, tot) => (tot ? Math.round(100 * part / tot) : 0);
 
   function K_TITLE(mode) {
-    const rows = mode === "noisrael" ? K_DATA.noIsrael : K_DATA.all;
-    const yesLate = (r) => K_PCT(r.late.y, r.late.tot);
-    const absLate = (r) => K_PCT(r.late.a, r.late.tot);
-    const abstainers = rows.filter(r => absLate(r) > yesLate(r)).map(r => r.label.replace(" Group", ""));
-    const yesers = rows.filter(r => yesLate(r) >= 60).map(r => r.label.replace(" Group", ""));
-    const list = (a) => a.length < 2 ? (a[0] || "") :
-      a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
-    if (abstainers.length && yesers.length) {
-      return `Since 2016 the ${list(abstainers)} groups mostly abstain; ` +
-        `the ${list(yesers)} groups vote Yes`;
-    }
-    return "How each regional group voted, year by year";
+    return mode === "noisrael"
+      ? "How each regional group voted, by year, excluding the Israel docket"
+      : "How each regional group voted, by year";
   }
 
   function drawK(host, mode) {
@@ -1808,9 +1823,9 @@
       }
     });
 
-    const NOTE = `Shares of each group's members voting or abstaining on the texts put to a vote that ` +
-      `year (absences excluded). Council membership changes every year. ‘Israel docket’: texts on the ` +
-      `Occupied Palestinian Territory and Israel, and Lebanon 2006.`;
+    const NOTE = `Shares of each group's members voting or abstaining on the texts put to a vote that year ` +
+      `(absences excluded); membership changes every year. ‘Israel docket’: texts on the Occupied Palestinian ` +
+      `Territory and Israel, and Lebanon 2006.`;
     const noteLines = wrapTo(NOTE, 13.5, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 640 + i * 18,
       "font-size": 13.5, fill: PAL.muted }));
@@ -1819,6 +1834,7 @@
 
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
 
@@ -1874,9 +1890,8 @@
     const svg = svgRoot(D_W, D_H);
     svg.setAttribute("style", "display:block;width:100%;height:auto");
 
-    const title = `The ${L_DATA.rows.length === 8 ? "eight" : L_DATA.rows.length} habitual opponents vote No ` +
-      `on almost every investigation; ${L_DATA.yesIsr} of their ${L_DATA.rows.reduce((a, d) => a + d.yes, 0)} ` +
-      `Yes votes are on texts concerning Israel`;
+    const title = `The ${L_DATA.rows.length === 8 ? "eight" : L_DATA.rows.length} members with the highest ` +
+      `share of No, and how their votes divide`;
     const titleLines = wrapTo(title, 25, iw);
     titleLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 42 + i * 31, "font-size": 25,
       "font-weight": 650, fill: PAL.ink }));
@@ -1927,15 +1942,15 @@
     });
 
     const NOTE = `Council members with ${L_MIN_VOTES} or more votes cast on the ` +
-      `${TEXTS.filter(r => r.adoption_mode === "Recorded vote").length} recorded votes; years of ` +
-      `membership differ (Eritrea 2019–24; the Russian Federation until April 2022), so totals are not ` +
-      `comparable across States. ‘Texts concerning Israel’: OPT/Israel and Lebanon 2006.`;
+      `${TEXTS.filter(r => r.adoption_mode === "Recorded vote").length} recorded votes. Years of membership ` +
+      `differ, so totals are not comparable across States. ‘Texts concerning Israel’: OPT/Israel and Lebanon 2006.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 626 + i * 19, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL, y: 626 + noteLines.length * 19 + 8, "font-size": 13, fill: PAL.muted });
 
     host.textContent = "";
     host.appendChild(svg);
+    attachTips(svg);
   }
 
   /* ---------------- render ---------------- */
