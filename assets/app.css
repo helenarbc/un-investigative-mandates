@@ -682,3 +682,25 @@ table.criteria td + td { color: var(--ink-2); border-left: 1px solid var(--grid)
 .mech-search input::placeholder { color: var(--muted); }
 .mech-search input::-webkit-search-cancel-button { cursor: pointer; }
 .mech-count { flex: 0 0 auto; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+
+/* Resolutions filter bar: the second row, and a More-filters control that reads as one */
+.filter-row-2 { align-items: flex-end; }
+.filter-row-2 .f-search { flex: 1 1 420px; }
+.f-more-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--ink-2); background: var(--surface); color: var(--ink);
+  border-radius: var(--r-pill); padding: 7px 14px; cursor: pointer;
+  font: 600 var(--fs-md) var(--sans); white-space: nowrap;
+}
+.f-more-btn:hover { background: var(--wash); }
+.f-more-btn svg { width: 15px; height: 15px; }
+.f-more-btn .f-more-caret { transition: transform 0.2s; opacity: 0.6; }
+.f-more-btn[aria-expanded="true"] .f-more-caret { transform: rotate(180deg); }
+.f-more-btn.has-filters { border-color: var(--accent); color: var(--accent-ink); }
+.f-more-n {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-pill);
+  background: var(--accent); color: #fff; font-size: var(--fs-xs); font-weight: 650;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.f-more-n[hidden] { display: none; }

@@ -71,10 +71,6 @@
     IHL: "International humanitarian law is named in the mandate paragraphs",
     ICL: "Coder's label: the mandate paragraphs name crimes or criminal proceedings (crimes against humanity, war crimes, criminal responsibility, prosecutions, the ICC). No mandate paragraph in the dataset uses the phrase 'international criminal law'.",
   };
-  const fwCombo = (r) => {
-    const fw = (r.legal_frameworks || []).slice().sort((a, b) => (FW_ORDER[a] ?? 9) - (FW_ORDER[b] ?? 9));
-    return fw.length ? fw.join(" + ") : "(none)";
-  };
   const FW_COMBO_COLOR = {
     "IHRL": "--c1", "IHRL + IHL": "--c2", "IHRL + ICL": "--c5",
     "IHRL + IHL + ICL": "--c4", "IHL": "--c3", "ICL": "--c6", "(none)": "--grid",
@@ -162,6 +158,8 @@
 
   /* ---------- filter bar ---------- */
   function opt(v, label, sel) { return `<option value="${esc(v)}"${sel === v ? " selected" : ""}>${esc(label)}</option>`; }
+  let paintMoreFilters = () => {};
+
   function renderFilters() {
     const yearOpts = (sel) => {
       let o = "";
@@ -171,20 +169,28 @@
     const MECH_OPTS = D.bodies.filter(b => (b.resolutions || []).length).map(b => b.short_name).sort();
     $("#filterbar").innerHTML = `
       <div class="filter-row">
-        <div class="f-item f-search"><label for="f-q">Search</label>
-          <input type="search" id="f-q" placeholder="Symbol, title or mechanism…" value="${esc(F.q)}"></div>
-        <div class="f-item"><label for="f-y0">From</label><select id="f-y0">${yearOpts(F.y0)}</select></div>
-        <div class="f-item"><label for="f-y1">To</label><select id="f-y1">${yearOpts(F.y1)}</select></div>
         <div class="f-item"><label for="f-body">Mechanism</label>
           <select id="f-body">${opt("", "All")}${MECH_OPTS.map(b => opt(b, b, F.body)).join("")}</select></div>
+        <div class="f-item"><label for="f-country">Situation</label>
+          <select id="f-country">${opt("", "All")}${COUNTRIES.map(c => opt(c, c, F.country)).join("")}</select></div>
+        <div class="f-item"><label for="f-y0">From</label><select id="f-y0">${yearOpts(F.y0)}</select></div>
+        <div class="f-item"><label for="f-y1">To</label><select id="f-y1">${yearOpts(F.y1)}</select></div>
+      </div>
+      <div class="filter-row filter-row-2">
+        <div class="f-item f-search"><label for="f-q">Search</label>
+          <input type="search" id="f-q" placeholder="Symbol, title or mechanism…" value="${esc(F.q)}"></div>
         <div class="f-actions">
-          <button class="icon-btn" id="f-more" aria-expanded="false">More filters ▾</button>
+          <button class="f-more-btn" id="f-more" aria-expanded="false" aria-controls="f-adv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M3 5h18M7 12h10M10 19h4"/></svg>
+            <span>More filters</span><span class="f-more-n" id="f-more-n"></span>
+            <svg class="f-more-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
           <button class="icon-btn reset-btn" id="f-reset" title="Clear all filters">Reset</button>
         </div>
       </div>
       <div class="filter-row" id="f-adv" hidden>
-        <div class="f-item"><label for="f-country">Situation (country)</label>
-          <select id="f-country">${opt("", "All")}${COUNTRIES.map(c => opt(c, c, F.country)).join("")}</select></div>
         <div class="f-item"><label for="f-mode">Adoption</label>
           <select id="f-mode">${opt("", "All")}${opt("Recorded vote", "Recorded vote", F.mode)}${opt("Consensus", "Without a vote", F.mode)}</select></div>
         <div class="f-item"><label for="f-role">Resolution role</label>
@@ -204,7 +210,7 @@
           <div class="chip-group" id="f-fw">${FWS.map(v =>
             `<button class="chip" data-fw="${esc(v)}" aria-pressed="${F.fw.has(v)}" title="${esc(FW_TITLE[v] || "")}">${esc(v)}</button>`).join("")}</div></div>
       </div>
-      <div class="filter-note" id="f-note"></div>`;
+`;
 
     $("#f-q").addEventListener("input", (e) => { F.q = e.target.value.trim(); update(); });
     [["f-y0", "y0", Number], ["f-y1", "y1", Number], ["f-body", "body", String], ["f-country", "country", String],
@@ -217,11 +223,26 @@
         update();
       });
     });
+    // how many of the advanced filters are actually set, shown on the button
+    const advCount = () => {
+      let n = 0;
+      if (F.mode) n++; if (F.role) n++; if (F.ca) n++;
+      if (F.genderLoc) n++; if (F.genderLabel) n++; if (F.children) n++;
+      n += F.verbs.size + F.fw.size;
+      return n;
+    };
+    paintMoreFilters = () => {
+      const n = advCount(), el = $("#f-more-n");
+      if (el) { el.textContent = n ? n : ""; el.hidden = !n; }
+      const btn = $("#f-more");
+      if (btn) btn.classList.toggle("has-filters", !!n);
+    };
+    paintMoreFilters();
+    if (advCount()) { const adv = $("#f-adv"); adv.hidden = false; $("#f-more").setAttribute("aria-expanded", "true"); }
     $("#f-more").addEventListener("click", () => {
       const adv = $("#f-adv");
       adv.hidden = !adv.hidden;
       $("#f-more").setAttribute("aria-expanded", String(!adv.hidden));
-      $("#f-more").textContent = adv.hidden ? "More filters ▾" : "More filters ▴";
     });
     $("#f-reset").addEventListener("click", resetFilters);
     $("#f-verbs").addEventListener("click", (e) => {
@@ -332,7 +353,6 @@
     `<a class="reslink sym" data-sym="${esc(r.symbol)}">${esc(label || r.symbol)}</a>`;
 
   /* ---------- view: resolutions ---------- */
-  let stackBy = "resolution_role";
   let sortKey = "date_adopted", sortDir = -1;
 
   function viewResolutions(R) {
@@ -349,32 +369,6 @@
         <div class="tile clickable" id="tile-mechs" title="Open the Mechanisms tab"><div class="t-label">Mechanisms concerned</div><div class="t-value">${bodiesSet.size}</div><div class="t-sub">see the Mechanisms tab</div></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h2>Adopted by recorded vote or without a vote, per year</h2>
-          <span class="count">${recorded.length} by recorded vote (all passed) · ${consensus} without a vote</span></div>
-        <div class="panel-body"><div class="chart-host" id="mode-chart"></div><div class="legend" id="mode-legend"></div></div>
-        <div class="panel-note">Each column is one year: the lower part counts resolutions put to a recorded vote and
-          <b>adopted with a majority of Yes votes</b>, the upper part those adopted without a vote. Every recorded
-          vote in this dataset passed — a defeated draft never becomes a resolution, so it cannot appear here (the Yemen
-          renewal rejected in October 2021 is the best-known example). The narrowest result is 21 in favour, 19 against,
-          7 abstaining (resolution 51/27, 2022). Counts reflect the current filters; click a column to focus that year.</div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h2>Resolutions per year</h2>
-          <span class="spacer"></span>
-          <div class="seg" id="stack-seg">
-            <button data-k="resolution_role" aria-pressed="${stackBy === "resolution_role"}">by role</button>
-            <button data-k="legal_frameworks" aria-pressed="${stackBy === "legal_frameworks"}">legal frameworks mentioned</button>
-          </div>
-        </div>
-        <div class="panel-body"><div class="chart-host" id="year-chart"></div><div class="legend" id="year-legend"></div></div>
-        <div class="panel-note">${stackBy === "resolution_role"
-          ? `<b>Founding</b> creates a mechanism; <b>renewal</b> extends it in time; <b>expansion</b> widens the
-             investigation itself (e.g. a special inquiry into new events); <b>tasking</b> adds work — extra reports,
-             briefings or operational steps — without widening what is investigated.
-             Click a column to focus that year.`
-          : `Click a column to focus that year. Counts reflect the current filters.`}</div>
-      </div>
-      <div class="panel">
         <div class="panel-head"><h2>Resolutions</h2><span class="count">${R.length}</span>
           ${refFiltered().length ? `<span class="count" title="Resolutions on the Special Rapporteur on Afghanistan, shown for reference only; they are not counted in any tile, chart or percentage">+ ${refFiltered().length} shown for reference, not counted</span>` : ""}
           <span class="spacer"></span><details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-res">Download CSV</button></div></details></div>
@@ -382,40 +376,6 @@
         <div class="panel-note">Click a row for details, the vote breakdown and links to the UN documents.${refFiltered().length ? ` Rows tagged <span class="badge">reference only</span> are the texts on the Special Rapporteur on Afghanistan: listed for context, excluded from every count above.` : ""}</div>
       </div>`;
 
-    // chart
-    const years = [];
-    for (let y = F.y0; y <= F.y1; y++) years.push(y);
-    const catKeys = stackKeys(R);
-    const series = catKeys.map(k => ({
-      key: k.key, label: k.label, color: cssVar(k.color),
-      values: years.map(y => R.filter(r => r.year === y && stackVal(r) === k.key).length),
-    }));
-    window.HRCCharts.stackedColumns($("#year-chart"), {
-      categories: years.map(String), series, height: 230,
-      onBarClick: (ci) => { F.y0 = F.y1 = years[ci]; renderFilters(); update(); },
-      tooltip: (ci) => series.map(s => ({ label: s.label, color: s.color, value: s.values[ci] })).filter(x => x.value),
-    });
-    $("#year-legend").innerHTML = series.map(s =>
-      `<span class="lg"><span class="sw" style="background:${s.color}"></span>${esc(s.label)}</span>`).join("");
-    // adoption mode per year (always shown)
-    const modeSeries = [
-      { key: "vote", label: "recorded vote — adopted (Yes majority)", color: cssVar("--c1"),
-        values: years.map(y => R.filter(r => r.year === y && r.adoption_mode === "Recorded vote").length) },
-      { key: "consensus", label: "adopted without a vote", color: cssVar("--c2"),
-        values: years.map(y => R.filter(r => r.year === y && r.adoption_mode !== "Recorded vote").length) },
-    ];
-    window.HRCCharts.stackedColumns($("#mode-chart"), {
-      categories: years.map(String), series: modeSeries, height: 200,
-      onBarClick: (ci) => { F.y0 = F.y1 = years[ci]; renderFilters(); update(); },
-      tooltip: (ci) => modeSeries.map(s => ({ label: s.label, color: s.color, value: s.values[ci] })).filter(x => x.value),
-    });
-    $("#mode-legend").innerHTML = modeSeries.map(s =>
-      `<span class="lg"><span class="sw" style="background:${s.color}"></span>${esc(s.label)}</span>`).join("");
-    $("#stack-seg").addEventListener("click", (e) => {
-      const k = e.target.dataset && e.target.dataset.k;
-      if (!k) return;
-      stackBy = k; viewResolutions(filtered());
-    });
     $("#tile-mechs").addEventListener("click", () => setTab("mechs"));
 
     renderResTable(R, refFiltered());
@@ -431,24 +391,6 @@
     });
   }
 
-  function stackVal(r) {
-    if (stackBy === "legal_frameworks") return fwCombo(r);
-    const v = r[stackBy];
-    return v || "(not coded)";
-  }
-  function stackKeys(R) {
-    if (stackBy === "resolution_role")
-      return [...ROLES.map(x => ({ key: x, label: x, color: ROLE_COLOR[x] })), { key: "(not coded)", label: "not coded", color: "--baseline" }]
-        .filter(k => R.some(r => stackVal(r) === k.key));
-    if (stackBy === "adoption_mode")
-      return [{ key: "Recorded vote", label: "recorded vote", color: "--c1" }, { key: "Consensus", label: "without a vote", color: "--c2" }]
-        .filter(k => R.some(r => stackVal(r) === k.key));
-    // legal frameworks mentioned (each resolution counted once, by combination)
-    const order = ["IHRL", "IHRL + IHL", "IHRL + ICL", "IHRL + IHL + ICL", "IHL", "ICL", "(none)"];
-    return order.filter(k => R.some(r => fwCombo(r) === k))
-      .map(k => ({ key: k, label: k === "(none)" ? "none mentioned" : k, color: FW_COMBO_COLOR[k] || "--baseline" }));
-  }
-
   function sortRows(R) {
     const dir = sortDir;
     return R.slice().sort((a, b) => {
@@ -462,7 +404,7 @@
   function renderResTable(R, REFR) {
     const cols = [
       ["symbol", "Symbol"], ["date_adopted", "Date"], ["title", "Title"],
-      ["resolution_role", "Role"], ["mechanism_type", "Mechanism"],
+      ["resolution_role", "Role"],
       ["adoption_mode", "Adoption"], ["criminal_accountability", "Accountability wording"], [null, "Lang."],
     ];
     const rows = sortRows(R.concat(REFR || []));
@@ -473,7 +415,6 @@
         <td class="num" style="white-space:nowrap">${fmtDate(r.date_adopted)}</td>
         <td>${esc(r.title)}<div style="font-size:12px;color:var(--muted)">${esc((r.bodies || []).join(" · "))}</div></td>
         <td>${roleBadge(r)}</td>
-        <td>${esc(r.mechanism_type || "—")}</td>
         <td style="white-space:nowrap">${tallyPills(r)}</td>
         <td>${caBadge(r)}</td>
         <td>${genderBadges(r)}</td>
@@ -1399,7 +1340,6 @@
           ${(r.legal_frameworks || []).map(f => `<span class="badge" title="${esc(FW_TITLE[f] || "")}">${esc(f)}</span>`).join(" ")}
         </div>
         <div class="meta-grid">
-          <div class="m"><b>Mechanism</b>${esc(r.mechanism_type || "—")}</div>
           <div class="m"><b>Bodies</b>${esc((r.bodies || []).join(", ") || "—")}</div>
           <div class="m"><b>Mandate paragraphs</b>${esc(r.mandate_paragraphs || "—")}</div>
           ${r.agenda_item ? `<div class="m"><b>Agenda item</b>${r.agenda_item === "special session"
@@ -1513,9 +1453,7 @@
 
   function update() {
     const R = filtered();
-    const note = $("#f-note");
-    if (note) note.textContent = `${R.length} of ${RES.length} resolutions selected — ${filterSummary()}.` +
-      (REFRES.length ? ` (${REFRES.length} reference-only texts on the Special Rapporteur on Afghanistan are not counted — see Mechanisms.)` : "");
+    paintMoreFilters();
     if (currentTab === "res") viewResolutions(R);
     else if (currentTab === "votes") {
       if (currentSub === "matrix") viewMatrix(R);
