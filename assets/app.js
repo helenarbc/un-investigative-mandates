@@ -735,7 +735,7 @@
         were not members at the time have no position to show and are left out; clear the filter to see all ${STATES.length}.</div>` : ""}
       </div>
       <div class="tiles">
-        <div class="tile"><div class="t-label">Votes cast (in selection)</div><div class="t-value">${myVotes.length}</div><div class="t-sub">of ${recorded.length} recorded votes</div></div>
+        <div class="tile" title="A state only has a position on a vote taken while it sat on the Council. The Yes, No and Abstain tiles beside this one add up to this figure, minus any absences."><div class="t-label">On the Council for</div><div class="t-value">${myVotes.length}</div><div class="t-sub">of the ${recorded.length} recorded votes shown${recorded.length - myVotes.length ? ` · not a member for the other ${recorded.length - myVotes.length}` : ""}</div></div>
         <div class="tile"><div class="t-label">Yes</div><div class="t-value" style="color:var(--yes)">${count("Y")}</div></div>
         <div class="tile"><div class="t-label">No</div><div class="t-value" style="color:var(--no)">${count("N")}</div></div>
         <div class="tile"><div class="t-label">Abstain</div><div class="t-value">${count("A")}</div><div class="t-sub">${count("X")} absences</div></div>
