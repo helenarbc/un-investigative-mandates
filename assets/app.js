@@ -542,11 +542,12 @@
           <details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-matrix">Download CSV</button></div></details>
         </div>
         <div class="matrix-wrap" id="matrix-host"></div>
-        <div class="panel-note">${matrixRows === "states"
-          ? `One row per Council member that cast a vote here; a faint cell means it was not a member for that vote.`
-          : `One row per UN regional group; each cell splits that group's votes proportionally.`}
-        The three figures after each name are its Yes · No · Abstain totals. Columns are resolutions
-        ${matrixCols === "date" ? "in date order" : "grouped by mechanism"} — hover for the title, click for details.</div>
+        <div class="panel-note"><b>Rows:</b> ${matrixRows === "states"
+          ? `Council members; a faint cell means the state was not a member for that vote.`
+          : `the five regional groups; each cell splits the group's votes proportionally.`}
+        The three figures after each name are its Yes · No · Abstain totals.
+        <b>Columns:</b> resolutions ${matrixCols === "date" ? "by date" : "by mechanism"}. Hover for the title,
+        click for details.</div>
       </div>`;
 
     const nCols = recorded.length;
@@ -915,6 +916,23 @@
     "none stated": "The founding resolution sets no period at all. The body is told what to investigate, not when it happened.",
   };
 
+  // Mechanisms-tab filters. Kept separate from F, which belongs to Resolutions and Votes.
+  const MF = { q: "", country: "", status: "", y0: "", y1: "", type: "", verbs: new Set(), fw: new Set() };
+  // Computed on first use, not at module evaluation: COUNCIL_SCOPES is declared further down.
+  let MECH_OPTS_CACHE = null;
+  const mechOpts = () => {
+    if (MECH_OPTS_CACHE) return MECH_OPTS_CACHE;
+    const bs = D.bodies.filter(b => COUNCIL_SCOPES.has(b.scope));
+    MECH_OPTS_CACHE = {
+      countries: [...new Set(bs.map(b => countryName(b.country)).filter(Boolean))].sort(),
+      years: [...new Set(bs.map(b => (b.start_date || "").slice(0, 4)).filter(Boolean))].sort(),
+      types: [...new Set(bs.map(b => b.mandate_type).filter(Boolean))].sort(),
+      verbs: [...new Set(bs.flatMap(b => b.mandate_action_verbs || []))].sort(),
+      fws: ["IHRL", "IHL", "ICL"].filter(f => bs.some(b => (b.mandate_legal_frameworks || []).includes(f))),
+    };
+    return MECH_OPTS_CACHE;
+  };
+
   function renderMechs() { renderBodies("#mechs-content", SCOPE_GROUPS, false); }
   function renderOther() { renderBodies("#other-content", OTHER_SCOPE_GROUPS, true); }
 
@@ -978,12 +996,49 @@
           </div></details>
       </div></div>
 ` : `
-      <div class="mech-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="mech-q" autocomplete="off" spellcheck="false"
-          placeholder="Search ${nHere} mechanisms — name, situation or acronym">
-        <span class="mech-count" id="mech-count"></span>
+      <div class="filterbar">
+        <div class="filter-row">
+          <div class="f-item"><label for="mf-country">Situation</label>
+            <select id="mf-country"><option value="">All</option>${mechOpts().countries.map(c =>
+              `<option value="${esc(c)}"${MF.country === c ? " selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
+          <div class="f-item"><label for="mf-status">Status</label>
+            <select id="mf-status"><option value="">All</option>
+              <option value="in-force"${MF.status === "in-force" ? " selected" : ""}>in force</option>
+              <option value="ended"${MF.status === "ended" ? " selected" : ""}>ended</option></select></div>
+          <div class="f-item"><label for="mf-y0">Began from</label>
+            <select id="mf-y0"><option value="">—</option>${mechOpts().years.map(y =>
+              `<option value="${y}"${String(MF.y0) === String(y) ? " selected" : ""}>${y}</option>`).join("")}</select></div>
+          <div class="f-item"><label for="mf-y1">to</label>
+            <select id="mf-y1"><option value="">—</option>${mechOpts().years.map(y =>
+              `<option value="${y}"${String(MF.y1) === String(y) ? " selected" : ""}>${y}</option>`).join("")}</select></div>
+        </div>
+        <div class="filter-row filter-row-2">
+          <div class="f-item f-search"><label for="mech-q">Search</label>
+            <input type="search" id="mech-q" autocomplete="off" spellcheck="false"
+              placeholder="Name, full title, situation or acronym" value="${esc(MF.q)}"></div>
+          <div class="f-actions">
+            <button class="f-more-btn" id="mf-more" aria-expanded="false" aria-controls="mf-adv">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M3 5h18M7 12h10M10 19h4"/></svg>
+              <span>More filters</span><span class="f-more-n" id="mf-more-n"></span>
+              <svg class="f-more-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <button class="icon-btn reset-btn" id="mf-reset" title="Clear all filters">Reset</button>
+            <span class="mech-count" id="mech-count"></span>
+          </div>
+        </div>
+        <div class="filter-row" id="mf-adv" hidden>
+          <div class="f-item"><label for="mf-type">Mandate type</label>
+            <select id="mf-type"><option value="">All</option>${mechOpts().types.map(t =>
+              `<option value="${esc(t)}"${MF.type === t ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></div>
+          <div class="f-item" style="flex:1 1 320px"><label>Mandate action verbs (all selected must appear)</label>
+            <div class="chip-group" id="mf-verbs">${mechOpts().verbs.map(v =>
+              `<button class="chip" data-v="${esc(v)}" aria-pressed="${MF.verbs.has(v)}">${esc(v)}</button>`).join("")}</div></div>
+          <div class="f-item"><label>Legal frameworks named</label>
+            <div class="chip-group" id="mf-fw">${mechOpts().fws.map(v =>
+              `<button class="chip" data-f="${esc(v)}" aria-pressed="${MF.fw.has(v)}" title="${esc(FW_TITLE[v] || "")}">${esc(v)}</button>`).join("")}</div></div>
+        </div>
       </div>`;
     const nAll = Object.values(periodCount).reduce((a, n) => a + n, 0);
     const periodBar = "";
@@ -1006,7 +1061,13 @@
           const ndocs = docCountByBody[b.short_name] || 0;
           const isRef = b.scope === REF_SCOPE;
           return `<tr data-s="${esc(((b.short_name || "") + " " + (b.full_name || "") + " " +
-            (countryName(b.country) || "") + " " + (b.country || "")).toLowerCase())}">
+            (countryName(b.country) || "") + " " + (b.country || "")).toLowerCase())}"
+            data-country="${esc(countryName(b.country) || "")}"
+            data-status="${isRunning(b) ? "in-force" : "ended"}"
+            data-y="${esc((b.start_date || "").slice(0, 4))}"
+            data-mt="${esc(b.mandate_type || "")}"
+            data-verbs="${esc((b.mandate_action_verbs || []).join("|"))}"
+            data-fw="${esc((b.mandate_legal_frameworks || []).join("|"))}">
             <td><a class="mech-open" data-body="${esc(b.short_name)}" style="cursor:pointer"><b>${esc(b.short_name)}</b></a>
               ${isRef ? `<span class="badge" style="margin-left:4px" title="Shown for reference; not counted in any statistic">reference only</span>` : ""}
               ${!isRef && b.start_date && (b.mandate_status === "active" || isRunning(b)) ? `<span class="badge on" style="background:var(--c2);margin-left:4px" title="${b.end_date ? "Fixed term, still running: the End Date is the expiry of the current period" : "No end date set — the Council's own word is ongoing"}">${b.end_date ? "in force" : "ongoing"}</span>` : ""}
@@ -1041,29 +1102,86 @@
       </div>` : ""}
 `;
     const q = $("#mech-q", host);
-    if (q) {
+    if (q && !isOther) {
       const countEl = $("#mech-count", host);
+      const hit = (tr) => {
+        const d = tr.dataset;
+        if (MF.q && !(d.s || "").includes(MF.q)) return false;
+        if (MF.country && d.country !== MF.country) return false;
+        if (MF.status && d.status !== MF.status) return false;
+        if (MF.y0 && (!d.y || d.y < MF.y0)) return false;
+        if (MF.y1 && (!d.y || d.y > MF.y1)) return false;
+        if (MF.type && d.mt !== MF.type) return false;
+        if (MF.verbs.size) {
+          const has = new Set((d.verbs || "").split("|").filter(Boolean));
+          for (const v of MF.verbs) if (!has.has(v)) return false;
+        }
+        if (MF.fw.size) {
+          const has = new Set((d.fw || "").split("|").filter(Boolean));
+          for (const f of MF.fw) if (!has.has(f)) return false;
+        }
+        return true;
+      };
+      const advCount = () => (MF.country ? 1 : 0) + (MF.status ? 1 : 0) + (MF.y0 ? 1 : 0) +
+        (MF.y1 ? 1 : 0) + (MF.type ? 1 : 0) + MF.verbs.size + MF.fw.size;
       const apply = () => {
-        const t = q.value.trim().toLowerCase();
         let shown = 0;
         $$(".panel", host).forEach(panel => {
           const rows = $$("tbody tr", panel);
           if (!rows.length) return;
           let n = 0;
           rows.forEach(tr => {
-            const hit = !t || (tr.dataset.s || "").includes(t);
-            tr.style.display = hit ? "" : "none";
-            if (hit) n++;
+            const ok = hit(tr);
+            tr.style.display = ok ? "" : "none";
+            if (ok) n++;
           });
           panel.style.display = n ? "" : "none";
           const c = $(".panel-head .count", panel);
           if (c) c.textContent = n;
           shown += n;
         });
-        countEl.textContent = t ? `${shown} of ${nHere}` : "";
+        const nAdv = advCount();
+        const badge = $("#mf-more-n", host);
+        if (badge) { badge.textContent = nAdv ? nAdv : ""; badge.hidden = !nAdv; }
+        const mb = $("#mf-more", host);
+        if (mb) mb.classList.toggle("has-filters", !!nAdv);
+        countEl.textContent = (MF.q || nAdv) ? `${shown} of ${nHere}` : "";
       };
-      q.addEventListener("input", apply);
-      q.addEventListener("keydown", (e) => { if (e.key === "Escape") { q.value = ""; apply(); } });
+      q.addEventListener("input", () => { MF.q = q.value.trim().toLowerCase(); apply(); });
+      q.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { q.value = ""; MF.q = ""; apply(); }
+      });
+      [["mf-country", "country"], ["mf-status", "status"], ["mf-y0", "y0"],
+       ["mf-y1", "y1"], ["mf-type", "type"]].forEach(([id, key]) => {
+        const el = $("#" + id, host);
+        if (el) el.addEventListener("change", (e) => { MF[key] = e.target.value; apply(); });
+      });
+      [["mf-verbs", "v", MF.verbs], ["mf-fw", "f", MF.fw]].forEach(([id, attr, set]) => {
+        const el = $("#" + id, host);
+        if (el) el.addEventListener("click", (e) => {
+          const b = e.target.closest("button");
+          const v = b && b.dataset[attr];
+          if (!v) return;
+          set.has(v) ? set.delete(v) : set.add(v);
+          b.setAttribute("aria-pressed", String(set.has(v)));
+          apply();
+        });
+      });
+      const more = $("#mf-more", host), adv = $("#mf-adv", host);
+      if (more && adv) {
+        if (MF.type || MF.verbs.size || MF.fw.size) { adv.hidden = false; more.setAttribute("aria-expanded", "true"); }
+        more.addEventListener("click", () => {
+          adv.hidden = !adv.hidden;
+          more.setAttribute("aria-expanded", String(!adv.hidden));
+        });
+      }
+      const reset = $("#mf-reset", host);
+      if (reset) reset.addEventListener("click", () => {
+        MF.q = ""; MF.country = ""; MF.status = ""; MF.y0 = ""; MF.y1 = ""; MF.type = "";
+        MF.verbs.clear(); MF.fw.clear();
+        renderMechs();
+      });
+      apply();
     }
 
     host.onclick = (e) => {
