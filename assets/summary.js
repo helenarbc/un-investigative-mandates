@@ -6,6 +6,7 @@
       1. Resolutions per year, by role          — stacked columns, 2006-2026
       2. Texts and bodies per situation         — horizontal bars + bodies column
      2A. Texts and bodies by regional group    — the same two columns, summarised
+     4A. How long each body actually ran       — one bar per body, 2006-2026
       3. Bodies running at the same time        — columns per calendar year
       4. The term each mandate sets             — stacked columns, counts or shares
       5. Task verbs per founding mandate        — dot chart, read as two bands
@@ -542,6 +543,103 @@
           _tip: `${r.region} — ${plural(r.bodies, "body", "bodies")}\n` + listTip(r.bodyNames.slice().sort(), 24),
         }));
       }
+    });
+    host.textContent = "";
+    host.appendChild(svg);
+    attachTips(svg);
+  }
+
+  /* ---------------- chart 4A ---------------- */
+  // How long each body actually ran, against chart 4's question of how long the
+  // text said it could. For a body still running the bar stops at the build date,
+  // not at End Date: for an active fixed-term body End Date is the expiry of its
+  // CURRENT period, which is in the future and would overstate the duration.
+  const DL_ENDED = "#86b6ef", DL_RUNNING = "#1d3f73";
+  const DL_DATA = (() => {
+    const BUILD = new Date(String(D.built || "").slice(0, 10) || "2026-11-05");
+    const day = 24 * 60 * 60 * 1000;
+    const months = (a, b) => (b - a) / (day * 30.4375);
+    const rows = RUNNING.map(b => {
+      const s = b.start_date ? new Date(b.start_date) : null;
+      if (!s) return null;
+      const live = /active/i.test(b.mandate_status || "");
+      const e = live ? BUILD : (b.end_date ? new Date(b.end_date) : null);
+      if (!e || e < s) return null;
+      return {
+        name: b.short_name, country: b.country, live,
+        startY: s.getFullYear() + (s.getMonth() + s.getDate() / 31) / 12,
+        endY: e.getFullYear() + (e.getMonth() + e.getDate() / 31) / 12,
+        m: months(s, e), start: b.start_date, end: b.end_date,
+        type: b.mandate_type,
+      };
+    }).filter(Boolean).sort((a, b) => a.startY - b.startY);
+    const ms = rows.map(r => r.m).sort((a, b) => a - b);
+    const medianOf = (a) => a.length ? a[Math.floor(a.length / 2)] : 0;
+    const ended = rows.filter(r => !r.live).map(r => r.m).sort((a, b) => a - b);
+    const BANDS = [[0, 12, "under a year"], [12, 24, "one to two years"],
+      [24, 60, "two to five years"], [60, 120, "five to ten years"], [120, 1e9, "over ten years"]];
+    const bands = BANDS.map(([lo, hi, label]) => {
+      const a = rows.filter(r => r.m >= lo && r.m < hi);
+      return { label, n: a.length, live: a.filter(r => r.live).length };
+    });
+    return {
+      rows, bands, total: rows.length,
+      median: medianOf(ms), medianEnded: medianOf(ended),
+      live: rows.filter(r => r.live).length,
+    };
+  })();
+
+  const DL_DUR = (m) => {
+    if (m < 12) { const n = Math.round(m); return n + (n === 1 ? " month" : " months"); }
+    const y = (m / 12).toFixed(m < 24 ? 1 : 0).replace(/\.0$/, "");
+    return y + (y === "1" ? " year" : " years");
+  };
+
+  function drawDL(host) {
+    const W = Math.max(host.clientWidth || 960, 300);
+    const narrow = W < 560;
+    const rows = DL_DATA.rows;
+    const rowH = narrow ? 14 : 16, barH = narrow ? 8 : 10;
+    const headH = 20, footH = 18;
+    const H = headH + rows.length * rowH + footH + 4;
+    const labelW = narrow ? Math.min(132, W * 0.42) : Math.min(230, W * 0.30);
+    const durW = narrow ? 48 : 60;
+    const padR = 6;
+    const iw = Math.max(40, W - labelW - durW - padR);
+    const y0 = YEAR_MIN, y1 = YEAR_MAX + 1;
+    const X = (yr) => labelW + iw * (yr - y0) / (y1 - y0);
+    const fontRow = narrow ? 8.5 : 10;
+    const svg = svgRoot(W, H);
+
+    for (let yr = y0; yr <= y1; yr += (narrow ? 5 : 2)) {
+      const x = X(yr);
+      svg.appendChild(el("line", { x1: x, x2: x, y1: headH - 4, y2: headH + rows.length * rowH + 2,
+        stroke: PAL.grid, "stroke-width": 1 }));
+      text(svg, yr, { x, y: 12, "text-anchor": "middle", "font-size": narrow ? 9 : 10.5, fill: PAL.muted });
+      text(svg, yr, { x, y: H - 5, "text-anchor": "middle", "font-size": narrow ? 9 : 10.5, fill: PAL.muted });
+    }
+
+    rows.forEach((r, i) => {
+      const y = headH + i * rowH;
+      const cy = y + barH / 2;
+      text(svg, r.name, {
+        x: labelW - 7, y: cy + fontRow * 0.36, "text-anchor": "end",
+        "font-size": fontRow, fill: PAL.ink,
+      });
+      const x1 = X(r.startY), x2 = Math.max(X(r.endY), x1 + 2);
+      const tip = r.name + " — " + r.country +
+        "\n" + DL_DUR(r.m) + " (" + Math.round(r.m) + " months)" +
+        "\nfrom " + r.start + (r.live ? ", still running at the build date" : " to " + r.end) +
+        (r.type ? "\nmandate: " + r.type : "");
+      svg.appendChild(el("rect", {
+        x: x1, y, width: x2 - x1, height: barH, rx: barH / 2,
+        fill: r.live ? DL_RUNNING : DL_ENDED, _tip: tip,
+      }));
+      text(svg, DL_DUR(r.m), {
+        x: W - padR, y: cy + fontRow * 0.36, "text-anchor": "end",
+        "font-size": fontRow, fill: r.live ? PAL.ink : PAL.ink2,
+        "font-weight": r.live ? 600 : 400,
+      });
     });
     host.textContent = "";
     host.appendChild(svg);
@@ -2010,6 +2108,20 @@
       modes: [["counts", "Counts"], ["shares", "Shares"]],
       file: (mode) => `chart-04-mandate-terms-${mode}.png`,
       draw: drawD,
+    },
+    {
+      id: "4A",
+      file: "chart-04a-how-long-each-body-ran.png",
+      title: () => `How long each body actually ran`,
+      legend: () => `<span class="lg"><span class="sw" style="background:${DL_RUNNING}"></span>Still running (${DL_DATA.live})</span>` +
+        `<span class="lg"><span class="sw" style="background:${DL_ENDED}"></span>Ended (${DL_DATA.total - DL_DATA.live})</span>`,
+      note: () => `One bar per body, in the order they began. A body still running is drawn to the build date, ` +
+        `not to its End Date, which for an active fixed-term body is the expiry of its current period. ` +
+        `Median across all ${DL_DATA.total}: ${DL_DUR(DL_DATA.median)}; median of those that have ended: ` +
+        `${DL_DUR(DL_DATA.medianEnded)}. ` +
+        DL_DATA.bands.filter(b => b.n).map(b => `${b.label} ${b.n}`).join(" · ") + `. ` +
+        `S-1/1 (2006), never implemented, is not counted.`,
+      draw: drawDL,
     },
     {
       id: "5",
