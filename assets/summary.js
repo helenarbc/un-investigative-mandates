@@ -2065,6 +2065,102 @@
   const legendHTML = (items) => items.map(([k, t]) =>
     `<span class="lg"><span class="sw" style="background:${ROLE_COLOR[k] || REGION_COLOR[k] || k}"></span>${esc(t)}</span>`).join("");
 
+
+  /* ---------------- the spoken cards ----------------
+     Text panels the same width as the charts, so the whole talk is one scroll
+     down this tab: what is counted, the three hypotheses, a card introducing
+     each of them, and the verdicts at the end. They carry no number and no
+     Download PNG; `prose: true` gives them the plain panel shell. */
+
+  const H1_TEXT = "The number, scope and support for investigative bodies are all on the rise.";
+  const H2_TEXT = "The mandates are carefully drafted.";
+  const H3_TEXT = "Which contexts get investigated is ultimately a political decision.";
+
+  const proseCard = (id, eyebrow, title, bodyHTML) => ({
+    id, prose: true,
+    html: () => `<div class="sg-prose-in">
+      <p class="sg-eyebrow">${eyebrow}</p>
+      <h2 class="sg-prose-h">${title}</h2>
+      ${bodyHTML}
+    </div>`,
+  });
+
+  const INCLUDED_CARD = proseCard("included", "What is counted", "Which bodies and which texts are in this dataset", `
+    <p class="sg-prose-lead">Every Human Rights Council resolution and decision adopted since July 2006 that
+      <b>creates</b> a country-specific investigative body, <b>renews or extends</b> it in time, or gives it a
+      <b>new investigative, monitoring, evidence or reporting task</b>.</p>
+    <ol class="sg-crit">
+      <li><b>Created by this Council.</b> Not the General Assembly, not the Security Council, not the
+        Secretary-General. So the Syria mechanism (IIIM, 2016) and UNITAD (2017) are out: they carry no Council
+        resolution and no Council vote, and the vote is half of what is studied here.</li>
+      <li><b>Country-specific, not thematic.</b> A body turned on one situation, not on a phenomenon across all
+        States.</li>
+      <li><b>A body, defined by what it does.</b> Commissions of inquiry, fact-finding missions, groups and teams
+        of experts, investigative mechanisms — and the investigations and accountability projects OHCHR carries
+        out at the Council's request, which are ten of the forty-seven.</li>
+    </ol>
+    <p class="sg-prose-note">Each text is coded from its <b>mandate paragraphs alone</b>: not the preamble, which
+      characterises the situation rather than instructing anyone, and not the terms of reference adopted afterwards.
+      Country Special Rapporteurs are out unless the same text also creates or tasks a body, and so are texts that
+      only welcome a report or urge a State to cooperate.</p>
+    <p class="sg-prose-figs"><b>137</b> texts · <b>47</b> bodies · <b>23</b> situations · <b>87</b> recorded votes ·
+      <b>4,089</b> recorded positions</p>`);
+
+  const HYPO_CARD = proseCard("hypotheses", "Three hypotheses", "What this paper sets out to test", `
+    <p class="sg-prose-lead">Three things are said with confidence in the consultations where these texts are
+      negotiated. Each is stated here as a hypothesis and tested against the whole corpus.</p>
+    <ol class="sg-hyp">
+      <li><span class="sg-hyp-n">1</span><span>${H1_TEXT}</span></li>
+      <li><span class="sg-hyp-n">2</span><span>${H2_TEXT}</span></li>
+      <li><span class="sg-hyp-n">3</span><span>${H3_TEXT}</span></li>
+    </ol>`);
+
+  const H1_CARD = proseCard("h1", "Hypothesis one", H1_TEXT, `
+    <p class="sg-prose-lead">Three limbs, and they do not travel together. The first two charts count the bodies
+      and the texts. The third measures what each founding mandate asks for. The last two ask how the Council
+      voted on them.</p>`);
+
+  const H2_CARD = proseCard("h2", "Hypothesis two", H2_TEXT, `
+    <p class="sg-prose-lead">Two tests. Are the tasks matched by the means — the time, the continuity, the
+      resources? And do the groups named in a resolution reach the paragraphs that actually instruct the body?</p>`);
+
+  const H3_CARD = proseCard("h3", "Hypothesis three", H3_TEXT, `
+    <p class="sg-prose-lead">If selection is what decides these texts, then the wording — which is what everyone
+      in that building spends their time on — should not move the outcome much. These charts ask whether a text is
+      voted at all, how the groups vote, which situations recur, how mandates end, and who opposes.</p>`);
+
+  const VERDICT_CARD = proseCard("verdicts", "Conclusions", "The three hypotheses, and what the texts answer", `
+    <div class="sg-verdict">
+      <div class="sg-v-row">
+        <p class="sg-v-h"><span class="sg-hyp-n">1</span>${H1_TEXT}</p>
+        <p class="sg-v-a"><b class="sg-part">Number — yes.</b> Three bodies running at once in 2006, between
+          fourteen and sixteen every year since 2021. <b class="sg-part">Scope — yes.</b> Three task verbs in the
+          Lebanon mandate of 2006; 9.6 on average since 2021, and no founding mandate below eight since 2022.
+          <b class="sg-no">Support — no.</b> Two thirds of the members in favour before 2016, half since, and it
+          has stayed at half for ten years.</p>
+      </div>
+      <div class="sg-v-row">
+        <p class="sg-v-h"><span class="sg-hyp-n">2</span>${H2_TEXT}</p>
+        <p class="sg-v-a"><b class="sg-no">No.</b> Term length and task load are uncorrelated (r = −0.05): more is
+          asked without more time. Formulas travel word for word across continents. And groups are named where
+          naming is free and absent where the text binds — women appear in 112 texts and in seven mandates, girls
+          in fifty-two texts and in one.</p>
+      </div>
+      <div class="sg-v-row">
+        <p class="sg-v-h"><span class="sg-hyp-n">3</span>${H3_TEXT}</p>
+        <p class="sg-v-a"><b class="sg-yes">Yes.</b> Whether a text is voted at all depends on consent; the two
+          largest groups moved to abstention rather than opposition; four situations hold forty-four per cent of
+          the texts; and both ends of the chamber reverse their position on one situation — the eight habitual
+          opponents vote yes on every text concerning Israel and on three per cent of everything else, while the
+          Western group votes yes on ninety-seven per cent of everything else and eighteen per cent of those.</p>
+      </div>
+    </div>
+    <p class="sg-prose-note"><b>What follows.</b> The language of a mandate is not the lever: identical wording has
+      drawn different coalitions, and the same Syria text passed by recorded vote twenty-nine times and then without
+      a vote once the government changed. What the wording can change is whether a body can do the work once it
+      exists — which is worth arguing about, but it is not a route to a better majority. And one asymmetry runs
+      under all three: every creation leaves a document, and almost no ending does.</p>`);
+
   const CARDS = [
     {
       id: "1",
@@ -2199,6 +2295,33 @@
       draw: drawH,
     },
   ];
+
+  /* ---------------- presentation order ----------------
+     The Summary graphs tab is the talk, scrolled top to bottom: the spoken
+     cards carry the structure and each chart sits under the hypothesis it
+     tests. Charts keep their definitions and are renumbered 1-15 in this
+     order, so the number on screen is the order it is spoken in.
+       hypothesis 1  number, scope, and how the Council voted   (1-5)
+       hypothesis 2  terms against tasks, formulas, law, groups (6-9)
+       hypothesis 3  consent, groups, docket, endings, opponents (10-15)
+     PNG filenames keep their original numbers; only the on-screen id moves. */
+  (() => {
+    const ORDER = ["1", "2", "3", "4", "5", "11", "12", "13", "14", "6", "7", "8", "9", "10", "10b"];
+    const byId = {};
+    CARDS.forEach(c => { byId[c.id] = c; });
+    const missing = ORDER.filter(id => !byId[id]);
+    if (missing.length) { console.warn("summary: unknown card id", missing); return; }
+    const charts = ORDER.map((id, i) => { const c = byId[id]; c.id = String(i + 1); return c; });
+    CARDS.length = 0;
+    CARDS.push(
+      INCLUDED_CARD, HYPO_CARD,
+      H1_CARD, ...charts.slice(0, 5),
+      H2_CARD, ...charts.slice(5, 9),
+      H3_CARD, ...charts.slice(9),
+      VERDICT_CARD
+    );
+  })();
+
 
 
   /* ---------------- K. How each regional group votes, year by year ---------------- */
@@ -2761,7 +2884,10 @@
     const host = $("#summary-content");
     if (!host) return;
     PAL = screenPalette();
-    host.innerHTML = CARDS.map(c => `
+    host.innerHTML = CARDS.map(c => c.prose ? `
+      <div class="panel sg-card sg-prose" data-card="${c.id}">
+        <div class="panel-body">${c.html()}</div>
+      </div>` : `
       <div class="panel sg-card" data-card="${c.id}">
         <div class="panel-head"><h2><span class="sg-num">${esc(c.id)}</span>${esc(c.head || c.title())}</h2>
           <span class="spacer"></span>
@@ -2779,6 +2905,7 @@
         ${c.selfContained ? "" : `<div class="sg-source">${esc(SOURCE_LINE)}</div>`}
       </div>`).join("");
     CARDS.forEach(c => {
+      if (c.prose) return;
       const card = host.querySelector(`.sg-card[data-card="${c.id}"]`);
       card._mode = c.modes ? c.modes[0][0] : null;
       card._draw = (h) => c.draw(h, card._mode);
@@ -2804,8 +2931,9 @@
   function redraw() {
     PAL = screenPalette();
     CARDS.forEach(c => {
+      if (c.prose) return;            // spoken cards have no chart to redraw
       const card = document.querySelector(`.sg-card[data-card="${c.id}"]`);
-      if (card) card._draw($(".sg-chart", card));
+      if (card && card._draw) card._draw($(".sg-chart", card));
     });
   }
   function activate() {

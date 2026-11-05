@@ -466,6 +466,49 @@ details.menu > .menu-list {
 .excluded-fold > summary b { color: var(--ink); font-weight: 650; }
 .excluded-fold > div { margin-top: 14px; }
 
+
+/* ---------- spoken cards on the Summary graphs tab ----------
+   Text panels the same width as the chart panels, so the talk is one scroll. */
+.sg-prose > .panel-body { padding: 0; }
+.sg-prose-in { padding: 34px 38px 36px; max-width: 1100px; }
+.sg-eyebrow {
+  font-size: 12.5px; letter-spacing: 1.6px; text-transform: uppercase;
+  font-weight: 650; color: var(--accent-ink); margin: 0 0 10px;
+}
+.sg-prose-h { font-size: 26px; line-height: 1.22; font-weight: 650; color: var(--ink); margin: 0 0 16px; }
+.sg-prose-lead { font-size: 16px; line-height: 1.6; color: var(--ink); margin: 0 0 16px; }
+.sg-prose-note { font-size: 14px; line-height: 1.6; color: var(--ink-2); margin: 14px 0 0; }
+.sg-prose-figs {
+  font-size: 15px; line-height: 1.6; color: var(--ink); margin: 16px 0 0;
+  border-top: 1px solid var(--border); padding-top: 14px;
+}
+.sg-crit { margin: 0 0 4px; padding-left: 0; list-style: none; counter-reset: crit; }
+.sg-crit li {
+  font-size: 15px; line-height: 1.6; color: var(--ink); margin: 0 0 12px;
+  padding-left: 40px; position: relative; counter-increment: crit;
+}
+.sg-crit li::before {
+  content: counter(crit); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 999px; background: var(--accent-soft, #eceae4);
+  color: var(--accent-ink); font-size: 13.5px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.sg-hyp { margin: 0; padding-left: 0; list-style: none; }
+.sg-hyp li { display: flex; gap: 16px; align-items: baseline; font-size: 18px; line-height: 1.5;
+  color: var(--ink); padding: 14px 0; border-top: 1px solid var(--border); }
+.sg-hyp-n {
+  flex: 0 0 auto; font-size: 15px; font-weight: 700; color: var(--accent-ink);
+  min-width: 26px; height: 26px; border-radius: 999px; background: var(--accent-soft, #eceae4);
+  display: inline-flex; align-items: center; justify-content: center; margin-right: 10px;
+}
+.sg-verdict { display: flex; flex-direction: column; }
+.sg-v-row { border-top: 1px solid var(--border); padding: 16px 0 4px; }
+.sg-v-h { font-size: 17px; font-weight: 650; line-height: 1.45; color: var(--ink); margin: 0 0 8px; display: flex; align-items: baseline; }
+.sg-v-a { font-size: 15px; line-height: 1.62; color: var(--ink-2); margin: 0 0 10px; }
+.sg-part { color: var(--ink); }
+.sg-yes { color: var(--yes); }
+.sg-no  { color: var(--no); }
+
 details.more { display: inline; }
 details.more > summary { display: inline; cursor: pointer; color: var(--accent-ink); list-style: none; }
 details.more > summary::-webkit-details-marker { display: none; }
