@@ -184,6 +184,16 @@ TERM_OVERRIDES = {
 # mandate paragraphs actually set a term - 43/28 (Syria, 2020) is coded expansion
 # under the strongest-effect rule but OP67 extends the commission for a year, so
 # it belongs on the chart; a pure tasking sets no term and stays off it.
+# Scope corrections applied at build time, for bodies whose Airtable "Scope" value does
+# not match what the founding text actually sets up. Reviewed 5 November 2026.
+SCOPE_OVERRIDES = {
+    # 36/2 OP16 asks OHCHR itself to "dispatch a team of three experts", reporting through
+    # the High Commissioner (OP17). No commissioners appointed by the Council President and
+    # the text never calls the body independent, so it belongs with the OHCHR mechanisms
+    # rather than the independent bodies. Both scopes are counted, so no figure changes.
+    "OHCHR Mission Burundi (2017)": "OHCHR investigation (broader)",
+}
+
 TERM_ROLES = ("founding", "renewal")
 
 
@@ -355,7 +365,7 @@ def main():
         out_ib.append({
             "short_name": f.get("Short Name Investigative Body"),
             "full_name": f.get("Full name"),
-            "scope": f.get("Scope"),
+            "scope": SCOPE_OVERRIDES.get(f.get("Short Name Investigative Body"), f.get("Scope")),
             "mandate_type": f.get("Mandate type"),
             "mandate_status": f.get("Mandate status"),
             "country": f.get("Country Under Investigation"),
