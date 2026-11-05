@@ -124,18 +124,30 @@
     });
     svg.addEventListener("pointerleave", () => { if (window.HRCTooltip) window.HRCTooltip.hide(); });
   }
+  // Gridlines, bands and the labels drawn on top of the marks all sit above them
+  // and would swallow the pointer, so hovering the middle of a bar hit the number
+  // printed on it and no tooltip appeared. Only the marks themselves are hoverable.
+  //
+  // This rule used to be a <style> element appended inside each SVG, written as
+  // "*{pointer-events:none}". A <style> inside inline SVG in an HTML document is
+  // NOT scoped to that SVG - it applies to the whole page. The selector therefore
+  // matched <body> and every tab button, and as soon as one chart had been drawn
+  // nothing on the site could be clicked. Scoped to .hrc-svg and injected once.
+  const SVG_POINTER_STYLE_ID = "hrc-svg-pointer-rules";
+  function ensureSvgPointerRules() {
+    if (document.getElementById(SVG_POINTER_STYLE_ID)) return;
+    const st = document.createElement("style");
+    st.id = SVG_POINTER_STYLE_ID;
+    st.textContent = ".hrc-svg *{pointer-events:none}.hrc-svg [data-tip]{pointer-events:auto}";
+    document.head.appendChild(st);
+  }
   function svgRoot(W, H) {
-    const svg = el("svg", {
+    ensureSvgPointerRules();
+    return el("svg", {
       xmlns: NS, viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img",
+      class: "hrc-svg",
       "font-family": FONT, style: "display:block;max-width:100%;height:auto",
     });
-    // Gridlines, bands and the labels drawn on top of the marks all sit above them
-    // and would swallow the pointer, so hovering the middle of a bar hit the number
-    // printed on it and no tooltip appeared. Only the marks themselves are hoverable.
-    const st = el("style", {});
-    st.textContent = "*{pointer-events:none}[data-tip]{pointer-events:auto}";
-    svg.appendChild(st);
-    return svg;
   }
   function text(parent, s, attrs) {
     const t = el("text", attrs);
