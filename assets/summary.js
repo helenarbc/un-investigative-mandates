@@ -574,7 +574,22 @@
       };
     }).filter(Boolean).sort((a, b) => a.startY - b.startY);
     const ms = rows.map(r => r.m).sort((a, b) => a - b);
-    const medianOf = (a) => a.length ? a[Math.floor(a.length / 2)] : 0;
+    // True median: for an even count, the mean of the two middle values.
+    const medianOf = (a) => {
+      const n = a.length;
+      if (!n) return 0;
+      return n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2;
+    };
+    const meanOf = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+    // Modal duration, to the nearest whole year: the single most common outcome,
+    // which neither the median nor the mean shows.
+    const modeOf = (a) => {
+      const bins = new Map();
+      a.forEach(m => { const k = Math.round(m / 12); bins.set(k, (bins.get(k) || 0) + 1); });
+      let best = null;
+      bins.forEach((n, k) => { if (!best || n > best.n) best = { k, n }; });
+      return best || { k: 0, n: 0 };
+    };
     const ended = rows.filter(r => !r.live).map(r => r.m).sort((a, b) => a - b);
     const BANDS = [[0, 12, "under a year"], [12, 24, "one to two years"],
       [24, 60, "two to five years"], [60, 120, "five to ten years"], [120, 1e9, "over ten years"]];
@@ -585,6 +600,8 @@
     return {
       rows, bands, total: rows.length,
       median: medianOf(ms), medianEnded: medianOf(ended),
+      mean: meanOf(ms), mode: modeOf(ms), modeEnded: modeOf(ended),
+      endedCount: ended.length,
       live: rows.filter(r => r.live).length,
     };
   })();
@@ -865,7 +882,9 @@
     // note, wrapped on word boundaries so it never runs off the canvas
     const NOTE = "Texts that create or extend a body, coded from the mandate paragraphs; taskings, which set no " +
       "term, are not shown. ‘Other set term’, " + lower(word(D_OTHER_TERMS.total)) + " texts: " +
-      D_OTHER_TERMS.summary + ".";
+      D_OTHER_TERMS.summary + ". Three further texts whose term was written as a session reference or as " +
+      "‘until it presents a final report’ but which ran to within days of twelve months — 25/23, 39/14 " +
+      "and 42/26 — are counted under twelve months (decision of 5 November 2026).";
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln,
       { x: padL - 4, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
@@ -878,7 +897,7 @@
 
   function D_TITLE() {
     const i12 = TERMS.indexOf("12 months");
-    return `The term set by each text that creates or extends a mandate, by year`;
+    return `Duration of mandate as set by the resolution, by year`;
   }
 
   /* ---------------- chart E: task verbs in each founding mandate ---------------- */
@@ -1020,7 +1039,7 @@
   }
 
   function E_TITLE() {
-    return `Task verbs in each founding mandate, by year`;
+    return `Tasks assigned in each founding mandate, by year`;
   }
 
   /* ---------------- chart F: four features of each founding mandate ---------------- */
@@ -1177,7 +1196,7 @@
   }
 
   function F_TITLE() {
-    return `Four features of each founding mandate, by year`;
+    return `Four characteristics of each founding mandate, by year`;
   }
 
   /* ---------------- table G: the fifteen task verbs ---------------- */
@@ -1512,7 +1531,7 @@
   }
 
   function E2_TITLE() {
-    return `Task verbs in each founding mandate, with the range before ${E2_EARLY_END + 1} and since ${E2_LATE_START}`;
+    return `Tasks assigned in each founding mandate, with the range before ${E2_EARLY_END + 1} and since ${E2_LATE_START}`;
   }
 
   /* ---------------- chart 7: groups named vs groups instructed ---------------- */
@@ -1630,7 +1649,7 @@
   }
 
   function H_TITLE() {
-    return `Groups named in the text, and groups the body is instructed to examine`;
+    return `Groups named in the resolution and groups included in the mandate`;
   }
   function H_SUBTITLE() {
     return `Each group, as a count of the ${H_DATA.total} texts in the corpus.`;
@@ -1733,7 +1752,7 @@
   }
 
   function I_TITLE() {
-    return `How texts were adopted, by year`;
+    return `Mode of adoption of mandating texts, by year`;
   }
 
   /* ---------------- chart 9: how States voted ---------------- */
@@ -1826,7 +1845,7 @@
 
   function J_TITLE() {
     const e = J_DATA.early, l = J_DATA.late;
-    return `Average Yes, abstentions and No per recorded vote, by year`;
+    return `Average distribution of votes per recorded vote, by year`;
   }
 
   /* ---------------- PNG export ---------------- */
@@ -2042,7 +2061,7 @@
   }
 
   function M_TITLE() {
-    return `The law each founding mandate names, and how far it goes toward crime`;
+    return `Applicable law and criminal-accountability language in founding mandates`;
   }
 
   /* ---------------- cards ---------------- */
@@ -2056,7 +2075,7 @@
     {
       id: "1",
       file: "chart-01-resolutions-per-year-by-role.png",
-      title: () => `Resolutions and decisions per year, by role`,
+      title: () => `Resolutions and decisions adopted each year, by function`,
       legend: () => legendHTML(A_LEGEND),
       note: () => `Each column is one calendar year, split by the role of the text; the figure above is the year's total. ` +
         `${A_DATA.total} texts in all, 2006–${YEAR_MAX}.`,
@@ -2065,7 +2084,7 @@
     {
       id: "2",
       file: "chart-02-texts-and-bodies-per-situation.png",
-      title: () => `Texts and bodies per situation`,
+      title: () => `Mandating texts and bodies, by situation`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         B_DATA.regionCounts.map(({ region, n }) =>
           `<span class="lg"><span class="sw" style="background:${REGION_COLOR[region]}"></span>${esc(region)} ${n}</span>`).join(""),
@@ -2077,7 +2096,7 @@
     {
       id: "2A",
       file: "chart-02a-texts-and-bodies-by-region.png",
-      title: () => `Texts and bodies by regional group of the situation`,
+      title: () => `Mandating texts and bodies, by regional group of the situation`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         BR_DATA.rows.map(r =>
           `<span class="lg"><span class="sw" style="background:${REGION_COLOR[r.region]}"></span>${esc(BR_SHORT[r.region] || r.region)} ${r.situations}</span>`).join(""),
@@ -2091,7 +2110,7 @@
     {
       id: "3",
       file: "chart-03-bodies-running-per-year.png",
-      title: () => `Council-mandated bodies running in each year`,
+      title: () => `Mandates in operation in each year`,
       legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
         `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
       note: () => `A body is counted in every year its mandate is in force; the ` +
@@ -2101,7 +2120,7 @@
     },
     {
       id: "4",
-      head: "The term each mandate sets",
+      head: "Duration of mandate as set by the establishing or extending resolution",
       // the SVG carries its own title, legend, note and source so the PNG is
       // a finished slide; the card head only holds the controls
       selfContained: true,
@@ -2112,48 +2131,50 @@
     {
       id: "4A",
       file: "chart-04a-how-long-each-body-ran.png",
-      title: () => `How long each body actually ran`,
+      title: () => `Duration of mandate in practice`,
       legend: () => `<span class="lg"><span class="sw" style="background:${DL_RUNNING}"></span>Still running (${DL_DATA.live})</span>` +
         `<span class="lg"><span class="sw" style="background:${DL_ENDED}"></span>Ended (${DL_DATA.total - DL_DATA.live})</span>`,
       note: () => `One bar per body, in the order they began. A body still running is drawn to the build date, ` +
         `not to its End Date, which for an active fixed-term body is the expiry of its current period. ` +
-        `Median across all ${DL_DATA.total}: ${DL_DUR(DL_DATA.median)}; median of those that have ended: ` +
-        `${DL_DUR(DL_DATA.medianEnded)}. ` +
+        `Most common outcome, to the nearest year: ${DL_DATA.mode.k === 1 ? "one year" : DL_DATA.mode.k + " years"}, ` +
+        `${DL_DATA.mode.n} of the ${DL_DATA.total}, and ${DL_DATA.modeEnded.n} of the ${DL_DATA.endedCount} that have ended. ` +
+        `Median ${DL_DUR(DL_DATA.median)}; median of those that have ended ${DL_DUR(DL_DATA.medianEnded)}; ` +
+        `mean ${DL_DUR(DL_DATA.mean)} \u2014 the distance between mean and median is the three longest-running bodies. ` +
         DL_DATA.bands.filter(b => b.n).map(b => `${b.label} ${b.n}`).join(" · ") + `. ` +
         `S-1/1 (2006), never implemented, is not counted.`,
       draw: drawDL,
     },
     {
       id: "5",
-      head: "Task verbs in each founding mandate: the range in each period",
+      head: "Scope of mandate: tasks assigned in founding resolutions",
       selfContained: true,
       file: "chart-05-task-verbs-per-founding-text.png",
       draw: drawE2,
     },
     {
       id: "6",
-      head: "Task verbs in founding mandates: when each one first appears",
+      head: "First appearance of each mandated task in a founding resolution",
       selfContained: true,
       file: "chart-06-task-verbs-first-use.png",
       draw: drawV,
     },
     {
       id: "7",
-      head: "The law each founding mandate names, and how far it goes toward crime",
+      head: "Applicable law and criminal-accountability language in founding mandates",
       selfContained: true,
       file: "chart-07-law-named-and-criminal-register.png",
       draw: drawM,
     },
     {
       id: "8",
-      head: "Groups named in the text, and groups the body is instructed to examine",
+      head: "Groups named in the resolution and groups included in the mandate",
       selfContained: true,
       file: "chart-08-groups-named-vs-instructed.png",
       draw: drawH,
     },
     {
       id: "9",
-      head: "How texts were adopted",
+      head: "Mode of adoption of mandating texts",
       selfContained: true,
       modes: [["counts", "Counts"], ["shares", "Shares"]],
       file: (mode) => `chart-09-adoption-by-year-${mode}.png`,
@@ -2161,14 +2182,14 @@
     },
     {
       id: "10",
-      head: "Average Yes, abstentions and No per recorded vote",
+      head: "Average distribution of votes per recorded vote",
       selfContained: true,
       file: "chart-10-votes-by-year.png",
       draw: drawJ,
     },
     {
       id: "11",
-      head: "How each regional group voted, by year",
+      head: "Voting record by regional group and year",
       selfContained: true,
       modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
       file: (mode) => mode === "noisrael"
@@ -2178,7 +2199,7 @@
     },
     {
       id: "12",
-      head: "Members with the highest share of No",
+      head: "Members with the highest proportion of votes against",
       selfContained: true,
       file: "chart-12-habitual-opponents.png",
       draw: drawL,
@@ -2245,7 +2266,7 @@
   function K_TITLE(mode) {
     return mode === "noisrael"
       ? "How each regional group voted, by year, excluding the Israel docket"
-      : "How each regional group voted, by year";
+      : "Voting record by regional group and year";
   }
 
   function drawK(host, mode) {
