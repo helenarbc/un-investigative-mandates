@@ -517,74 +517,88 @@
   // Same two columns as chart 7, one row per regional group. Texts as a bar, bodies
   // as dots, situations as a figure, so the three reconcile with the corpus totals.
   function drawBR(host) {
+    // A donut rather than five bars: the question is how the corpus divides, and a
+    // ring reads as a division of a whole without repeating a row per region.
     const W = Math.max(host.clientWidth || 960, 300);
-    const narrow = W < 560;
-    const rows = BR_DATA.rows;
-    const rowH = narrow ? 30 : 34, barH = narrow ? 14 : 16;
-    const headH = 18;
-    const H = headH + rows.length * rowH + 6;
-    const labelW = narrow ? Math.min(118, W * 0.38) : Math.min(188, W * 0.27);
-    const maxBodies = Math.max(...rows.map(r => r.bodies));
-    const dotR = narrow ? 2.4 : 3;
-    const dotPitch = dotR * 2 + 1.6;
-    const bodiesW = (narrow ? 20 : 24) + maxBodies * dotPitch + 6;
-    const valueW = narrow ? 30 : 36;
-    const iw = Math.max(40, W - labelW - valueW - bodiesW - 8);
-    const max = Math.max(...rows.map(r => r.texts));
-    const fontRow = narrow ? 11 : 13;
+    const narrow = W < 640;
+    const rows = BR_DATA.rows.filter(r => r.texts > 0);
+    const empty = BR_DATA.rows.filter(r => !r.texts);
+    const total = BR_DATA.totalTexts;
+
+    const H = narrow ? 420 : 360;
+    const cy = narrow ? 150 : H / 2;
+    const cx = narrow ? W / 2 : Math.min(230, W * 0.3);
+    const R = Math.min(narrow ? 108 : 132, cy - 18);
+    const r0 = R * 0.58;
     const svg = svgRoot(W, H);
 
-    text(svg, "Texts", { x: labelW + 2, y: 12, "font-size": narrow ? 9.5 : 11, fill: PAL.muted });
-    text(svg, "Bodies", { x: W - bodiesW + (narrow ? 0 : 2), y: 12, "font-size": narrow ? 9.5 : 11, fill: PAL.muted });
+    const arc = (a0, a1, rOut, rIn) => {
+      const pt = (ang, rr) => [cx + rr * Math.cos(ang), cy + rr * Math.sin(ang)];
+      const big = a1 - a0 > Math.PI ? 1 : 0;
+      const [x0, y0] = pt(a0, rOut), [x1, y1] = pt(a1, rOut);
+      const [x2, y2] = pt(a1, rIn), [x3, y3] = pt(a0, rIn);
+      return `M${x0} ${y0}A${rOut} ${rOut} 0 ${big} 1 ${x1} ${y1}` +
+             `L${x2} ${y2}A${rIn} ${rIn} 0 ${big} 0 ${x3} ${y3}Z`;
+    };
 
-    rows.forEach((r, i) => {
-      const y = headH + i * rowH;
-      const cy = y + barH / 2;
-      const share = Math.round(100 * r.texts / BR_DATA.totalTexts);
-      const tip = r.texts === 0
-        ? `${r.region}\nNo situation in this regional group has been given an investigative mandate ` +
-          `by the Council in twenty years.`
-        : `${r.region}\n${plural(r.texts, "text")} of ${BR_DATA.totalTexts} (${share}%)` +
+    let ang = -Math.PI / 2;
+    const seg = [];
+    rows.forEach(r => {
+      const sweep = 2 * Math.PI * r.texts / total;
+      seg.push({ r, a0: ang, a1: ang + sweep, mid: ang + sweep / 2 });
+      ang += sweep;
+    });
+
+    seg.forEach(({ r, a0, a1, mid }) => {
+      const share = Math.round(100 * r.texts / total);
+      svg.appendChild(el("path", {
+        d: arc(a0, a1 - 0.012, R, r0), fill: REGION_COLOR[r.region] || PAL.baseline,
+        _tip: `${r.region}\n${plural(r.texts, "text")} of ${total} (${share}%)` +
           `\n${plural(r.bodies, "body", "bodies")} · ${plural(r.situations, "situation")}` +
           `\n${r.founding} founding · ${r.voted} of ${r.texts} put to a recorded vote` +
           ` (${Math.round(100 * r.voted / r.texts)}%)` +
-          `\nSituations:\n` + listTip(r.names.slice().sort(), 24);
-      text(svg, BR_SHORT[r.region] || r.region, {
-        x: labelW - 8, y: cy + fontRow * 0.35, "text-anchor": "end", "font-size": fontRow, fill: PAL.ink,
-      });
-      const w = iw * r.texts / max;
-      if (r.texts === 0) {
-        // an empty slot the width of the longest bar, so the nothing is visible as nothing
-        svg.appendChild(el("rect", {
-          x: labelW, y, width: iw, height: barH, rx: 2, fill: "none",
-          stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "3 3", _tip: tip,
-        }));
-      } else {
-        svg.appendChild(el("rect", {
-          x: labelW, y, width: Math.max(2, w), height: barH, rx: 2,
-          fill: REGION_COLOR[r.region] || PAL.baseline, _tip: tip,
-        }));
-      }
-      text(svg, `${r.texts}`, {
-        x: labelW + (r.texts === 0 ? iw : w) + 5, y: cy + fontRow * 0.35, "font-size": fontRow,
-        "font-weight": 600, fill: r.texts === 0 ? PAL.muted : PAL.ink,
-      });
-      // second line: situations, and the share of the corpus
-      text(svg, r.texts === 0
-        ? "no situation in this group has ever been investigated"
-        : `${plural(r.situations, "situation")} · ${share}% of the corpus`, {
-        x: labelW, y: y + barH + (narrow ? 11 : 12), "font-size": narrow ? 9.5 : 10.5, fill: PAL.muted,
-      });
-      const bx = W - bodiesW;
-      text(svg, r.bodies, { x: bx, y: cy + fontRow * 0.35, "font-size": fontRow, fill: PAL.ink2 });
-      for (let k = 0; k < r.bodies; k++) {
-        svg.appendChild(el("circle", {
-          cx: bx + (narrow ? 14 : 18) + dotR + k * dotPitch, cy, r: dotR,
-          fill: REGION_COLOR[r.region] || PAL.baseline, opacity: 0.75,
-          _tip: `${r.region} — ${plural(r.bodies, "body", "bodies")}\n` + listTip(r.bodyNames.slice().sort(), 24),
-        }));
+          `\nSituations:\n` + listTip(r.names.slice().sort(), 24),
+      }));
+      // the share inside the band, where the band is deep enough to hold it
+      if (a1 - a0 > 0.34) {
+        const rr = (R + r0) / 2;
+        text(svg, share + "%", {
+          x: cx + rr * Math.cos(mid), y: cy + rr * Math.sin(mid) + 4,
+          "text-anchor": "middle", "font-size": 13, "font-weight": 650, fill: "#ffffff",
+        });
       }
     });
+
+    text(svg, total, { x: cx, y: cy - 2, "text-anchor": "middle", "font-size": 30,
+      "font-weight": 650, fill: PAL.ink });
+    text(svg, "mandating texts", { x: cx, y: cy + 16, "text-anchor": "middle",
+      "font-size": 11.5, fill: PAL.muted });
+    text(svg, `${BR_DATA.totalBodies} bodies`, { x: cx, y: cy + 32, "text-anchor": "middle",
+      "font-size": 11.5, fill: PAL.muted });
+
+    // the key carries the numbers, so the ring itself stays uncluttered
+    const kx = narrow ? 18 : cx + R + 46;
+    const kyTop = narrow ? cy + R + 34 : cy - (rows.length * 34 + (empty.length ? 30 : 0)) / 2 + 10;
+    rows.forEach((r, i) => {
+      const y = kyTop + i * 34;
+      svg.appendChild(el("rect", { x: kx, y: y - 9, width: 11, height: 11, rx: 2.5,
+        fill: REGION_COLOR[r.region] || PAL.baseline }));
+      text(svg, BR_SHORT[r.region] || r.region, { x: kx + 18, y, "font-size": 14,
+        "font-weight": 600, fill: PAL.ink });
+      text(svg, `${plural(r.texts, "text")} (${Math.round(100 * r.texts / total)}%) · ` +
+        `${plural(r.bodies, "body", "bodies")} · ${plural(r.situations, "situation")}`,
+        { x: kx + 18, y: y + 15, "font-size": 12, fill: PAL.ink2 });
+    });
+    empty.forEach((r, i) => {
+      const y = kyTop + rows.length * 34 + i * 30;
+      svg.appendChild(el("rect", { x: kx, y: y - 9, width: 11, height: 11, rx: 2.5,
+        fill: "none", stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "2.5 2.5" }));
+      text(svg, BR_SHORT[r.region] || r.region, { x: kx + 18, y, "font-size": 14,
+        "font-weight": 600, fill: PAL.muted });
+      text(svg, "no situation in this group has ever been investigated", { x: kx + 18, y: y + 15,
+        "font-size": 12, fill: PAL.muted });
+    });
+
     host.textContent = "";
     host.appendChild(svg);
     attachTips(svg);
@@ -1713,8 +1727,7 @@
     };
   })();
 
-  function drawI(host, mode) {
-    const shares = mode === "shares";
+  function drawI(host) {
     const padL = 72, padR = 40;
     const iw = D_W - padL - padR;
     const svg = svgRoot(D_W, D_H);
@@ -1734,14 +1747,14 @@
     const plotT = legendY + 34, plotB = 556;
     const ih = plotB - plotT;
     const totals = YEARS.map(y => I_DATA.per.get(y).n);
-    const yMax = shares ? 100 : Math.max(4, Math.ceil((Math.max(...totals) + 1) / 2) * 2);
+    const yMax = Math.max(4, Math.ceil((Math.max(...totals) + 1) / 2) * 2);
     for (let t = 0; t <= 4; t++) {
       const yy = plotT + ih - ih * t / 4;
       svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: yy, y2: yy, stroke: PAL.grid, "stroke-width": 1 }));
-      text(svg, shares ? Math.round(100 * t / 4) + "%" : Math.round(yMax * t / 4),
+      text(svg, Math.round(yMax * t / 4),
         { x: padL - 10, y: yy + 5, "text-anchor": "end", "font-size": 14, fill: PAL.muted });
     }
-    const slot = iw / YEARS.length, bw = Math.min(34, slot - 20);
+    const slot = iw / YEARS.length, bw = Math.min(44, slot - 10);
     YEARS.forEach((yr, i) => {
       const d = I_DATA.per.get(yr);
       const x = padL + slot * i + (slot - bw) / 2;
@@ -1749,33 +1762,34 @@
       [["novote", I_NOVOTE], ["voted", I_VOTE]].forEach(([k, c]) => {
         const v = d[k];
         if (!v) return;
-        const h = shares ? (d.n ? ih * v / d.n : 0) : ih * v / yMax;
+        const h = ih * v / yMax;
         svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c,
           _tip: `${yr} — ${plural(v, "text")} ${k === "voted" ? "put to a recorded vote" : "adopted without a vote"}` +
             (d.n ? ` (${Math.round(100 * v / d.n)}% of ${d.n})` : "") + "\n" +
             listTip(k === "voted" ? d.itemsVoted : d.itemsNovote) }));
-        if (h >= 17) {
-          const lbl = shares ? Math.round(100 * v / d.n) + "%" : String(v);
-          if (textW(lbl, 14) < bw - 4) {
-            text(svg, lbl, { x: x + bw / 2, y: yCur - h / 2 + 5, "text-anchor": "middle", "font-size": 14,
-              "font-weight": 600, fill: k === "voted" ? "#ffffff" : "#0b0b0b" });
-          }
+        const ink = k === "voted" ? "#ffffff" : "#0b0b0b";
+        const pct = d.n ? Math.round(100 * v / d.n) + "%" : "";
+        if (h >= 32 && pct && textW("(" + pct + ")", 11) < bw - 2) {
+          // the count, with its share of the year's texts under it
+          text(svg, String(v), { x: x + bw / 2, y: yCur - h / 2, "text-anchor": "middle", "font-size": 14,
+            "font-weight": 600, fill: ink });
+          text(svg, "(" + pct + ")", { x: x + bw / 2, y: yCur - h / 2 + 15, "text-anchor": "middle",
+            "font-size": 11, fill: ink, opacity: 0.85 });
+        } else if (h >= 17 && textW(String(v), 14) < bw - 4) {
+          text(svg, String(v), { x: x + bw / 2, y: yCur - h / 2 + 5, "text-anchor": "middle", "font-size": 14,
+            "font-weight": 600, fill: ink });
         }
         yCur -= h;
       });
-      if (!shares && d.n) {
+      if (d.n) {
         text(svg, d.n, { x: x + bw / 2, y: plotB - ih * d.n / yMax - 8, "text-anchor": "middle",
           "font-size": 14, "font-weight": 650, fill: PAL.ink });
       }
       text(svg, yr, { x: x + bw / 2, y: plotB + 24, "text-anchor": "middle", "font-size": 14, fill: PAL.ink2 });
-      if (shares) {
-        text(svg, `n = ${d.n}`, { x: x + bw / 2, y: plotB + 42, "text-anchor": "middle",
-          "font-size": 12.5, fill: PAL.muted });
-      }
     });
     svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
 
-    const NOTE = `Each bar is the texts of that year that create, renew, expand or task a body.`;
+    const NOTE = `Each bar is the texts of that year that create, renew, expand or task a body; the bracketed figure is that segment's share of the year.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -1931,7 +1945,7 @@
                    ["2016–20", 2016, 2020], ["2021–" + String(YEAR_MAX).slice(2), 2021, 9999]];
   const M_FW = [["IHRL", "international human rights law", "#2a78d6"],
                 ["IHL", "international humanitarian law", "#6fc096"],
-                ["neither", "names neither", "#c9c8c3"]];
+                ["neither", "names no body of law", "#c9c8c3"]];
   // the ladder, lowest rung first; labels are the dataset's own codes
   const M_REG = [
     ["none", "no accountability language", "#c9c8c3"],
@@ -1996,8 +2010,8 @@
     let lx = xA;
     M_FW.forEach(([k, lbl, c]) => {
       svg.appendChild(el("rect", { x: lx, y: headY + 16, width: 12, height: 12, rx: 2.5, fill: c }));
-      text(svg, k === "neither" ? "neither" : k, { x: lx + 17, y: headY + 26, "font-size": 14, fill: PAL.ink2 });
-      lx += 17 + textW(k === "neither" ? "neither" : k, 14) + 20;
+      text(svg, k === "neither" ? "names no body of law" : k, { x: lx + 17, y: headY + 26, "font-size": 14, fill: PAL.ink2 });
+      lx += 17 + textW(k === "neither" ? "names no body of law" : k, 14) + 20;
     });
     let lxb = xB, lyb = headY + 16;
     M_REG.slice().reverse().forEach(([k, lbl, c]) => {
@@ -2106,13 +2120,7 @@
       title: () => `Resolutions and decisions adopted each year, by function`,
       legend: () => legendHTML(A_LEGEND),
       note: () => `One column per calendar year, split by the role of the text; ${A_DATA.total} texts in all, 2006–${YEAR_MAX}.`,
-      long: () => `There is no role for ending a mandate: in twenty years the Council has never adopted a text that ` +
-        `closes an investigative body. The nearest is 50/23 (Libya, 2022), which ends one by extending it ` +
-        `“for a final, non-extendable period of nine months”, and is counted as a renewal. Mandates end by the ` +
-        `absence of a decision rather than by one — a renewal defeated on the floor (Yemen, 7 October 2021, the ` +
-        `only draft ever rejected by this Council), a renewal never tabled (Ethiopia, October 2023), or a term ` +
-        `that simply expires (Eritrea, 2016). None of those produced an adopted text, so none appears here, ` +
-        `which is why the practice looks like uninterrupted growth.`,
+      long: () => `No text in the corpus closes a body: mandates end when a renewal is defeated, never tabled, or simply left to expire, so none of those endings can appear here.`,
       draw: drawA,
     },
     {
@@ -2122,13 +2130,12 @@
       legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
         `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
       note: () => `A body is counted in every year its mandate is in force.`,
-      long: () => `The ${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}. ` +
-        `S-1/1 (2006), never implemented, is not counted.`,
+      long: () => `A body is counted in every year its mandate is in force; the ${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}.`,
       draw: drawC,
     },
     {
       id: "3",
-      long: () => `Coded from the mandate paragraphs on a 15-verb taxonomy. No mean is drawn, because a single text would move it.`,
+      long: () => `Verbs are read from the mandate paragraphs only, on a fixed 15-verb taxonomy. No yearly mean is drawn, because one text would move it.`,
       head: "Scope of mandate: tasks assigned in founding resolutions",
       selfContained: true,
       file: "chart-03-task-verbs-per-founding-text.png",
@@ -2136,16 +2143,15 @@
     },
     {
       id: "4",
-      long: () => `“Adopted without a vote” means no member requested a recorded vote; it does not mean every member agreed.`,
+      long: () => `“Adopted without a vote” means no member asked for a vote. It does not mean every member agreed.`,
       head: "Mode of adoption of mandating texts",
       selfContained: true,
-      modes: [["counts", "Counts"], ["shares", "Shares"]],
-      file: (mode) => `chart-04-adoption-by-year-${mode}.png`,
+      file: "chart-04-adoption-by-year.png",
       draw: drawI,
     },
     {
       id: "5",
-      long: () => `Abstentions do not count as votes, so a text can pass with fewer than ${J_MAJORITY} in favour. The gap to ${J_SEATS} is members absent or not voting.`,
+      long: () => `Abstentions are not votes, so a text can pass with fewer than ${J_MAJORITY} in favour. The gap to ${J_SEATS} is members absent or not voting.`,
       head: "Average distribution of votes per recorded vote",
       selfContained: true,
       file: "chart-05-votes-by-year.png",
@@ -2153,13 +2159,10 @@
     },
     {
       id: "6",
-      long: () => `Membership changes every year. “Israel docket”: texts on the Occupied Palestinian Territory and Israel, and Lebanon 2006.`,
+      long: () => `Shares are of each group’s members that year, and membership changes annually. The figure above each bar is the positions behind it. 2007 and 2008 are empty: both 2007 texts were adopted without a vote and 2008 produced no mandating text, so there are no recorded positions.`,
       head: "Voting record by regional group and year",
       selfContained: true,
-      modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
-      file: (mode) => mode === "noisrael"
-        ? "chart-06-regional-groups-by-year-without-israel-docket.png"
-        : "chart-06-regional-groups-by-year-all.png",
+      file: "chart-06-regional-groups-by-year.png",
       draw: drawK,
     },
     {
@@ -2170,26 +2173,16 @@
         B_DATA.regionCounts.map(({ region, n }) =>
           `<span class="lg"><span class="sw" style="background:${REGION_COLOR[region]}"></span>${esc(region)} ${n}</span>`).join(""),
       note: () => `One row per situation; ${B_DATA.rows.length} situations in all.`,
-      long: () => `OPT / Israel is counted in two groups, so the five regional counts total ` +
-        `${B_DATA.regionCounts.reduce((a, x) => a + x.n, 0)} for ${B_DATA.rows.length} situations.` +
-        (B_DATA.unassigned ? ` ${word(B_DATA.unassigned)} further text created no body and is not shown.` : ""),
+      long: () => `OPT / Israel is counted in two regional groups, so the regional counts total more than the number of situations.`,
       draw: drawB,
     },
     {
       id: "8",
       file: "chart-08-texts-and-bodies-by-region.png",
       title: () => `Mandating texts and bodies, by regional group of the situation`,
-      legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
-        BR_DATA.rows.map(r =>
-          `<span class="lg"><span class="sw" style="background:${REGION_COLOR[r.region]}"></span>${esc(BR_SHORT[r.region] || r.region)} ${r.situations}</span>`).join(""),
-      note: () => `The chart above by region: ${BR_DATA.totalSituations} situations, ${BR_DATA.totalBodies} bodies, ${BR_DATA.totalTexts} texts.`,
-      long: () => `Each situation is counted once here. OPT / Israel is placed in ` +
-        `Asia-Pacific on geography; the chart above shows it in two groups because Israel has sat with ` +
-        `the Western European and others group in Geneva since 1 January 2014. ` +
-        `The Western European and others row is empty, and is shown rather than left out: on geography ` +
-        `no situation in that group has been given an investigative mandate by this Council in twenty ` +
-        `years. Israel is the only member of the group that appears in the corpus at all, and it appears ` +
-        `as the State investigated, under a situation placed in Asia-Pacific.`,
+      legend: () => "",
+      note: () => `Each ring segment is a regional group's share of the ${BR_DATA.totalTexts} mandating texts; ${BR_DATA.totalBodies} bodies across ${BR_DATA.totalSituations} situations.`,
+      long: () => `Each situation is counted once, placed on geography — which puts OPT / Israel in Asia-Pacific, though Israel has sat with the Western European and others group since 2014.`,
       draw: drawBR,
     },
     {
@@ -2199,39 +2192,28 @@
       legend: () => `<span class="lg"><span class="sw" style="background:${DL_RUNNING}"></span>Still running (${DL_DATA.live})</span>` +
         `<span class="lg"><span class="sw" style="background:${DL_ENDED}"></span>Ended (${DL_DATA.total - DL_DATA.live})</span>`,
       note: () => `One bar per body, in the order they began; median ${DL_DUR(DL_DATA.median)}.`,
-      long: () => `A body still running is drawn to the build date, ` +
-        `not to its End Date, which for an active fixed-term body is the expiry of its current period. ` +
-        `Most common outcome, to the nearest year: ${DL_DATA.mode.k === 1 ? "one year" : DL_DATA.mode.k + " years"}, ` +
-        `${DL_DATA.mode.n} of the ${DL_DATA.total}, and ${DL_DATA.modeEnded.n} of the ${DL_DATA.endedCount} that have ended. ` +
-        `Median of those that have ended ${DL_DUR(DL_DATA.medianEnded)}; ` +
-        `mean ${DL_DUR(DL_DATA.mean)} \u2014 the distance between mean and median is the three longest-running bodies. ` +
-        DL_DATA.bands.filter(b => b.n).map(b => `${b.label} ${b.n}`).join(" · ") + `. ` +
-        `S-1/1 (2006), never implemented, is not counted. ` +
-        `Where a bar ends, the Council usually decided nothing: only one adopted text in the corpus sets out to ` +
-        `close a body, 50/23 (Libya, 2022), and it does so by granting a final nine months. The rest end because ` +
-        `a renewal was defeated, never tabled, or simply not sought.`,
+      long: () => `A body still running is drawn to the build date, not to its End Date, which for a fixed renewable term is the expiry of the current period.`,
       draw: drawDL,
     },
     {
       id: "10",
-      long: () => {
-        const W = L_DATA.weog;
-        const rest = (W.other && W.other.length === 1)
-          ? `the remaining ${W.not - W.isr} are all on one text`
-          : `${W.not - W.isr} are on other texts`;
-        return `Years of membership differ, so totals are not comparable across States. ` +
-          `“Texts concerning Israel”: OPT/Israel and Lebanon 2006. The same exceptions appear at the other ` +
-          `end of the Council: Western group members cast ${W.not} votes that were not Yes, ${W.isr} of them ` +
-          `(${Math.round(100 * W.isr / W.not)}%) on those same texts, and ${rest}.`;
-      },
+      long: () => `Years of membership differ, so totals are not comparable across States. “Texts concerning Israel”: OPT / Israel and Lebanon 2006.`,
       head: "Members with the highest proportion of votes against",
       selfContained: true,
       file: "chart-10-habitual-opponents.png",
       draw: drawL,
     },
     {
+      id: "10b",
+      long: () => `The other tail of chart 10, on the same members and the same bars. “Texts they did not support” lists each position that was not Yes: N for a vote against, A for an abstention.`,
+      head: "Members with the highest proportion of votes in favour",
+      selfContained: true,
+      file: "chart-10b-habitual-supporters.png",
+      draw: drawLY,
+    },
+    {
       id: "11",
-      long: () => `Texts that create or extend a body, coded from the mandate paragraphs; taskings, which set no new period, are not counted.`,
+      long: () => `Terms are read from the text that sets them. Taskings set no new period and are not counted here.`,
       head: "Duration of mandate as set by the establishing or extending resolution",
       // the SVG carries its own title, legend, note and source so the PNG is
       // a finished slide; the card head only holds the controls
@@ -2242,7 +2224,7 @@
     },
     {
       id: "12",
-      long: () => `A cell marks a year in which at least one founding mandate carries that verb; the dark cell is its first use. Renewals and taskings are not shown.`,
+      long: () => `A cell marks a year in which at least one founding mandate carries that verb; the dark cell is its first use. The bracketed phrase is the object the verb recurrently takes in the mandate paragraphs. Renewals and taskings are not shown.`,
       head: "First appearance of each mandated task in a founding resolution",
       selfContained: true,
       file: "chart-12-task-verbs-first-use.png",
@@ -2250,7 +2232,7 @@
     },
     {
       id: "13",
-      long: () => `Left: a text may name both bodies of law, so the bars are not a division of the band. Right: an ordered ladder, each text on one rung only. The dataset codes international criminal law wherever a mandate names crimes or criminal proceedings — the top rung — so that coding appears on the right, not on the left. Naming a body of law is not applying it: this counts words in the mandate paragraph.`,
+      long: () => `A text may name both bodies of law, so the left bars are not a division of the band. “Names no body of law” means the mandate paragraph names none of IHRL, IHL or international criminal law — not that the text is unconcerned with human rights: most such mandates speak of violations, victims or accountability in plain terms, as S-3/1 (Beit Hanoun, 2006) and 42/25 (Venezuela, 2019) do. The right panel is a ladder: each text sits on one rung only, its highest.`,
       head: "Applicable law and criminal-accountability language in founding mandates",
       selfContained: true,
       file: "chart-13-law-named-and-criminal-register.png",
@@ -2323,20 +2305,18 @@
   })();
   const K_PCT = (part, tot) => (tot ? Math.round(100 * part / tot) : 0);
 
-  function K_TITLE(mode) {
-    return mode === "noisrael"
-      ? "How each regional group voted, by year, excluding the Israel docket"
-      : "Voting record by regional group and year";
+  function K_TITLE() {
+    return "Voting record by regional group and year";
   }
 
-  function drawK(host, mode) {
-    const rows = mode === "noisrael" ? K_DATA.noIsrael : K_DATA.all;
+  function drawK(host) {
+    const rows = K_DATA.all;
     const padL = 58, padR = 34;
     const iw = D_W - padL - padR;
     const svg = svgRoot(D_W, D_H);
     svg.setAttribute("style", "display:block;width:100%;height:auto");
 
-    const titleLines = wrapTo(K_TITLE(mode), 24, iw);
+    const titleLines = wrapTo(K_TITLE(), 24, iw);
     titleLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 36 + i * 29, "font-size": 24,
       "font-weight": 650, fill: PAL.ink }));
 
@@ -2359,7 +2339,8 @@
     rows.forEach((row, pi) => {
       const pTop = top + pi * panelH;
       const plotT = pTop + headH, plotB = pTop + panelH - 8;
-      const ih = plotB - plotT;
+      const nH = 13;                        // strip above each bar carrying its n
+      const ih = plotB - plotT - nH;
 
       const e = K_PCT(row.early.y, row.early.tot), l = K_PCT(row.late.y, row.late.tot);
       text(svg, `${row.label} — Yes ${e}% → ${l}%`, { x: padL - 4, y: pTop + 15,
@@ -2372,12 +2353,15 @@
       svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB,
         stroke: PAL.baseline, "stroke-width": 1 }));
       ["0%", "100%"].forEach((lbl, i) => text(svg, lbl, { x: padL - 10,
-        y: i ? plotT + 5 : plotB + 4, "text-anchor": "end", "font-size": 11.5, fill: PAL.muted }));
+        y: i ? plotT + nH + 5 : plotB + 4, "text-anchor": "end", "font-size": 11.5, fill: PAL.muted }));
 
       YEARS.forEach((yr, i) => {
         const d = row.per.get(yr), tot = d.y + d.a + d.n;
         const x = padL + slot * i + (slot - bw) / 2;
         if (!tot) return;
+        // the absolute number of positions behind the bar: 100% of three votes is not 100% of fifteen
+        text(svg, tot, { x: x + bw / 2, y: plotB - ih - 4, "text-anchor": "middle",
+          "font-size": 10.5, "font-weight": 600, fill: PAL.muted });
         let yCur = plotB;
         [["y", J_YES], ["a", J_ABS], ["n", J_NO]].forEach(([k, c]) => {
           const h = ih * d[k] / tot;
@@ -2390,7 +2374,7 @@
         });
       });
 
-      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotT + ih / 2, y2: plotT + ih / 2,
+      svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB - ih / 2, y2: plotB - ih / 2,
         stroke: PAL.ink, "stroke-width": 1, "stroke-dasharray": "5 4", opacity: 0.45 }));
 
       if (pi === rows.length - 1) {
@@ -2415,7 +2399,7 @@
 
 
   /* ---------------- L. The eight habitual opponents ---------------- */
-  const L_MIN_VOTES = 20, L_TOP = 8;
+  const L_MIN_VOTES = 20, L_TOP = 10;
   const L_NO = "#eb6834", L_ABS = "#c9c8c3", L_YES_ISR = "#86b6ef", L_YES_OTH = "#2a78d6";
   const L_SEG_LABEL = { no: "No", abs: "Abstain", yesIsr: "Yes on texts concerning Israel", yesOther: "Yes on other texts" };
   const L_SHORT = {
@@ -2469,7 +2453,18 @@
       .map(d => Object.assign(d, { pctNo: Math.round(100 * d.no / d.cast), yesOther: d.yes - d.yesIsr }))
       .sort((a, b) => (b.no / b.cast) - (a.no / a.cast))
       .slice(0, L_TOP);
-    return { rows, maxCast: Math.max(...rows.map(d => d.cast)),
+    // the same table sorted the other way: who almost always votes Yes, and when they did not
+    const eligible = [...rec.values()]
+      .map(d => Object.assign(d, { cast: d.yes + d.abs + d.no }))
+      .filter(d => d.cast >= L_MIN_VOTES)
+      .map(d => Object.assign(d, { pctYes: Math.round(100 * d.yes / d.cast),
+        notYes: d.abs + d.no,
+        notYesItems: d.noItems.map(t => t + " \u2014 No").concat(d.absItems.map(t => t + " \u2014 abstained")) }));
+    const rowsYes = eligible.slice()
+      .sort((a, b) => (b.yes / b.cast) - (a.yes / a.cast) || a.cast - b.cast)
+      .slice(0, L_TOP);
+    return { rows, rowsYes, maxCastYes: Math.max(...rowsYes.map(d => d.cast)),
+      maxCast: Math.max(...rows.map(d => d.cast)),
       yesIsr: rows.reduce((a, d) => a + d.yesIsr, 0),
       weog: { not: wNot, isr: wIsr, other: [...wOther.keys()] } };
   })();
@@ -2479,8 +2474,8 @@
     const svg = svgRoot(D_W, D_H);
     svg.setAttribute("style", "display:block;width:100%;height:auto");
 
-    const title = `The ${L_DATA.rows.length === 8 ? "eight" : L_DATA.rows.length} members with the highest ` +
-      `share of No, and how their votes divide`;
+    const title = `The ${L_DATA.rows.length} members with the highest share of No, ` +
+      `and how their votes divide`;
     const titleLines = wrapTo(title, 25, iw);
     titleLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 42 + i * 31, "font-size": 25,
       "font-weight": 650, fill: PAL.ink }));
@@ -2552,6 +2547,23 @@
     "consolidate", "preserve", "analyse evidence", "document", "verify", "monitor",
     "assess", "report", "make recommendations", "provide guidance", "engage"];
   const V_CELL = "#86b6ef", V_FIRST = "#1d3f73", V_GRID = "#eceae4";
+  const V_OBJECT = {
+    "investigate": "alleged violations and abuses",
+    "establish facts": "the facts and circumstances",
+    "identify perpetrators": "those responsible",
+    "collect": "information and evidence",
+    "consolidate": "information and evidence",
+    "preserve": "information and evidence",
+    "analyse evidence": "information and evidence",
+    "document": "violations, and what is gathered",
+    "verify": "information and evidence",
+    "monitor": "the human rights situation",
+    "assess": "the situation and national processes",
+    "report": "to the Council, on the situation",
+    "make recommendations": "on accountability and assistance",
+    "provide guidance": "to national and transitional processes",
+    "engage": "authorities, victims and civil society",
+  };
 
   const V_DATA = (() => {
     const founding = TEXTS.filter(r => r.resolution_role === "founding");
@@ -2572,6 +2584,91 @@
     return { rows, cum, nFounding: founding.length };
   })();
 
+  /* ---------------- chart 10b: the other tail ---------------- */
+  // The mirror of chart 10. Same members, same bars, sorted by share of Yes, so the
+  // two charts can be read against each other. The right-hand column is the point:
+  // for a habitual supporter the interesting fact is the handful of texts it did not
+  // support, so those are named rather than left in the tooltip.
+  function drawLY(host) {
+    const padL = 40, padR = 34;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const title = `The ${L_DATA.rowsYes.length} members with the highest share of Yes, ` +
+      `and the texts they did not support`;
+    const titleLines = wrapTo(title, 25, iw);
+    titleLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 42 + i * 31, "font-size": 25,
+      "font-weight": 650, fill: PAL.ink }));
+
+    const legendY = 42 + titleLines.length * 31 + 24;
+    let lx = padL;
+    [["Yes on other texts", L_YES_OTH], ["Yes on texts concerning Israel", L_YES_ISR],
+     ["Abstain", L_ABS], ["No", L_NO]].forEach(([lbl, c]) => {
+      svg.appendChild(el("rect", { x: lx, y: legendY - 11, width: 13, height: 13, rx: 2.5, fill: c }));
+      text(svg, lbl, { x: lx + 19, y: legendY, "font-size": 14, fill: PAL.ink2 });
+      lx += 19 + textW(lbl, 14) + 24;
+    });
+
+    const nameR = padL + 150;
+    const pctR = nameR + 54;
+    const barL = pctR + 18;
+    const barR = D_W - padR - 236;        // room for the occasions column
+    const scale = (barR - barL) / L_DATA.maxCastYes;
+    const top = legendY + 30;
+    const rowH = (588 - top) / L_DATA.rowsYes.length;
+    const bh = Math.min(34, rowH - 14);
+
+    L_DATA.rowsYes.forEach((d, i) => {
+      const cy = top + rowH * i + rowH / 2;
+      text(svg, L_SHORT[d.state] || d.state, { x: nameR, y: cy + 5, "text-anchor": "end",
+        "font-size": 15, "font-weight": 600, fill: PAL.ink });
+      text(svg, d.pctYes + "%", { x: pctR, y: cy + 5, "text-anchor": "end",
+        "font-size": 15, "font-weight": 650, fill: L_YES_OTH });
+
+      let x = barL;
+      [["yesOther", L_YES_OTH, "#ffffff"], ["yesIsr", L_YES_ISR, "#0b0b0b"],
+       ["abs", L_ABS, "#0b0b0b"], ["no", L_NO, "#ffffff"]].forEach(([k, c, ink]) => {
+        const v = d[k], w = v * scale;
+        if (w <= 0) return;
+        svg.appendChild(el("rect", { x, y: cy - bh / 2, width: w, height: bh, fill: c,
+          _tip: `${L_SHORT[d.state] || d.state} — ${L_SEG_LABEL[k]}: ${v} of ${d.cast} votes cast ` +
+            `(${Math.round(100 * v / d.cast)}%)\n` +
+            listTip(k === "no" ? d.noItems : k === "abs" ? d.absItems : k === "yesIsr" ? d.yesIsrItems
+              : d.yesOthItems) }));
+        if (textW(String(v), 14) + 8 <= w) {
+          text(svg, v, { x: x + w / 2, y: cy + 5, "text-anchor": "middle", "font-size": 14,
+            "font-weight": 600, fill: ink });
+        }
+        x += w;
+      });
+
+      // when it was not Yes
+      const ox = barR + 14;
+      if (!d.notYes) {
+        text(svg, "no exceptions", { x: ox, y: cy + 5, "font-size": 13, fill: PAL.muted });
+      } else {
+        const syms = d.noItems.map(t => t.split(" — ")[0] + " N")
+          .concat(d.absItems.map(t => t.split(" — ")[0] + " A"));
+        const shown = syms.slice(0, 3).join(", ") + (syms.length > 3 ? ` +${syms.length - 3}` : "");
+        text(svg, shown, { x: ox, y: cy + 5, "font-size": 13, fill: PAL.ink2,
+          _tip: `${L_SHORT[d.state] || d.state} — ${plural(d.notYes, "position")} that were not Yes\n` +
+            listTip(d.notYesItems) });
+      }
+    });
+    text(svg, "N = voted No · A = abstained", { x: barR + 14, y: top - 10,
+      "font-size": 11.5, fill: PAL.muted });
+
+    const NOTE = `Council members with ${L_MIN_VOTES} or more votes cast on the ${TEXTS.filter(r => r.adoption_mode === "Recorded vote").length} recorded votes.`;
+    const noteLines = wrapTo(NOTE, 14, iw);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 626 + i * 19, "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL, y: 626 + noteLines.length * 19 + 8, "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+    attachTips(svg);
+  }
+
   function drawV(host) {
     const padL = 28, padR = 26;
     const svg = svgRoot(D_W, D_H);
@@ -2582,7 +2679,7 @@
     titleLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 36 + i * 29,
       "font-size": 24, "font-weight": 650, fill: PAL.ink }));
 
-    const labelW = 232;
+    const labelW = 300;
     const gridL = padL + labelW, gridR = D_W - padR - 54;
     const slot = (gridR - gridL) / YEARS.length;
     const top = 36 + titleLines.length * 29 + 34;
@@ -2599,8 +2696,12 @@
       if (ri % 2 === 0) {
         svg.appendChild(el("rect", { x: gridL, y: y0, width: gridR - gridL, height: rowH, fill: V_GRID }));
       }
-      text(svg, r.verb, { x: gridL - 10, y: mid + 5, "text-anchor": "end",
-        "font-size": 14.5, fill: PAL.ink });
+      text(svg, r.verb, { x: gridL - 10, y: mid - 1, "text-anchor": "end",
+        "font-size": 14, fill: PAL.ink });
+      if (V_OBJECT[r.verb]) {
+        text(svg, "(" + V_OBJECT[r.verb] + ")", { x: gridL - 10, y: mid + 11,
+          "text-anchor": "end", "font-size": 10.5, fill: PAL.muted });
+      }
       text(svg, r.firstYear || "—", { x: gridR + 50, y: mid + 5, "text-anchor": "end",
         "font-size": 13.5, "font-weight": 650, fill: V_FIRST });
 

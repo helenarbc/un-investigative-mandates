@@ -1568,177 +1568,94 @@
 
   function renderAbout() {
     $("#about-content").innerHTML = `
-      <h2>What this is</h2>
-      <p>An explorer of the United Nations Human Rights Council's country-specific
-      <b>investigative and accountability mandates</b> (2006–2026): the resolutions that create,
-      renew, expand or task them, how every Council member voted, who sponsored them, and the
-      language of the mandates themselves — including how they address criminal accountability,
-      gender and children. The <b>Reports</b> tab searches the mechanisms' own reports paragraph
-      by paragraph and returns only verbatim text with citations.</p>
-      <p><button class="icon-btn" onclick="window.HRCTour && HRCTour.start()">? Take the one-minute tour</button></p>
-      <h2>What is included</h2>
-      <p>Every HRC resolution or decision adopted 2006–2026 (in regular session, special session
-      or organizational meeting) that <b>(a) establishes</b> a country-specific investigative or
-      accountability mechanism — a commission of inquiry, fact-finding mission, group, team or
-      committee of experts, or an OHCHR investigation, examination, monitoring or accountability
-      mandate conducted at the Council's request; <b>(b) renews or extends</b> such a mechanism;
-      or <b>(c) assigns it new</b> investigative, monitoring, evidence-preservation or reporting
-      tasks.</p>
-      <p><b>Not included:</b> thematic mechanisms, country special-procedures mandates (Special
-      Rapporteurs and Independent Experts) unless the same text also does (a)–(c), resolutions
-      that merely welcome a mechanism's report or urge cooperation, and UPR outcome decisions.
-      A request to OHCHR for a report, where no mechanism exists and no investigative or evidence
-      function is given, does not qualify (for example S-23/1 on Boko Haram, 2015, which is
-      therefore excluded).
-      One special procedure is shown <b>for reference only</b> and excluded from every figure: the
-      Special Rapporteur on Afghanistan, which the Council gave fact-finding support (2021) and a task
-      to document and preserve information (2022–2026) until the Independent Investigative Mechanism for
-      Afghanistan, created in October 2025, is operational.
-      The <b>Excluded mechanisms</b> tab lists, for context, ${OTHER_MANDATED_BODIES} investigative bodies mandated by the
-      General Assembly, the Security Council or the Secretary-General (a selection, not a complete list), the
-      Special Rapporteur on Afghanistan, and the texts excluded from the corpus. None of them is counted in any
-      figure on this site; their reports are searchable in the Reports tab.</p>
-      <h2>Data</h2>
-      <p>The dataset covers ${RES.length} resolutions and decisions (complete to the end of the Council's
-      63rd session, 7 October 2026), ${COUNCIL_BODIES} Council-mandated investigative bodies,
-      ${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length} recorded
-      votes with country-by-country positions, sponsorship lists, and the mechanisms' public reports.
-      It was compiled and verified against the official UN documents (docs.un.org and the OHCHR
-      Search Library) by <b>Helena Rodríguez-Bronchú Carceller</b>; every figure on this site links
-      back to the document it comes from.
-      Analytical codings (resolution role, criminal-accountability wording, mandate action verbs,
-      legal frameworks, gender and children language) are the author's own, applied from the
-      resolutions' literal text; the verbatim mandate quotes shown in each resolution card are the
-      coding evidence.</p>
-      <p><b>Cite as:</b> Rodríguez-Bronchú Carceller, H., <i>UN Investigative Mandates</i> (2026),
-      with the UN document symbol of the resolution or report concerned.</p>
-      <h2>Method notes</h2>
-      <ul>
-        <li><b>Resolution roles.</b> Each resolution is coded by what it does to the mechanism:
-        <i>founding</i> — creates it; <i>renewal</i> — extends its mandate in time;
-        <i>expansion</i> — widens the investigation itself, typically by ordering an additional
-        special inquiry into specific new events (as for El-Houleh and Aleppo in Syria);
-        <i>tasking</i> — gives it additional work, such as extra reports, briefings or operational
-        steps, without widening what it investigates. A resolution can renew and expand at once;
-        it is coded by its strongest effect on the mandate. A tasking must contain a paragraph
-        addressed to the body itself. Welcoming or taking note of its report, urging States to
-        cooperate with it, and transmitting its reports to other United Nations organs are not
-        taskings: the first is an assessment, the others are addressed to States and to the
-        Council's own organs.</li>
-        <li>Vote tallies follow the official adoption record; the roll-call lists shown are the
-        official annexes.</li>
-        <li>"Without a vote" is the UN category (the data value in the base is "Consensus"): no member asked for a vote; it does not imply that every member agreed, and several such texts carry explanations of position or disassociations.</li>
-        <li>Mechanism-level codings (action verbs, legal frameworks) are the union of the
-        mechanism's mandating resolutions, so renewals inherit the founding language.</li>
-        <li><b>Criminal-accountability wording</b> is coded literally from the mandate paragraphs, one
-        value per text: <i>names crimes or criminal proceedings</i> — the text uses the word crime(s) or
-        criminal-justice vocabulary (crimes against humanity, war crimes, genocide, criminal or command
-        responsibility, criminal prosecutions or proceedings, the International Criminal Court, legal
-        proceedings); <i>accountability or perpetrators wording only</i> — accountability, impunity, those
-        responsible or perpetrators, without naming crimes; <i>none</i>; <i>no mandate text</i> — renewals
-        that only extend the mandate "as set out in" an earlier text. The "ICL" legal-framework tag on a
-        resolution follows the same rule. No mandate paragraph in the dataset contains the phrase
-        "international criminal law".</li>
-        <li><b>Legal frameworks named</b> (chart 13, left panel) is coded literally from the mandate
-        paragraphs: <i>IHRL</i> where the text names international human rights law or human rights law,
-        <i>IHL</i> where it names international humanitarian law. A text may name both, so the bars are
-        not a division of the band; a text naming neither is counted in the grey bar. Naming a body of
-        law is not the same as applying it — this records the words in the instruction, not the law the
-        body went on to use. Chart 13 reads founding mandates only (46 texts), in five-year bands, each
-        band against its own n.</li>
-        <li><b>4 November 2026:</b> S-23/1 (Boko Haram, 2015) excluded from the corpus. It requests
-        an OHCHR report compiled from information supplied by the affected States, gives no
-        investigative or evidence mandate and creates no body.</li>
-        <li><b>5 November 2026:</b> seven Syria texts excluded from the corpus — 20/22, 24/22,
-        26/23, 27/16, 29/16, 36/20 and 47/18. Each had been coded <i>tasking</i>, but none of them
-        contains a paragraph addressed to the commission of inquiry: they welcome its reports, urge
-        States to cooperate with it, or transmit its reports onward. Because the Council adopted a
-        general Syria resolution at almost every session, counting these texts overstated both the
-        number of mandate texts on Syria and the share of the corpus adopted by recorded vote: all
-        seven were voted. The reason for each is on the <b>Excluded mechanisms</b> tab.</li>
-        <li><b>Agenda item, and the position of the State concerned.</b> Added 5 November 2026 for the 52 texts
-        adopted without a vote, plus Ukraine 49/1 and Lebanon S-2/1. The agenda item is taken from the UN Digital
-        Library catalogue record (MARC field 991, Agenda information) and needs no judgement: item 4 nineteen
-        times, item 10 thirteen, item 2 seven, item 1 three, special sessions nine, and one text (4/8, 2007)
-        for which the record carries no item. The <i>position of the State concerned</i> is coded only where a
-        source supports it: <i>requested</i> where the State introduced or co-sponsored the text;
-        <i>accepted</i> where the text was taken under item 10, technical assistance and capacity-building,
-        which the Council uses with the agreement of the State concerned; <i>objected</i> where the State
-        disassociated itself from the consensus or spoke against; <i>not recorded</i> where it did not speak.
-        It is left empty otherwise. That is deliberate: summary records exist for the early and special sessions
-        and again systematically from the forty-eighth session (September 2021), but for the regular sessions
-        between roughly 2009 and 2021 there are none, so for those years the session report shows that the State
-        concerned spoke but not what it said. <i>Vote requested by</i> is coded only where a record names the
-        requesting delegation.</li>
-        <li><b>5 November 2026, three coding decisions.</b> (a) <i>Terms set by reference to a session.</i>
-        25/23 (Syria, 2014) extends the commission "through to the twenty-eighth session" and S-35/1 (Iran, 2022)
-        establishes the fact-finding mission "until the end of the fifty-fifth session". A session reference is a
-        real end point, so both ceased to be counted as <i>not stated</i>. No other text in the corpus sets its
-        term this way. <b>Superseded in part the same evening — see the note on measured terms below.</b> (b) <i>Special-Rapporteur paragraphs carry no verbs.</i> The
-        three Belarus texts each extend both the Special Rapporteur and the Group of Independent Experts in
-        separate paragraphs. Only the paragraphs addressed to the Group are coded, so the Special Rapporteur's
-        tasks in 55/27 and 58/19 have been removed: 55/27 loses <i>monitor</i> and 58/19, a renewal by reference
-        that adds no task, loses all four of its verbs. 61/26 was already correct. (c) <i>57/34 (DRC, 2024).</i>
-        Its verbs differ from the earlier DRC renewals because the mandate changed: OP15 asks the team for
-        technical support, transitional-justice design and concrete measures, so it is coded <i>provide guidance</i>
-        and <i>make recommendations</i>, with no instruction to investigate or report.</li>
-        <li><b>Paragraphs addressed to OHCHR as an office carry no verbs.</b> Decided 5 November 2026.
-        A country text often asks the High Commissioner's Office to give the Government technical assistance —
-        forensic expertise for its own judicial authorities, capacity-building, experts deployed to support a
-        national process. Those paragraphs neither create nor task an investigative body, and the investigating
-        they refer to is done by national courts, so they contribute no action verbs. Applied to the Democratic
-        Republic of the Congo series: 45/34, 48/20 and 54/34 lose the verbs that had been read from them.
-        This is <i>not</i> a rule about OHCHR-led bodies, which remain fully in the corpus: where the Council
-        asks the Office to run an investigation, examination or accountability project — the DPRK project, the
-        Belarus examination, Sri Lanka, Libya 2015, Iraq 2014 — OHCHR <i>is</i> the body and its paragraphs are
-        the mandate. The distinction is between a mandate <i>to</i> the Office and a mandate <i>through</i> it.</li>
-        <li><b>Terms written as a condition are measured, not guessed.</b> Decided 5 November 2026.
-        Where a text sets its term by reference to a session or to the delivery of a final report, the term is
-        measured against the record: the closing date of the session named, or the date of the next renewal.
-        Three such texts ran to within days of twelve months and are counted under <i>12 months</i>:
-        <b>25/23</b> (Syria, 2014; the twenty-eighth session closed on 27 March 2015, 12.0 months),
-        <b>39/14</b> (Burundi, 2018; 12.0 months to the next renewal) and
-        <b>42/26</b> (Burundi, 2019; 12.3 months). <b>S-35/1</b> (Iran, 2022) stays under <i>other set term</i>:
-        the fifty-fifth session closed on 5 April 2024, so it set a term of 16.3 months. The band
-        <i>other set term</i> therefore holds five texts, not eight, and <i>12 months</i> holds sixty-one.</li>
-        <li><b>ITE Kasai (2017) and the team of experts on the DRC (2018) are kept as two records.</b>
-        Reviewed 5 November 2026 and deliberately left as they are. The Council itself treats them as one
-        continuing team across 35/33, 38/20, 41/26, 45/34, 48/20, 54/34 and 57/34, and merging them would
-        give one clean chain. They are kept separate because their mandates are not the same instrument:
-        the 2017 body was confined to the Kasai provinces, and 48/20 (2021) extended the later team from
-        Kasai to the entire national territory — the only text in the corpus that widens a body's
-        geographic scope in those terms. Treating them as one body would erase that change and would also
-        merge two different reporting lines. The consequence is that the DRC shows four bodies rather than
-        three, and the corpus total is 47 rather than 46. Anyone preferring the merged reading should
-        subtract one body from both figures; no other figure on this site is affected.</li>
-        <li><b>End Date, and what it means.</b> For a body whose mandate has finished, <i>End Date</i> is the
-        date it ceased. For a body still running under a fixed renewable term, it is the expiry of its
-        <b>current</b> period, which is a future date — not the date the body ended. Read it with
-        <i>Mandate status</i>. The duration chart therefore draws a body that is still running to the build
-        date rather than to its End Date, which would otherwise count time it has not yet worked.</li>
-        <li><b>DPRK accountability project, 52/28 and 58/17.</b> Corrected 5 November 2026. OP15 of each text
-        contains a single clause about examining collected material — experts in legal accountability
-        "assess all information and testimonies" — which had been coded twice, as both <i>assess</i> and
-        <i>analyse evidence</i>. The material named in the same sentence is the central information and
-        evidence repository, so this is analysis of evidence rather than assessment of a situation, and
-        <i>assess</i> has been removed from both texts. <i>monitor</i> and <i>document</i> are unaffected;
-        they are coded from "monitoring and documentation efforts" earlier in the paragraph. Both are
-        renewals, so no founding-mandate figure changes.</li>
-        <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
-        resolutions no sponsor list has been recorded yet.</li>
-        <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates
-        text. Paragraph numbers are the printed UN paragraph numbers wherever they exist;
-        documents without numbered paragraphs are flagged.</li>
+      <p class="prose">Every figure on this site is built from the text of the resolutions themselves.
+      This page states what enters the corpus, what that leaves out, and how the coding is applied.
+      <button class="icon-btn" onclick="window.HRCTour && HRCTour.start()">? One-minute tour</button></p>
+
+      <h2>What qualifies</h2>
+      <p class="prose">A text enters the corpus only if it meets all four criteria. Each one excludes
+      something, and the second column is what it excludes.</p>
+      <table class="data criteria">
+        <thead><tr><th>A text is counted if…</th><th>…which leaves out</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>1. The Human Rights Council adopted it, 2006–2026.</b> In regular session, special
+              session or organizational meeting.</td>
+            <td>Texts of the General Assembly, the Security Council and the Secretary-General. Their
+              bodies are listed for context at the foot of Mechanisms and their reports are searchable,
+              but they are counted in no figure.</td>
+          </tr>
+          <tr>
+            <td><b>2. It acts on a country-specific mechanism</b> — establishes, renews, expands, or
+              gives it new tasks.</td>
+            <td>Thematic mechanisms. Country special procedures — Special Rapporteurs and Independent
+              Experts — unless the same text also does one of those four things. Resolutions that only
+              welcome a report or urge cooperation. UPR outcome decisions.</td>
+          </tr>
+          <tr>
+            <td><b>3. The mechanism investigates or preserves evidence.</b> A commission of inquiry,
+              fact-finding mission, group, team or committee of experts, or an OHCHR investigation,
+              examination, monitoring or accountability mandate run at the Council's request.</td>
+            <td>A request to OHCHR for a report where no body exists and no investigative or evidence
+              function is given — S-23/1 (Boko Haram, 2015) is the case in point, and is excluded.</td>
+          </tr>
+          <tr>
+            <td><b>4. It contains a paragraph addressed to the body itself.</b> An instruction the body
+              is meant to carry out.</td>
+            <td>Welcoming its report, urging States to cooperate with it, transmitting its reports to
+              other organs. The first is an assessment; the others address States and the Council's own
+              organs. This is what removes seven general Syria resolutions that had looked like taskings.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="prose">One deliberate exception: the <b>Special Rapporteur on Afghanistan</b> is shown for
+      reference and counted nowhere. The Council gave it fact-finding support in 2021 and a task to document
+      and preserve information from 2022 until the Independent Investigative Mechanism for Afghanistan,
+      created in October 2025, is operational.</p>
+
+      <h2>How the coding is applied</h2>
+      <ul class="prose">
+        <li><b>What a text does to a mandate.</b> <i>Founding</i> creates it; <i>renewal</i> extends it in
+          time; <i>expansion</i> widens the investigation itself; <i>tasking</i> adds work without widening
+          what is investigated. A text that renews and expands at once is coded by its strongest effect.</li>
+        <li><b>Action verbs come from the mandate paragraphs only.</b> A paragraph addressed to OHCHR as an
+          office — technical assistance, forensic expertise for national courts, capacity-building — carries
+          none: that is a mandate <i>through</i> the Office, not <i>to</i> a body. Where the Council asks the
+          Office to run the investigation itself, OHCHR is the body and its paragraphs are the mandate.</li>
+        <li><b>Mechanism-level codings are the union of its mandating texts</b>, so a renewal inherits the
+          founding language.</li>
+        <li><b>Criminal-accountability wording is read literally</b>, one value per text: names crimes or
+          criminal proceedings · accountability or perpetrators only · none · no mandate text. No mandate
+          paragraph in the corpus contains the phrase "international criminal law".</li>
+        <li><b>Naming a body of law is not applying it.</b> IHRL and IHL are recorded where the mandate
+          paragraph names them. This counts the words in the instruction, not the law the body went on to use.</li>
+        <li><b>Terms set by a condition are measured, not guessed.</b> Where a text runs "to the twenty-eighth
+          session" or until a final report, the term is measured against the record — the closing date of that
+          session, or the date of the next renewal.</li>
+        <li><b>End Date is not always an ending.</b> For a body still running under a renewable term it is the
+          expiry of the current period, a future date. Read it with the mandate status; the duration chart draws
+          a running body to the build date instead.</li>
+        <li><b>"Without a vote" is the UN category</b>: no member asked for a vote. It does not mean every member
+          agreed, and several such texts carry explanations of position or disassociations.</li>
+        <li><b>The Reports search is verbatim.</b> The site never paraphrases or generates text. Paragraph numbers
+          are the printed UN numbers where they exist; documents without them are flagged.</li>
       </ul>
-      <h2>Credits</h2>
-      <p>Design and interaction concepts inspired by Łukasz Szoszkiewicz's
-      <a href="https://lszoszk.github.io/hrc-voting/" target="_blank" rel="noopener">HRC voting explorer</a> and
-      <a href="https://lszoszk.github.io/generalcomments/" target="_blank" rel="noopener">UN Human Rights Database</a>
-      — warmly acknowledged. This site's code is an independent implementation.</p>
-      <p>Built as a static, dependency-free site; it works offline and collects no analytics.</p>`;
+
+      <h2>Data</h2>
+      <p class="prose">${RES.length} resolutions and decisions, complete to the close of the Council's 63rd session
+      on 7 October 2026 · ${COUNCIL_BODIES} Council-mandated bodies ·
+      ${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length} recorded votes with
+      country-by-country positions · sponsorship lists from the draft L-documents, which for a minority of
+      resolutions are not yet recorded · the mechanisms' public reports.</p>
+      <p class="prose">Compiled and verified against the official UN documents (docs.un.org and the OHCHR Search
+      Library) by <b>Helena Rodríguez-Bronchú Carceller</b>. The analytical codings are the author's own, applied
+      from the literal text; the verbatim mandate quotes on each resolution card are the coding evidence. Every
+      figure links back to the document it comes from.</p>
+      <p class="prose"><b>Cite as:</b> Rodríguez-Bronchú Carceller, H., <i>UN Investigative Mandates</i> (2026),
+      with the UN document symbol of the resolution or report concerned.</p>`;
     $("#footer").innerHTML = `Dataset: Helena Rodríguez-Bronchú Carceller · compiled from official UN documents
       · build ${esc((D.built || "").slice(0, 10))}
-      · <a href="#/about" id="foot-about">About &amp; method</a>`;
+      · <a href="#/about" id="foot-about">Methodology</a>`;
     $("#foot-about").addEventListener("click", (e) => { e.preventDefault(); setTab("about"); });
   }
 

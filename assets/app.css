@@ -640,3 +640,17 @@ dl.scope dd { margin: 0; max-width: 72ch; }
   dl.scope { grid-template-columns: 1fr; gap: 2px; }
   dl.scope dd { margin-bottom: 8px; }
 }
+
+
+/* the inclusion criteria, each row stating what it leaves out */
+table.criteria { margin: 10px 0 18px; max-width: 108ch; }
+table.criteria th { width: 50%; }
+table.criteria td { vertical-align: top; line-height: 1.5; padding: 10px 14px; }
+table.criteria td + td { color: var(--ink-2); border-left: 1px solid var(--grid); }
+@media (max-width: 760px) {
+  table.criteria, table.criteria tbody, table.criteria tr, table.criteria td { display: block; width: auto; }
+  table.criteria thead { display: none; }
+  table.criteria tr { border-bottom: 1px solid var(--grid); padding: 6px 0; }
+  table.criteria td + td { border-left: 0; padding-top: 0; }
+  table.criteria td + td::before { content: "Leaves out: "; font-weight: 650; color: var(--muted); }
+}
