@@ -295,12 +295,17 @@
   // the situation. Each situation is counted ONCE here, so the columns reconcile with
   // the corpus totals; OPT / Israel is placed in Asia-Pacific on geography, while
   // chart 2 shows it in both groups because Israel sits in WEOG in Geneva.
-  const BR_ORDER = ["Africa", "Asia-Pacific (incl. Middle East)", "Eastern Europe", "Latin America"];
+  // The Western European and others group is carried here deliberately, and it is
+  // always zero: on geography no situation in the corpus sits in that group. Leaving
+  // the row out would hide that, so it is drawn as an explicit zero.
+  const BR_ORDER = ["Africa", "Asia-Pacific (incl. Middle East)", "Eastern Europe", "Latin America",
+    "Western European and others"];
   const BR_SHORT = {
     "Africa": "Africa",
     "Asia-Pacific (incl. Middle East)": "Asia-Pacific",
     "Eastern Europe": "Eastern Europe",
     "Latin America": "Latin America",
+    "Western European and others": "Western Europe and others",
   };
   const BR_DATA = (() => {
     // Primary region: the first group REGION_OF returns that is not WEOG.
@@ -526,24 +531,38 @@
       const y = headH + i * rowH;
       const cy = y + barH / 2;
       const share = Math.round(100 * r.texts / BR_DATA.totalTexts);
-      const tip = `${r.region}\n${plural(r.texts, "text")} of ${BR_DATA.totalTexts} (${share}%)` +
-        `\n${plural(r.bodies, "body", "bodies")} · ${plural(r.situations, "situation")}` +
-        `\n${r.founding} founding · ${r.voted} of ${r.texts} put to a recorded vote` +
-        ` (${Math.round(100 * r.voted / r.texts)}%)` +
-        `\nSituations:\n` + listTip(r.names.slice().sort(), 24);
+      const tip = r.texts === 0
+        ? `${r.region}\nNo situation in this regional group has been given an investigative mandate ` +
+          `by the Council in twenty years.`
+        : `${r.region}\n${plural(r.texts, "text")} of ${BR_DATA.totalTexts} (${share}%)` +
+          `\n${plural(r.bodies, "body", "bodies")} · ${plural(r.situations, "situation")}` +
+          `\n${r.founding} founding · ${r.voted} of ${r.texts} put to a recorded vote` +
+          ` (${Math.round(100 * r.voted / r.texts)}%)` +
+          `\nSituations:\n` + listTip(r.names.slice().sort(), 24);
       text(svg, BR_SHORT[r.region] || r.region, {
         x: labelW - 8, y: cy + fontRow * 0.35, "text-anchor": "end", "font-size": fontRow, fill: PAL.ink,
       });
       const w = iw * r.texts / max;
-      svg.appendChild(el("rect", {
-        x: labelW, y, width: Math.max(2, w), height: barH, rx: 2,
-        fill: REGION_COLOR[r.region] || PAL.baseline, _tip: tip,
-      }));
+      if (r.texts === 0) {
+        // an empty slot the width of the longest bar, so the nothing is visible as nothing
+        svg.appendChild(el("rect", {
+          x: labelW, y, width: iw, height: barH, rx: 2, fill: "none",
+          stroke: PAL.baseline, "stroke-width": 1, "stroke-dasharray": "3 3", _tip: tip,
+        }));
+      } else {
+        svg.appendChild(el("rect", {
+          x: labelW, y, width: Math.max(2, w), height: barH, rx: 2,
+          fill: REGION_COLOR[r.region] || PAL.baseline, _tip: tip,
+        }));
+      }
       text(svg, `${r.texts}`, {
-        x: labelW + w + 5, y: cy + fontRow * 0.35, "font-size": fontRow, "font-weight": 600, fill: PAL.ink,
+        x: labelW + (r.texts === 0 ? iw : w) + 5, y: cy + fontRow * 0.35, "font-size": fontRow,
+        "font-weight": 600, fill: r.texts === 0 ? PAL.muted : PAL.ink,
       });
       // second line: situations, and the share of the corpus
-      text(svg, `${plural(r.situations, "situation")} · ${share}% of the corpus`, {
+      text(svg, r.texts === 0
+        ? "no situation in this group has ever been investigated"
+        : `${plural(r.situations, "situation")} · ${share}% of the corpus`, {
         x: labelW, y: y + barH + (narrow ? 11 : 12), "font-size": narrow ? 9.5 : 10.5, fill: PAL.muted,
       });
       const bx = W - bodiesW;
@@ -2123,7 +2142,11 @@
         `counted once here, so the rows total ${BR_DATA.totalSituations} situations, ` +
         `${BR_DATA.totalBodies} bodies and ${BR_DATA.totalTexts} texts. OPT / Israel is placed in ` +
         `Asia-Pacific on geography; the chart above shows it in two groups because Israel has sat with ` +
-        `the Western European and others group in Geneva since 1 January 2014.`,
+        `the Western European and others group in Geneva since 1 January 2014. ` +
+        `The Western European and others row is empty, and is shown rather than left out: on geography ` +
+        `no situation in that group has been given an investigative mandate by this Council in twenty ` +
+        `years. Israel is the only member of the group that appears in the corpus at all, and it appears ` +
+        `as the State investigated, under a situation placed in Asia-Pacific.`,
       draw: drawBR,
     },
     {
