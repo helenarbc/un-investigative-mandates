@@ -240,7 +240,12 @@
     const textItems = new Map(SITUATIONS.map(s => [s, []]));
     BODIES.forEach(b => {
       const s = situationOf(b.country);
-      if (s) { bodies.set(s, bodies.get(s) + 1); bodyNames.get(s).push(b.short_name); }
+      if (s) {
+        bodies.set(s, bodies.get(s) + 1);
+        // Carry each body's own share of the situation's texts, so the two columns reconcile.
+        const n = (b.resolutions || []).length;
+        bodyNames.get(s).push({ name: b.short_name, n });
+      }
     });
     let unassigned = 0;
     TEXTS.forEach(r => {
@@ -252,7 +257,12 @@
     const rows = SITUATIONS.slice()
       .sort((a, b) => texts.get(b) - texts.get(a) || bodies.get(b) - bodies.get(a) || a.localeCompare(b))
       .map(s => ({ situation: s, texts: texts.get(s), bodies: bodies.get(s), regions: REGION_OF(s) || [],
-        bodyNames: bodyNames.get(s), textItems: textItems.get(s) }));
+        bodyNames: bodyNames.get(s).slice().sort((x, y) => y.n - x.n || x.name.localeCompare(y.name))
+          .map(b => `${b.name} [${plural(b.n, "text")}]`),
+        // A single text can create or task two bodies at once (S-37/1 did, for the DRC),
+        // so the per-body figures can add to more than the situation's text count.
+        bodySum: bodyNames.get(s).reduce((a, b) => a + b.n, 0),
+        textItems: textItems.get(s) }));
     const regionCounts = Object.keys(REGION_COLOR).map(r =>
       ({ region: r, n: rows.filter(x => x.regions.indexOf(r) >= 0).length }));
     const top4 = rows.slice(0, 4);
@@ -401,7 +411,9 @@
           x: labelW, y: y + k * sh, width: Math.max(2, w), height: sh,
           rx: regs.length === 1 ? 2 : 0, fill: REGION_COLOR[rg] || PAL.baseline,
           _tip: `${label(r.situation)} — ${plural(r.texts, "text")}, ${plural(r.bodies, "body", "bodies")}` +
-            (rg ? ` · ${rg}` : "") + `\nBodies:\n` + listTip(r.bodyNames) +
+            (rg ? ` · ${rg}` : "") + `\nBodies:\n` + listTip(r.bodyNames) + (r.bodySum > r.texts
+              ? `\n(One text can create or task more than one body, so these add to ${r.bodySum}.)`
+              : "") +
             `\nTexts:\n` + listTip(r.textItems, 24),
         }));
       });
@@ -414,7 +426,9 @@
         svg.appendChild(el("circle", {
           cx: bx + (narrow ? 14 : 18) + dotR + k * dotPitch, cy, r: dotR,
           fill: REGION_COLOR[r.regions[0]] || PAL.baseline, opacity: 0.75,
-          _tip: `${label(r.situation)} — ${plural(r.bodies, "body", "bodies")}\n` + listTip(r.bodyNames),
+          _tip: `${label(r.situation)} — ${plural(r.bodies, "body", "bodies")}\n` + listTip(r.bodyNames) + (r.bodySum > r.texts
+              ? `\n(One text can create or task more than one body, so these add to ${r.bodySum}.)`
+              : ""),
         }));
       }
     });
