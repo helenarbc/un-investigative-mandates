@@ -79,6 +79,24 @@
     return n;
   }
   const plural = (n, one, many) => n + " " + (n === 1 ? one : (many || one + "s"));
+  // Tooltips name the records behind a mark, not just their number. Long lists are
+  // capped so the tooltip stays on screen.
+  const TIP_CAP = 18;
+  function listTip(items, cap) {
+    const n = cap || TIP_CAP;
+    const shown = items.slice(0, n).map(x => "· " + x);
+    if (items.length > n) shown.push("· …and " + (items.length - n) + " more");
+    return shown.join("\n");
+  }
+  // A State casts one position per text, so a year's list repeats names; show each
+  // once with how many of that year's texts it voted that way on.
+  function countNames(names) {
+    const m = new Map();
+    names.forEach(n => m.set(n, (m.get(n) || 0) + 1));
+    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([n, c]) => c > 1 ? `${n} (${c})` : n);
+  }
+  const shortSymbol = (sym) => String(sym).replace("A/HRC/RES/", "").replace("A/HRC/DEC/", "dec ").replace("A/HRC/", "");
 
   // Show the site's tooltip for any mark carrying data-tip. One delegated set of
   // listeners per chart, so redrawing a chart does not pile up handlers.
@@ -199,34 +217,42 @@
 
   const A_DATA = (() => {
     const per = new Map(YEARS.map(y => [y, [0, 0, 0, 0]]));
+    const items = new Map(YEARS.map(y => [y, [[], [], [], []]]));
     const unroled = [];
     TEXTS.forEach(r => {
       const y = r.year || +String(r.date_adopted || "").slice(0, 4);
       const i = ROLES.indexOf(r.resolution_role);
       if (i < 0) { unroled.push(r.symbol); return; }
-      if (per.has(y)) per.get(y)[i]++;
+      if (per.has(y)) {
+        per.get(y)[i]++;
+        items.get(y)[i].push(shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body"));
+      }
     });
     const totals = ROLES.map((_, i) => YEARS.reduce((a, y) => a + per.get(y)[i], 0));
-    return { per, totals, unroled, total: TEXTS.length };
+    return { per, items, totals, unroled, total: TEXTS.length };
   })();
 
   const B_DATA = (() => {
     const countryByBody = new Map(BODIES.map(b => [b.short_name, situationOf(b.country)]));
     const texts = new Map(SITUATIONS.map(s => [s, 0]));
     const bodies = new Map(SITUATIONS.map(s => [s, 0]));
+    const bodyNames = new Map(SITUATIONS.map(s => [s, []]));
+    const textItems = new Map(SITUATIONS.map(s => [s, []]));
     BODIES.forEach(b => {
       const s = situationOf(b.country);
-      if (s) bodies.set(s, bodies.get(s) + 1);
+      if (s) { bodies.set(s, bodies.get(s) + 1); bodyNames.get(s).push(b.short_name); }
     });
     let unassigned = 0;
     TEXTS.forEach(r => {
       const s = (r.bodies || []).map(n => countryByBody.get(n)).find(Boolean);
       if (!s) { unassigned++; return; }
       texts.set(s, texts.get(s) + 1);
+      textItems.get(s).push(shortSymbol(r.symbol));
     });
     const rows = SITUATIONS.slice()
       .sort((a, b) => texts.get(b) - texts.get(a) || bodies.get(b) - bodies.get(a) || a.localeCompare(b))
-      .map(s => ({ situation: s, texts: texts.get(s), bodies: bodies.get(s), regions: REGION_OF(s) || [] }));
+      .map(s => ({ situation: s, texts: texts.get(s), bodies: bodies.get(s), regions: REGION_OF(s) || [],
+        bodyNames: bodyNames.get(s), textItems: textItems.get(s) }));
     const regionCounts = Object.keys(REGION_COLOR).map(r =>
       ({ region: r, n: rows.filter(x => x.regions.indexOf(r) >= 0).length }));
     const top4 = rows.slice(0, 4);
@@ -243,14 +269,15 @@
   const C_DATA = (() => {
     const startY = (b) => +String(b.start_date || "").slice(0, 4) || null;
     const endY = (b) => (b.end_date ? +String(b.end_date).slice(0, 4) : YEAR_MAX);
-    const values = YEARS.map(y => RUNNING.filter(b => {
+    const bodiesPer = YEARS.map(y => RUNNING.filter(b => {
       const s = startY(b);
       return s && s <= y && y <= endY(b);
-    }).length);
+    }));
+    const values = bodiesPer.map(a => a.length);
     const openEnded = RUNNING.filter(b => !b.end_date);
     const since2021 = YEARS.map((y, i) => (y >= 2021 ? values[i] : null)).filter(v => v !== null);
     return {
-      values, openEnded,
+      values, openEnded, bodiesPer,
       first: values[0], firstYear: YEARS[0],
       recentMin: Math.min(...since2021), recentMax: Math.max(...since2021),
     };
@@ -304,7 +331,8 @@
         const h = ih * v / yMax;
         svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5,
           fill: ROLE_COLOR[ROLES[k]],
-          _tip: `${yr} — ${plural(v, "text")} that ${ROLE_TIP[ROLES[k]]}\n${totals[i]} in ${yr} in all` }));
+          _tip: `${yr} — ${plural(v, "text")} that ${ROLE_TIP[ROLES[k]]}\n` +
+            listTip(A_DATA.items.get(yr)[k]) }));
         if (showSeg && h >= segFont * 1.5) {
           text(svg, v, {
             x: x + bw / 2, y: yCur - h / 2 + segFont * 0.36, "text-anchor": "middle",
@@ -372,8 +400,9 @@
         svg.appendChild(el("rect", {
           x: labelW, y: y + k * sh, width: Math.max(2, w), height: sh,
           rx: regs.length === 1 ? 2 : 0, fill: REGION_COLOR[rg] || PAL.baseline,
-          _tip: `${label(r.situation)}\n${plural(r.texts, "text")}, ${plural(r.bodies, "body", "bodies")}` +
-            (rg ? `\nRegional group: ${rg}` : ""),
+          _tip: `${label(r.situation)} — ${plural(r.texts, "text")}, ${plural(r.bodies, "body", "bodies")}` +
+            (rg ? ` · ${rg}` : "") + `\nBodies:\n` + listTip(r.bodyNames) +
+            `\nTexts:\n` + listTip(r.textItems, 24),
         }));
       });
       text(svg, r.texts, {
@@ -385,7 +414,7 @@
         svg.appendChild(el("circle", {
           cx: bx + (narrow ? 14 : 18) + dotR + k * dotPitch, cy, r: dotR,
           fill: REGION_COLOR[r.regions[0]] || PAL.baseline, opacity: 0.75,
-          _tip: `${label(r.situation)} — ${plural(r.bodies, "body", "bodies")} in all`,
+          _tip: `${label(r.situation)} — ${plural(r.bodies, "body", "bodies")}\n` + listTip(r.bodyNames),
         }));
       }
     });
@@ -418,7 +447,8 @@
       svg.appendChild(el("rect", {
         x, y: padT + ih - h, width: bw, height: Math.max(1, h), rx: 1.5,
         fill: yr >= 2021 ? C_RECENT : C_EARLY,
-        _tip: `${yr} — ${plural(v, "body", "bodies")} running at some point that year`,
+        _tip: `${yr} — ${plural(v, "body", "bodies")} running at some point that year\n` +
+          listTip(C_DATA.bodiesPer[i].map(b => b.short_name).sort()),
       }));
       text(svg, v, {
         x: x + bw / 2, y: padT + ih - h - 5, "text-anchor": "middle",
@@ -466,10 +496,14 @@
   const D_DATA = (() => {
     const texts = TEXTS.filter(r => r.mandate_term);
     const per = new Map(YEARS.map(y => [y, TERMS.map(() => 0)]));
+    const items = new Map(YEARS.map(y => [y, TERMS.map(() => [])]));
     texts.forEach(r => {
       const y = r.year || +String(r.date_adopted || "").slice(0, 4);
       const i = TERMS.indexOf(r.mandate_term);
-      if (per.has(y) && i >= 0) per.get(y)[i]++;
+      if (per.has(y) && i >= 0) {
+        per.get(y)[i]++;
+        items.get(y)[i].push(shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body"));
+      }
     });
     const totals = TERMS.map((_, i) => YEARS.reduce((a, y) => a + per.get(y)[i], 0));
     const first24 = YEARS.find(y => per.get(y)[TERMS.indexOf("24 months")] > 0);
@@ -480,7 +514,7 @@
         symbol: r.symbol,
       }))
       .sort((a, b) => a.year - b.year);
-    return { per, totals, total: texts.length, first24, ongoing };
+    return { per, items, totals, total: texts.length, first24, ongoing };
   })();
 
   // Fixed 16:9 canvas so the exported PNG drops straight onto a slide and the
@@ -532,7 +566,8 @@
         const share = tot ? v / tot : 0;
         const h = shares ? ih * share : ih * v / yMax;
         svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5,
-          fill: TERM_COLOR[TERMS[k]], _tip: D_TIP(yr, TERMS[k], v, tot, shares) }));
+          fill: TERM_COLOR[TERMS[k]],
+          _tip: D_TIP(yr, TERMS[k], v, tot, shares) + "\n" + listTip(D_DATA.items.get(yr)[k]) }));
         if (h >= 17) {
           const lbl = shares ? Math.round(share * 100) + "%" : String(v);
           if (textW(lbl, 14) < bw - 4) {
@@ -1240,9 +1275,13 @@
   const H_FOCUS = "gender";
 
   const H_DATA = (() => {
-    const anywhere = (g) => TEXTS.filter(r => (r.differentiated_analysis_whole_text || []).indexOf(g) >= 0).length;
-    const mandate = (g) => TEXTS.filter(r => (r.differentiated_analysis_mandate || []).indexOf(g) >= 0).length;
-    const rows = H_GROUPS.map(g => ({ group: g, anywhere: anywhere(g), mandate: mandate(g) }));
+    const lbl = (r) => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body");
+    const inAny = (g) => TEXTS.filter(r => (r.differentiated_analysis_whole_text || []).indexOf(g) >= 0);
+    const inMan = (g) => TEXTS.filter(r => (r.differentiated_analysis_mandate || []).indexOf(g) >= 0);
+    const anywhere = (g) => inAny(g).length;
+    const mandate = (g) => inMan(g).length;
+    const rows = H_GROUPS.map(g => ({ group: g, anywhere: anywhere(g), mandate: mandate(g),
+      anyItems: inAny(g).map(lbl), manItems: inMan(g).map(lbl) }));
     const focus = rows.find(r => r.group === H_FOCUS);
     const instructed = rows.filter(r => r.mandate > 0);
     const never = rows.filter(r => r.mandate === 0);
@@ -1307,12 +1346,14 @@
       });
       const yA = mid - barH - 2, yM = mid + 2;
       svg.appendChild(el("rect", { x: gridL, y: yA, width: Math.max(1, xAt(r.anywhere) - gridL), height: barH, rx: 2,
-        fill: H_LIGHT, _tip: `${r.group}\nNamed anywhere in the text: ${plural(r.anywhere, "text")}` }));
+        fill: H_LIGHT, _tip: `${r.group} — named anywhere in the text: ${plural(r.anywhere, "text")}\n` +
+          listTip(r.anyItems, 24) }));
       text(svg, r.anywhere, { x: xAt(r.anywhere) + 7, y: yA + barH - 3, "font-size": 14, fill: PAL.ink2 });
       if (r.mandate > 0) {
         svg.appendChild(el("rect", { x: gridL, y: yM, width: Math.max(1, xAt(r.mandate) - gridL), height: barH, rx: 2,
           fill: focus ? H_FOCUS_DARK : H_DARK,
-          _tip: `${r.group}\nIn the instruction to the body: ${plural(r.mandate, "text")}\nNamed anywhere: ${r.anywhere}` }));
+          _tip: `${r.group} — in the instruction to the body: ${plural(r.mandate, "text")}\n` +
+            listTip(r.manItems, 24) }));
         text(svg, r.mandate, {
           x: xAt(r.mandate) + 7, y: yM + barH - 3, "font-size": 14, "font-weight": 650,
           fill: focus ? H_FOCUS_DARK : PAL.ink,
@@ -1350,8 +1391,12 @@
   const I_DATA = (() => {
     const per = new Map(YEARS.map(y => {
       const ty = TEXTS.filter(r => (r.year || +String(r.date_adopted || "").slice(0, 4)) === y);
-      const voted = ty.filter(r => r.adoption_mode === "Recorded vote").length;
-      return [y, { n: ty.length, voted, novote: ty.length - voted }];
+      const vt = ty.filter(r => r.adoption_mode === "Recorded vote");
+      const nv = ty.filter(r => r.adoption_mode !== "Recorded vote");
+      const lbl = (r) => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body");
+      return [y, { n: ty.length, voted: vt.length, novote: nv.length,
+        itemsVoted: vt.map(r => lbl(r) + (r.tally ? " (" + r.tally + ")" : "")),
+        itemsNovote: nv.map(lbl) }];
     }));
     const share = (from, to) => {
       const a = TEXTS.filter(r => r.year >= from && r.year <= to);
@@ -1404,7 +1449,8 @@
         const h = shares ? (d.n ? ih * v / d.n : 0) : ih * v / yMax;
         svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c,
           _tip: `${yr} — ${plural(v, "text")} ${k === "voted" ? "put to a recorded vote" : "adopted without a vote"}` +
-            (d.n ? `\n${Math.round(100 * v / d.n)}% of the ${plural(d.n, "text")} that year` : "") }));
+            (d.n ? ` (${Math.round(100 * v / d.n)}% of ${d.n})` : "") + "\n" +
+            listTip(k === "voted" ? d.itemsVoted : d.itemsNovote) }));
         if (h >= 17) {
           const lbl = shares ? Math.round(100 * v / d.n) + "%" : String(v);
           if (textW(lbl, 14) < bw - 4) {
@@ -1447,7 +1493,9 @@
     const per = new Map(YEARS.map(y => {
       const v = TEXTS.filter(r => (r.year || 0) === y && r.adoption_mode === "Recorded vote");
       const avg = (f) => v.length ? v.reduce((a, r) => a + (r[f] || 0), 0) / v.length : 0;
-      return [y, { n: v.length, yes: avg("votes_yes"), no: avg("votes_no"), abs: avg("votes_abstain") }];
+      return [y, { n: v.length, yes: avg("votes_yes"), no: avg("votes_no"), abs: avg("votes_abstain"),
+        items: v.map(r => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body") +
+          " (" + (r.tally || "") + ")") }];
     }));
     const win = (from, to) => {
       const v = TEXTS.filter(r => r.year >= from && r.year <= to && r.adoption_mode === "Recorded vote");
@@ -1494,9 +1542,8 @@
           const h = ih * d[k] / J_SEATS;
           if (h <= 0) return;
           svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: Math.max(1, h - 1), rx: 1.5, fill: c,
-            _tip: `${yr} — average ${k === "yes" ? "Yes" : k === "abs" ? "abstentions" : "No"}: ${d[k].toFixed(1)} of ${J_SEATS} seats` +
-              `\nacross ${plural(d.n, "recorded vote")} that year` +
-              `\nYes ${d.yes.toFixed(1)} · abstain ${d.abs.toFixed(1)} · No ${d.no.toFixed(1)}` }));
+            _tip: `${yr} — average Yes ${d.yes.toFixed(1)}, abstain ${d.abs.toFixed(1)}, No ${d.no.toFixed(1)}` +
+              `, of ${J_SEATS} seats\n` + listTip(d.items) }));
           if (k === "yes" && h >= 18) {
             text(svg, d.yes.toFixed(1), { x: x + bw / 2, y: yCur - h / 2 + 5, "text-anchor": "middle",
               "font-size": 13.5, "font-weight": 650, fill: "#ffffff" });
@@ -1622,25 +1669,18 @@
       draw: drawD,
     },
     {
-      id: "E",
-      head: "Task verbs in each founding mandate",
+      id: "E2",
+      head: "Task verbs in each founding mandate: the range in each period",
       selfContained: true,
-      file: "chart-e-verbs-per-founding-text.png",
-      draw: drawE,
+      file: "chart-e2-verbs-floor.png",
+      draw: drawE2,
     },
     {
-      id: "F",
-      head: "Four features of each founding mandate",
+      id: "V",
+      head: "Task verbs in founding mandates: when each one first appears",
       selfContained: true,
-      file: "chart-f-founding-mandate-features.png",
-      draw: drawF,
-    },
-    {
-      id: "G",
-      head: "The fifteen task verbs",
-      selfContained: true,
-      file: "chart-g-task-verbs-table.png",
-      draw: drawG,
+      file: "chart-v-task-verbs-first-use.png",
+      draw: drawV,
     },
     {
       id: "H",
@@ -1663,13 +1703,6 @@
       selfContained: true,
       file: "chart-j-votes-by-year.png",
       draw: drawJ,
-    },
-    {
-      id: "E2",
-      head: "Task verbs in each founding mandate: the range in each period",
-      selfContained: true,
-      file: "chart-e2-verbs-floor.png",
-      draw: drawE2,
     },
     {
       id: "K",
@@ -1716,13 +1749,15 @@
     voted.forEach(r => { for (const ch of D.votes[r.symbol]) if (ch === "X") absent++; });
     const build = (texts) => K_GROUPS.map(([key, label]) => {
       const cols = idx.get(key) || [];
-      const per = new Map(YEARS.map(y => [y, { y: 0, a: 0, n: 0 }]));
+      const per = new Map(YEARS.map(y => [y, { y: 0, a: 0, n: 0, sy: [], sa: [], sn: [] }]));
       texts.forEach(r => {
         const v = D.votes[r.symbol], d = per.get(r.year);
         if (!v || !d) return;
         cols.forEach(i => {
-          const c = v[i];
-          if (c === "Y") d.y++; else if (c === "A") d.a++; else if (c === "N") d.n++;
+          const c = v[i], st = D.states[i].state;
+          if (c === "Y") { d.y++; d.sy.push(st); }
+          else if (c === "A") { d.a++; d.sa.push(st); }
+          else if (c === "N") { d.n++; d.sn.push(st); }
         });
       });
       const win = (from, to) => {
@@ -1805,9 +1840,9 @@
           const h = ih * d[k] / tot;
           if (h <= 0) return;
           svg.appendChild(el("rect", { x, y: yCur - h, width: bw, height: h, fill: c,
-            _tip: `${row.label}, ${yr}\n${k === "y" ? "Yes" : k === "a" ? "Abstain" : "No"}: ` +
+            _tip: `${row.label}, ${yr} — ${k === "y" ? "Yes" : k === "a" ? "Abstain" : "No"} ` +
               `${d[k]} of ${tot} positions (${Math.round(100 * d[k] / tot)}%)\n` +
-              `Yes ${d.y} · abstain ${d.a} · No ${d.n}` }));
+              listTip(countNames(k === "y" ? d.sy : k === "a" ? d.sa : d.sn)) }));
           yCur -= h;
         });
       });
@@ -1857,11 +1892,16 @@
       D.states.forEach((s, i) => {
         const c = v[i];
         if (c !== "Y" && c !== "A" && c !== "N") return;
-        if (!rec.has(s.state)) rec.set(s.state, { state: s.state, yes: 0, abs: 0, no: 0, yesIsr: 0, other: [] });
+        if (!rec.has(s.state)) rec.set(s.state, { state: s.state, yes: 0, abs: 0, no: 0, yesIsr: 0,
+          other: [], noItems: [], absItems: [], yesIsrItems: [] });
         const d = rec.get(s.state);
-        if (c === "N") d.no++;
-        else if (c === "A") d.abs++;
-        else { d.yes++; if (isr) d.yesIsr++; else d.other.push(r.symbol); }
+        const lbl = shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body");
+        if (c === "N") { d.no++; d.noItems.push(lbl); }
+        else if (c === "A") { d.abs++; d.absItems.push(lbl); }
+        else {
+          d.yes++;
+          if (isr) { d.yesIsr++; d.yesIsrItems.push(lbl); } else d.other.push(r.symbol);
+        }
       });
     });
     const rows = [...rec.values()]
@@ -1927,9 +1967,10 @@
         const v = d[k], w = v * scale;
         if (w <= 0) return;
         svg.appendChild(el("rect", { x, y: cy - bh / 2, width: w, height: bh, fill: c,
-          _tip: `${L_SHORT[d.state] || d.state}\n${L_SEG_LABEL[k]}: ${v} of ${d.cast} votes cast ` +
-            `(${Math.round(100 * v / d.cast)}%)\nNo ${d.no} · abstain ${d.abs} · Yes ${d.yes} ` +
-            `(${d.yesIsr} on texts concerning Israel, ${d.yesOther} on other texts)` }));
+          _tip: `${L_SHORT[d.state] || d.state} — ${L_SEG_LABEL[k]}: ${v} of ${d.cast} votes cast ` +
+            `(${Math.round(100 * v / d.cast)}%)\n` +
+            listTip(k === "no" ? d.noItems : k === "abs" ? d.absItems : k === "yesIsr" ? d.yesIsrItems
+              : d.other.map(x => shortSymbol(x))) }));
         if (textW(String(v), 14) + 8 <= w) {
           text(svg, v, { x: x + w / 2, y: cy + 5, "text-anchor": "middle", "font-size": 14,
             "font-weight": 600, fill: ink });
@@ -1947,6 +1988,112 @@
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 626 + i * 19, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL, y: 626 + noteLines.length * 19 + 8, "font-size": 13, fill: PAL.muted });
+
+    host.textContent = "";
+    host.appendChild(svg);
+    attachTips(svg);
+  }
+
+
+  /* ---------------- chart V: when each task verb enters a founding mandate ----------------
+     Rows are the fifteen verbs, ordered by the year each first appears in a founding
+     mandate; columns are years. A cell is marked when at least one founding text that
+     year carries the verb, and the first one is ringed. Read down the left edge and the
+     staircase is the answer to "what is new": five verbs in 2006, all fifteen by 2018. */
+  const V_ORDER = ["investigate", "establish facts", "identify perpetrators", "collect",
+    "consolidate", "preserve", "analyse evidence", "document", "verify", "monitor",
+    "assess", "report", "make recommendations", "provide guidance", "engage"];
+  const V_CELL = "#86b6ef", V_FIRST = "#1d3f73", V_GRID = "#eceae4";
+
+  const V_DATA = (() => {
+    const founding = TEXTS.filter(r => r.resolution_role === "founding");
+    const rows = V_ORDER.map(v => {
+      const per = new Map(YEARS.map(y => [y, []]));
+      founding.forEach(r => {
+        if ((r.action_verbs || []).indexOf(v) < 0) return;
+        const y = r.year || +String(r.date_adopted || "").slice(0, 4);
+        if (per.has(y)) per.get(y).push(r);
+      });
+      const firstYear = YEARS.find(y => per.get(y).length) || null;
+      const firstText = firstYear ? per.get(firstYear)
+        .slice().sort((a, b) => (a.date_adopted || "").localeCompare(b.date_adopted || ""))[0] : null;
+      return { verb: v, per, firstYear, firstText, n: founding.filter(r => (r.action_verbs || []).indexOf(v) >= 0).length };
+    }).sort((a, b) => (a.firstYear || 9999) - (b.firstYear || 9999) || b.n - a.n);
+    // how many of the fifteen are in use in each year, counted cumulatively
+    const cum = YEARS.map(y => rows.filter(r => r.firstYear !== null && r.firstYear <= y).length);
+    return { rows, cum, nFounding: founding.length };
+  })();
+
+  function drawV(host) {
+    const padL = 28, padR = 26;
+    const svg = svgRoot(D_W, D_H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+
+    const titleLines = wrapTo("Task verbs in founding mandates: the year each one first appears, and the years it is used",
+      24, D_W - padL - padR);
+    titleLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 36 + i * 29,
+      "font-size": 24, "font-weight": 650, fill: PAL.ink }));
+
+    const labelW = 232;
+    const gridL = padL + labelW, gridR = D_W - padR - 54;
+    const slot = (gridR - gridL) / YEARS.length;
+    const top = 36 + titleLines.length * 29 + 34;
+    const rowH = 26;
+
+    // year headings
+    YEARS.forEach((yr, i) => {
+      text(svg, String(yr).slice(2), { x: gridL + slot * (i + 0.5), y: top - 10,
+        "text-anchor": "middle", "font-size": 12.5, fill: PAL.muted });
+    });
+
+    V_DATA.rows.forEach((r, ri) => {
+      const y0 = top + ri * rowH, mid = y0 + rowH / 2;
+      if (ri % 2 === 0) {
+        svg.appendChild(el("rect", { x: gridL, y: y0, width: gridR - gridL, height: rowH, fill: V_GRID }));
+      }
+      text(svg, r.verb, { x: gridL - 10, y: mid + 5, "text-anchor": "end",
+        "font-size": 14.5, fill: PAL.ink });
+      text(svg, r.firstYear || "—", { x: gridR + 50, y: mid + 5, "text-anchor": "end",
+        "font-size": 13.5, "font-weight": 650, fill: V_FIRST });
+
+      YEARS.forEach((yr, i) => {
+        const hits = r.per.get(yr);
+        if (!hits.length) return;
+        const first = yr === r.firstYear;
+        const cx = gridL + slot * (i + 0.5);
+        const w = Math.min(16, slot - 6);
+        svg.appendChild(el("rect", {
+          x: cx - w / 2, y: mid - 7, width: w, height: 14, rx: 3,
+          fill: first ? V_FIRST : V_CELL,
+          _tip: `${r.verb} — ${yr}\n${plural(hits.length, "founding text")}` +
+            (first ? " · first use" : "") + "\n" +
+            listTip(hits.map(t => shortSymbol(t.symbol) + " — " + ((t.bodies || [])[0] || "no body"))),
+        }));
+      });
+    });
+
+    const gridB = top + V_DATA.rows.length * rowH;
+    text(svg, "first used", { x: gridR + 50, y: top - 10, "text-anchor": "end",
+      "font-size": 12.5, fill: PAL.muted });
+
+    // the staircase, stated: how many of the fifteen the Council had reached by each year
+    const cumY = gridB + 26;
+    text(svg, "verbs in use by then", { x: gridL - 10, y: cumY + 5, "text-anchor": "end",
+      "font-size": 13, "font-weight": 600, fill: PAL.ink2 });
+    YEARS.forEach((yr, i) => {
+      text(svg, V_DATA.cum[i], { x: gridL + slot * (i + 0.5), y: cumY + 5,
+        "text-anchor": "middle", "font-size": 13, "font-weight": 650,
+        fill: i && V_DATA.cum[i] > V_DATA.cum[i - 1] ? V_FIRST : PAL.muted });
+    });
+
+    const NOTE = `One row per verb, ordered by the year it first appears in a founding mandate ` +
+      `(n = ${V_DATA.nFounding}). A cell marks a year in which at least one founding mandate carries ` +
+      `that verb; the dark cell is its first use. Renewals and taskings are not shown.`;
+    const noteLines = wrapTo(NOTE, 14, D_W - padL - padR);
+    noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: cumY + 44 + i * 20,
+      "font-size": 14, fill: PAL.muted }));
+    text(svg, SOURCE_LINE, { x: padL, y: cumY + 44 + noteLines.length * 20 + 8,
+      "font-size": 13, fill: PAL.muted });
 
     host.textContent = "";
     host.appendChild(svg);
