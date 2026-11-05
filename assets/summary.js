@@ -2817,9 +2817,6 @@
       clearTimeout(t);
       t = setTimeout(redraw, 120);
     });
-    // theme switch: the chrome colours change, the series colours do not
-    new MutationObserver(() => { if (isOn() && built) redraw(); })
-      .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     // Direct load / refresh on #/summary: app.js's boot() does not know this route and
     // falls through to Mechanisms, rewriting the hash as it goes — which is why this file
     // is loaded before app.js and reads the entry hash now, then acts once boot() is done.

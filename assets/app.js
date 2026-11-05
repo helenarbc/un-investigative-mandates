@@ -12,6 +12,12 @@
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  const MONTHS_LONG = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+  const fmtLongDate = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
+    return m ? `${+m[3]} ${MONTHS_LONG[+m[2] - 1]} ${m[1]}` : "—";
+  };
   const fmtDate = (iso) => {
     if (!iso) return "—";
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -1628,7 +1634,7 @@
       <p class="prose"><b>Cite as:</b> Rodríguez-Bronchú Carceller, H., <i>UN Investigative Mandates</i> (2026),
       with the UN document symbol of the resolution or report concerned.</p>`;
     $("#footer").innerHTML = `Dataset: Helena Rodríguez-Bronchú Carceller · compiled from official UN documents
-      · build ${esc((D.built || "").slice(0, 10))}
+      · last updated on ${esc(fmtLongDate(D.built))}
       · <a href="#/about" id="foot-about">Methodology</a>`;
     $("#foot-about").addEventListener("click", (e) => { e.preventDefault(); setTab("about"); });
     const mx = $("#meth-excluded");
@@ -1642,21 +1648,6 @@
       }
     });
   }
-
-  /* ---------- theme ---------- */
-  const themeBtn = $("#theme-toggle");
-  function applyTheme(t) {
-    if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
-    else document.documentElement.removeAttribute("data-theme");
-    try { localStorage.setItem("hrc-theme", t); } catch (e) { /* file:// private mode */ }
-  }
-  themeBtn.addEventListener("click", () => {
-    applyTheme(document.documentElement.hasAttribute("data-theme") ? "light" : "dark");
-    update(); // re-render charts so SVG picks up new colors
-  });
-  let savedTheme = null;
-  try { savedTheme = localStorage.getItem("hrc-theme"); } catch (e) { /* unavailable */ }
-  if (savedTheme === "dark" || (!savedTheme && matchMedia("(prefers-color-scheme: dark)").matches)) applyTheme("dark");
 
   /* ---------- routing ---------- */
   // Read the hash and show the matching tab. Used at boot and again on every
