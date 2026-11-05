@@ -627,3 +627,16 @@ a.icon-btn#site-link:hover{text-decoration:underline}
 .sg-method > details.more > summary { font-weight: 600; }
 .sg-method > details.more > div { margin-top: 4px; max-width: 86ch; }
 
+
+
+/* the scope note behind "What is counted" — labelled rows scan faster than a paragraph */
+dl.scope { margin: 8px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; }
+dl.scope dt {
+  font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em;
+  font-weight: 650; color: var(--muted); padding-top: 2px; white-space: nowrap;
+}
+dl.scope dd { margin: 0; max-width: 72ch; }
+@media (max-width: 620px) {
+  dl.scope { grid-template-columns: 1fr; gap: 2px; }
+  dl.scope dd { margin-bottom: 8px; }
+}
