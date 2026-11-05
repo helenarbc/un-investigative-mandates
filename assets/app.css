@@ -665,3 +665,20 @@ table.criteria td + td { color: var(--ink-2); border-left: 1px solid var(--grid)
 }
 #about-content ul.prose { margin: 0 0 4px; padding-left: 20px; max-width: 72ch; }
 #about-content ul.prose li { margin-bottom: 4px; line-height: 1.55; }
+
+
+/* Mechanisms tab: the search field the tab now opens on */
+.mech-search {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0 14px; margin-bottom: 14px; height: 46px;
+}
+.mech-search:focus-within { border-color: var(--accent); }
+.mech-search > svg { width: 17px; height: 17px; flex: 0 0 auto; color: var(--muted); }
+.mech-search input {
+  flex: 1 1 auto; border: 0; outline: 0; background: none; min-width: 0;
+  font: var(--fs-base) var(--sans); color: var(--ink); padding: 0;
+}
+.mech-search input::placeholder { color: var(--muted); }
+.mech-search input::-webkit-search-cancel-button { cursor: pointer; }
+.mech-count { flex: 0 0 auto; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }

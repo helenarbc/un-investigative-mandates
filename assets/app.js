@@ -948,8 +948,8 @@
   // figure on the site counts. Everything else lives on the Excluded mechanisms tab,
   // so nothing appears in the main list that the charts leave out.
   const SCOPE_GROUPS = [
-    ["HRC investigative mandate", "Mandated by the Human Rights Council"],
-    ["OHCHR investigation (broader)", "OHCHR investigations at the Council's request"],
+    ["HRC investigative mandate", "Independent bodies"],
+    ["OHCHR investigation (broader)", "OHCHR mechanisms"],
   ];
   const OTHER_SCOPE_GROUPS = [
     ["SG-mandated investigation", "Mandated by the Secretary-General"],
@@ -979,7 +979,6 @@
     "open since a date": "The founding resolution names a start date and no end: everything from that date onwards.",
     "none stated": "The founding resolution sets no period at all. The body is told what to investigate, not when it happened.",
   };
-  let mechPeriod = "";   // "" = all
 
   function renderMechs() { renderBodies("#mechs-content", SCOPE_GROUPS, false); }
   function renderOther() { renderBodies("#other-content", OTHER_SCOPE_GROUPS, true); }
@@ -995,7 +994,6 @@
       if (!isOther) {
         const ps = b.period_scope || "none stated";
         periodCount[ps] = (periodCount[ps] || 0) + 1;
-        if (mechPeriod && ps !== mechPeriod) return;
       }
       grouped.get(key).rows.push(b);
     });
@@ -1045,40 +1043,15 @@
           </div></details>
       </div></div>
 ` : `
-      <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
-        <b style="color:var(--ink)">${nHere} country-specific investigative and accountability mechanisms mandated by the
-        Human Rights Council</b> (including OHCHR investigations at the Council's request). These are the bodies every
-        figure, chart and percentage on this site counts. Click a name for its mandate, resolutions, votes and reports.
-        <details class="more"><summary>What is and is not included</summary>
-          <div>Their resolutions and votes are what the Resolutions and Votes tabs show. Bodies mandated by the
-          Secretary-General, the General Assembly or the Security Council, the Special Rapporteur on Afghanistan, and
-          resolutions excluded from the corpus are all in <b>Mechanisms this dataset does not count</b>, at the foot
-          of this tab, and are counted nowhere.
-          Each mechanism's mandate action verbs and legal frameworks (shown when you open it) are the union of its
-          HRC mandating resolutions — renewals inherit the founding language.</div></details>
-      </div></div>`;
+      <div class="mech-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="mech-q" autocomplete="off" spellcheck="false"
+          placeholder="Search ${nHere} mechanisms — name, situation or acronym">
+        <span class="mech-count" id="mech-count"></span>
+      </div>`;
     const nAll = Object.values(periodCount).reduce((a, n) => a + n, 0);
-    const periodBar = isOther ? "" : `
-      <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;margin-bottom:6px">
-          <b style="color:var(--ink)">Period under investigation</b>
-          <span style="color:var(--muted)">— the stretch of time the founding resolution tells the body to examine</span>
-        </div>
-        <div class="seg" id="period-seg" style="display:inline-flex;flex-wrap:wrap">
-          <button data-p="" aria-pressed="${mechPeriod === ""}">All <span style="opacity:.6">${nAll}</span></button>
-          ${PERIOD_ORDER.filter(k => periodCount[k]).map(k => `
-            <button data-p="${k}" aria-pressed="${mechPeriod === k}" title="${esc(PERIOD_TITLE[k])}">
-              ${esc(PERIOD_LABEL[k])} <span style="opacity:.6">${periodCount[k]}</span></button>`).join("")}
-        </div>
-        <details class="more" style="margin-top:8px"><summary>How this is coded</summary>
-          <div>Read off the founding resolution only, in its own words, and carried to the body; renewals do not
-          change it. <b>A closed episode</b> means the text names an event or a bounded stretch of time — a particular
-          election, an attack, a set of protests. <b>Open since a date</b> means it names a start and no end.
-          <b>No period stated</b> means the text sets no period at all: the body is told what to investigate, not when
-          it happened. A mandate bounded by place or by actor rather than by time is coded as no period stated, and the
-          wording is given on the mechanism. The exact words are in the <i>Period investigated</i> column and in each
-          mechanism's profile.</div></details>
-      </div></div>`;
+    const periodBar = "";
     host.innerHTML = `
       ${intro}
       ${periodBar}
@@ -1097,7 +1070,8 @@
           const nres = (b.resolutions || []).length;
           const ndocs = docCountByBody[b.short_name] || 0;
           const isRef = b.scope === REF_SCOPE;
-          return `<tr>
+          return `<tr data-s="${esc(((b.short_name || "") + " " + (b.full_name || "") + " " +
+            (countryName(b.country) || "") + " " + (b.country || "")).toLowerCase())}">
             <td><a class="mech-open" data-body="${esc(b.short_name)}" style="cursor:pointer"><b>${esc(b.short_name)}</b></a>
               ${isRef ? `<span class="badge" style="margin-left:4px" title="Shown for reference; not counted in any statistic">reference only</span>` : ""}
               ${!isRef && b.start_date && (b.mandate_status === "active" || isRunning(b)) ? `<span class="badge on" style="background:var(--c2);margin-left:4px" title="${b.end_date ? "Fixed term, still running: the End Date is the expiry of the current period" : "No end date set — the Council's own word is ongoing"}">${b.end_date ? "in force" : "ongoing"}</span>` : ""}
@@ -1131,9 +1105,33 @@
           Methodology tab. They are not among the ${RES.length} resolutions counted anywhere on this site.</div>
       </div>` : ""}
 `;
+    const q = $("#mech-q", host);
+    if (q) {
+      const countEl = $("#mech-count", host);
+      const apply = () => {
+        const t = q.value.trim().toLowerCase();
+        let shown = 0;
+        $$(".panel", host).forEach(panel => {
+          const rows = $$("tbody tr", panel);
+          if (!rows.length) return;
+          let n = 0;
+          rows.forEach(tr => {
+            const hit = !t || (tr.dataset.s || "").includes(t);
+            tr.style.display = hit ? "" : "none";
+            if (hit) n++;
+          });
+          panel.style.display = n ? "" : "none";
+          const c = $(".panel-head .count", panel);
+          if (c) c.textContent = n;
+          shown += n;
+        });
+        countEl.textContent = t ? `${shown} of ${nHere}` : "";
+      };
+      q.addEventListener("input", apply);
+      q.addEventListener("keydown", (e) => { if (e.key === "Escape") { q.value = ""; apply(); } });
+    }
+
     host.onclick = (e) => {
-      const pb = e.target.closest("#period-seg button");
-      if (pb) { mechPeriod = pb.dataset.p || ""; renderBodies(hostSel, groupSpec, isOther); return; }
       const mo = e.target.closest("a.mech-open");
       if (mo) { openMechanism(mo.dataset.body); return; }
       const mr = e.target.closest("a.mech-res");
