@@ -1588,14 +1588,16 @@
             <td><b>2 · It acts on a country-specific mechanism.</b><br>
               It establishes one, renews it, widens what it investigates, or gives it new tasks.</td>
             <td>Thematic mechanisms. Country special procedures &#8212; Special Rapporteurs, Independent
-              Experts &#8212; unless the same text also does one of those four things. Texts that only welcome a
-              report or urge cooperation. UPR outcome decisions.</td>
+              Experts &#8212; even where they are given investigation-like functions, such as the Special
+              Rapporteur on Afghanistan, unless the same text also does one of those four things. Texts that
+              only welcome a report or urge cooperation. UPR outcome decisions.</td>
           </tr>
           <tr>
             <td><b>3 · That mechanism investigates, or preserves evidence.</b><br>
               A commission of inquiry, fact-finding mission, group, team or committee of experts; or OHCHR
               running an investigation, examination, monitoring or accountability mandate for the Council.</td>
-            <td>A request to OHCHR for a report where no body exists and nothing investigative is asked of it.</td>
+            <td>A request to OHCHR for a report where no body exists and nothing investigative is asked of
+              it &#8212; for example, resolution S-23/1 (Boko Haram, 2015).</td>
           </tr>
           <tr>
             <td><b>4 · It speaks to the body itself.</b><br>
@@ -1611,42 +1613,70 @@
       percentage, but each one keeps its profile, its dates and its reports, so the test can be audited rather
       than taken on trust.</p>
 
-      <h2>How the coding is applied</h2>
+      <h2>How it is coded</h2>
+      <p class="prose">The dataset has three parts: the mandating resolutions, the recorded votes, and the
+      mechanisms' reports.</p>
+
+      <h3>Resolutions</h3>
+      <p class="prose">${RES.length} texts. Each one is coded on:</p>
       <ul class="prose">
-        <li><b>What a text does to a mandate.</b> <i>Founding</i> creates it; <i>renewal</i> extends it in
-          time; <i>expansion</i> widens the investigation itself; <i>tasking</i> adds work without widening
-          what is investigated. A text that renews and expands at once is coded by its strongest effect.</li>
-        <li><b>Action verbs come from the mandate paragraphs only.</b> A paragraph addressed to OHCHR as an
-          office — technical assistance, forensic expertise for national courts, capacity-building — carries
-          none: that is a mandate <i>through</i> the Office, not <i>to</i> a body. Where the Council asks the
-          Office to run the investigation itself, OHCHR is the body and its paragraphs are the mandate.</li>
-        <li><b>Mechanism-level codings are the union of its mandating texts</b>, so a renewal inherits the
-          founding language.</li>
-        <li><b>Criminal-accountability wording is read literally</b>, one value per text: names crimes or
-          criminal proceedings · accountability or perpetrators only · none · no mandate text. No mandate
-          paragraph in the corpus contains the phrase "international criminal law".</li>
-        <li><b>Naming a body of law is not applying it.</b> IHRL and IHL are recorded where the mandate
-          paragraph names them. This counts the words in the instruction, not the law the body went on to use.</li>
-        <li><b>Terms set by a condition are measured, not guessed.</b> Where a text runs "to the twenty-eighth
-          session" or until a final report, the term is measured against the record — the closing date of that
-          session, or the date of the next renewal. This is what the Sri Lanka series does: none of its five
-          texts names a period, each sets its horizon by the session at which the comprehensive report falls
-          due, and measured out they run 12, 18.5, 24, 12 and 24 months.</li>
-        <li><b>End Date is not always an ending.</b> For a body still running under a renewable term it is the
-          expiry of the current period, a future date. Read it with the mandate status; the duration chart draws
-          a running body to the build date instead.</li>
-        <li><b>"Without a vote" is the UN category</b>: no member asked for a vote. It does not mean every member
-          agreed, and several such texts carry explanations of position or disassociations.</li>
-        <li><b>The Reports search is verbatim.</b> The site never paraphrases or generates text. Paragraph numbers
-          are the printed UN numbers where they exist; documents without them are flagged.</li>
+        <li>Symbol, date, session and year of adoption.</li>
+        <li>The situation, and the body or bodies it concerns.</li>
+        <li>What it does to the mandate: founding, renewal, expansion or tasking.</li>
+        <li>The mandate paragraphs: their OP numbers, and their text quoted verbatim.</li>
+        <li>The action verbs those paragraphs use, from a fixed list of fifteen. A text carries between
+          none and thirteen of them.</li>
+        <li>The term the text sets: ongoing, 24 months, 12 months, another set term, or none stated.</li>
+        <li>The period it tells the body to examine: a closed episode, open since a date, or none stated,
+          with the wording.</li>
+        <li>The bodies of law the mandate paragraphs name: international human rights law, international
+          humanitarian law, international criminal law, or none.</li>
+        <li>Its criminal-accountability register, on four values from naming crimes down to no mandate text.</li>
+        <li>Whether it refers to gender and to children, with the wording quoted.</li>
+        <li>How it was adopted; where there was a recorded vote, the tally and the delegation that called
+          for it.</li>
+        <li>Its sponsors, from the draft L-document.</li>
+        <li>The agenda item, and the position of the State concerned where a record supports it.</li>
       </ul>
 
-      <h2>Data</h2>
-      <p class="prose">${RES.length} resolutions and decisions, complete to the close of the Council's 63rd session
-      on 7 October 2026 · ${COUNCIL_BODIES} Council-mandated bodies ·
-      ${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length} recorded votes with
-      country-by-country positions · sponsorship lists from the draft L-documents, which for a minority of
-      resolutions are not yet recorded · the mechanisms' public reports.</p>
+      <h3>Recorded votes</h3>
+      <p class="prose">${RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol)).length}
+      roll-calls. Each carries one position for every State on the roster: yes, no, abstain, absent, or not a
+      member of the Council that year. ${(() => {
+        let n = 0;
+        RES.forEach(r => { const v = votesOf(r.symbol); if (v) v.forEach(c => { if (c !== ".") n++; }); });
+        return n.toLocaleString("en-GB");
+      })()} positions in all.</p>
+
+      <h3>Reports</h3>
+      <p class="prose">${D.documents.length} reports. Each carries its UN symbol, date, type and issuing body,
+      and its text is indexed paragraph by paragraph. Search returns the paragraph verbatim; the site never
+      paraphrases or generates text.</p>
+
+      <h3>Rules that the fields do not show</h3>
+      <ul class="prose">
+        <li>A text that renews and expands at once is coded by its strongest effect on the mandate.</li>
+        <li>Action verbs are read from the mandate paragraphs only. A paragraph addressed to OHCHR as an
+          office &#8212; technical assistance, capacity-building &#8212; carries none; where the Council asks the
+          Office to run the investigation itself, OHCHR is the body and its paragraphs are the mandate.</li>
+        <li>A mechanism's verbs and legal frameworks are the union of its mandating texts, so a renewal
+          inherits the founding language.</li>
+        <li>Bodies of law and accountability register are read literally. Naming a body of law is not
+          applying it.</li>
+        <li>A term written as a condition &#8212; "to the twenty-eighth session", or until a final report &#8212;
+          is measured against the record: the closing date of that session, or the date of the next renewal.
+          This is what the Sri Lanka series does, and measured out its five texts run 12, 18.5, 24, 12 and
+          24 months.</li>
+        <li>For a body still running under a renewable term, End Date is the expiry of the current period,
+          a future date, not an ending.</li>
+        <li>"Without a vote" is the UN category: no member asked for a vote. It does not mean every member
+          agreed.</li>
+      </ul>
+
+      <h2>Sources and citation</h2>
+      <p class="prose">Complete to the close of the Council's 63rd session, 7 October 2026, covering
+      ${COUNCIL_BODIES} Council-mandated bodies. Sponsorship lists come from the draft L-documents; for a
+      minority of resolutions they are not yet recorded.</p>
       <p class="prose">Compiled and verified against the official UN documents (docs.un.org and the OHCHR Search
       Library) by <b>Helena Rodríguez-Bronchú Carceller</b>. The analytical codings are the author's own, applied
       from the literal text; the verbatim mandate quotes on each resolution card are the coding evidence. Every

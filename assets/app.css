@@ -654,3 +654,14 @@ table.criteria td + td { color: var(--ink-2); border-left: 1px solid var(--grid)
   table.criteria td + td { border-left: 0; padding-top: 0; }
   table.criteria td + td::before { content: "Leaves out: "; font-weight: 650; color: var(--muted); }
 }
+
+
+/* Methodology page: the h2/h3/list rhythm, since its blocks are siblings not .prose children */
+#about-content h2 { font-size: var(--fs-lg); margin: 26px 0 6px; letter-spacing: -0.01em; }
+#about-content h2:first-child { margin-top: 0; }
+#about-content h3 {
+  font-size: var(--fs-md); font-weight: 650; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--muted); margin: 18px 0 6px;
+}
+#about-content ul.prose { margin: 0 0 4px; padding-left: 20px; max-width: 72ch; }
+#about-content ul.prose li { margin-bottom: 4px; line-height: 1.55; }
