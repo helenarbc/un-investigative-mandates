@@ -21,8 +21,7 @@
   };
   const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const unLink = (sym) => `https://docs.un.org/en/${sym}`;
-  const wsOn = (k) => !!(window.HRCWorkspace && window.HRCWorkspace.has(k));
-  const wsBtn = (key, off, on) => `<button class="icon-btn ws-btn" data-ws-key="${esc(key)}" data-ws-off="${off}" data-ws-on="${on}" aria-pressed="${wsOn(key)}">${wsOn(key) ? on : off}</button>`;
+
 
   /* ---------- indices ---------- */
   // Reference-only bodies (special procedures with investigative tasks, e.g. the Special
@@ -109,6 +108,12 @@
   const LOCS = [["mandate", "in the mandate"], ["other_ops", "in other operative paragraphs"], ["preamble", "in the preamble"]];
 
   const votesOf = (sym) => D.votes[sym] || null;
+  // Whether a mandate is still in force on the build date. The dataset's own
+  // mandate_status is authoritative; the fallback catches the few bodies the Council
+  // did not mandate, whose status is not coded but which have no end date at all.
+  // An End Date in the future is the expiry of the current period, not the end of the body.
+  const inForce = (b) => /active/i.test(b.mandate_status || "") ||
+    (!b.mandate_status && !b.end_date && !!b.start_date);
   const sponsorsOf = (sym) => D.sponsorships[sym] || null;
   const SPONSORED_COUNT = Object.keys(D.sponsorships).filter(s => bySym.has(s)).length;
 
@@ -513,7 +518,7 @@
       return;
     }
     // column order (+ optional mechanism blocks). Mechanism blocks follow the
-    // site-wide order: still-active mandates first, then newest start date;
+    // site-wide order: mandates still in force first, then oldest start date;
     // within a block resolutions stay oldest-to-newest so evolution reads left to right.
     let colGroups = null;
     if (matrixCols === "mechanism") {
@@ -527,9 +532,9 @@
         if (ba !== bb) {
           const A = bodyByName.get(ba), B = bodyByName.get(bb);
           if (A && B) {
-            const act = (A.end_date ? 1 : 0) - (B.end_date ? 1 : 0);
+            const act = (inForce(B) ? 1 : 0) - (inForce(A) ? 1 : 0);
             if (act) return act;
-            const sd = (B.start_date || "").localeCompare(A.start_date || "");
+            const sd = (A.start_date || "").localeCompare(B.start_date || "");
             if (sd) return sd;
           }
           return (firstDate[bb] || "").localeCompare(firstDate[ba] || "") || ba.localeCompare(bb);
@@ -1010,7 +1015,10 @@
     const durationOf = (b) => {
       if (/not implemented/i.test(b.short_name || "")) return "never implemented";
       if (!b.start_date) return "—";
-      const a = new Date(b.start_date), z = b.end_date ? new Date(b.end_date) : new Date();
+      // A body still running is measured to today, never to an End Date in the future:
+      // that date is the expiry of its current period, not the end of the body.
+      const running = inForce(b);
+      const a = new Date(b.start_date), z = (running || !b.end_date) ? new Date() : new Date(b.end_date);
       if (isNaN(a) || isNaN(z)) return "—";
       let months = (z.getFullYear() - a.getFullYear()) * 12 + (z.getMonth() - a.getMonth());
       if (z.getDate() < a.getDate()) months--;
@@ -1019,7 +1027,7 @@
       const parts = [];
       if (y) parts.push(`${y} year${y > 1 ? "s" : ""}`);
       if (m || !y) parts.push(`${m} month${m === 1 ? "" : "s"}`);
-      return `${parts.join(" and ")} (${b.end_date ? "ended" : "ongoing"})`;
+      return `${parts.join(" and ")} (${running ? "running" : "ended"})`;
     };
     const nHere = [...grouped.values()].reduce((a, g) => a + g.rows.length, 0);
     const intro = isOther ? `
@@ -1089,20 +1097,23 @@
       <div class="panel">
         <div class="panel-head"><h2>${esc(g.label)}</h2><span class="count">${g.rows.length}</span></div>
         <div class="tblwrap"><table class="data"><thead><tr>
-          <th class="no-sort">Mechanism</th><th class="no-sort">Situation</th><th class="no-sort">Active</th>
+          <th class="no-sort">Mechanism</th><th class="no-sort">Situation</th>
+          <th class="no-sort" title="From the start of the mandate to its end, or to the expiry of the current period for a body still running">Mandate years</th>
           <th class="no-sort" title="From the start of the mandate to its end, or to today if it is still running">Duration</th>
           ${isOther ? "" : `<th class="no-sort" title="The stretch of time the founding resolution tells the body to examine">Period investigated</th>`}
           <th class="no-sort">Explore</th></tr></thead>
         <tbody>${g.rows.sort((a, b) =>
-          ((a.end_date ? 1 : 0) - (b.end_date ? 1 : 0)) ||
-          (b.start_date || "").localeCompare(a.start_date || "")).map(b => {
+          ((inForce(b) ? 1 : 0) - (inForce(a) ? 1 : 0)) ||
+          (a.start_date || "").localeCompare(b.start_date || "")).map(b => {
           const nres = (b.resolutions || []).length;
           const ndocs = docCountByBody[b.short_name] || 0;
           const isRef = b.scope === REF_SCOPE;
           return `<tr>
             <td><a class="mech-open" data-body="${esc(b.short_name)}" style="cursor:pointer"><b>${esc(b.short_name)}</b></a>
               ${isRef ? `<span class="badge" style="margin-left:4px" title="Shown for reference; not counted in any statistic">reference only</span>` : ""}
-              ${!b.end_date && b.start_date ? `<span class="badge on" style="background:var(--c2);margin-left:4px">active</span>` : ""}
+              ${inForce(b) ? (b.end_date
+                ? `<span class="badge on" style="background:var(--c2);margin-left:4px" title="Still running; the current period expires ${esc(fmtDate(b.end_date))}">in force</span>`
+                : `<span class="badge on" style="background:var(--c2);margin-left:4px" title="No end date set">ongoing</span>`) : ""}
               <div style="font-size:12px;color:var(--muted)">${esc(b.full_name || "")}</div></td>
             <td>${esc(countryName(b.country) || "—")}</td>
             <td style="white-space:nowrap">${yearsOf(b)}</td>
@@ -1172,7 +1183,6 @@
       <div class="modal-head">
         <div><h3>${esc(b.full_name || name)}</h3>
           <div class="sym">${esc(name)} · ${esc(countryName(b.country) || "")} · ${active}</div></div>
-        ${wsBtn("m:" + name, "☆ Save", "★ Saved")}
         <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
@@ -1375,7 +1385,6 @@
       <div class="modal-head">
         <div><h3>${esc(r.title)}</h3>
           <div class="sym">${esc(r.symbol)} · ${fmtDate(r.date_adopted)} · session ${esc(r.session || "—")}</div></div>
-        ${wsBtn("r:" + r.symbol, "☆ Save", "★ Saved")}
         <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
@@ -1454,7 +1463,7 @@
 
   /* ---------- tabs, subnav, router ---------- */
   let lastRoutedHash = null;
-  let currentTab = "mechs", currentSub = "matrix";
+  let currentTab = "overview", currentSub = "matrix";
   function setTab(tab, push) {
     currentTab = tab;
     $$(".tabbar .tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
@@ -1472,8 +1481,8 @@
       update();
     }
     if (tab === "reports" && window.HRCReports) window.HRCReports.activate();
-    if (tab === "mechs") renderMechs();
-    if (tab === "other") renderOther();
+    if (tab === "mechs") { renderMechs(); renderOther(); }
+    if (tab === "overview") { renderOverviewTiles(); if (window.HRCSummary) window.HRCSummary.activate(); }
   }
   function setSub(sub) {
     currentSub = sub;
@@ -1514,6 +1523,40 @@
     }
   }
 
+  /* ---------- overview tiles ---------- */
+  // The headline figures of the whole corpus. They never follow the filter bar:
+  // the Overview describes the dataset, the Resolutions and Votes tabs interrogate it.
+  function renderOverviewTiles() {
+    const host = $("#overview-tiles");
+    if (!host) return;
+    const voted = RES.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol));
+    let positions = 0;
+    voted.forEach(r => {
+      const row = votesOf(r.symbol);
+      for (let i = 0; i < row.length; i++) if (row[i] !== ".") positions++;
+    });
+    const situations = new Set();
+    D.bodies.forEach(b => { if (b.scope !== REF_SCOPE && b.country) situations.add(b.country); });
+    const yearMin = YEARS.min, yearMax = YEARS.max;
+    host.innerHTML = `
+      <div class="tiles overview-tiles">
+        <div class="tile"><div class="t-label">Mandating texts</div><div class="t-value">${RES.length}</div>
+          <div class="t-sub">${yearMin}–${yearMax}</div></div>
+        <div class="tile clickable" data-go="mechs"><div class="t-label">Mechanisms</div><div class="t-value">${COUNCIL_BODIES}</div>
+          <div class="t-sub">across ${situations.size} situations</div></div>
+        <div class="tile clickable" data-go="votes"><div class="t-label">Recorded votes</div><div class="t-value">${voted.length}</div>
+          <div class="t-sub">${RES.length - voted.length} adopted without a vote</div></div>
+        <div class="tile clickable" data-go="votes"><div class="t-label">Positions recorded</div><div class="t-value">${positions.toLocaleString("en-GB")}</div>
+          <div class="t-sub">one per state, per vote</div></div>
+        <div class="tile clickable" data-go="reports"><div class="t-label">Reports searchable</div><div class="t-value">${D.documents.length}</div>
+          <div class="t-sub">paragraph by paragraph</div></div>
+      </div>`;
+    host.onclick = (e) => {
+      const t = e.target.closest("[data-go]");
+      if (t) setTab(t.dataset.go);
+    };
+  }
+
   /* ---------- about + footer ---------- */
   // Bodies on the site that the Council did not mandate (GA-, UNSC- and SG-mandated),
   // shown for context in the Mechanisms and Reports tabs and counted in no figure.
@@ -1532,11 +1575,6 @@
       gender and children. The <b>Reports</b> tab searches the mechanisms' own reports paragraph
       by paragraph and returns only verbatim text with citations.</p>
       <p><button class="icon-btn" onclick="window.HRCTour && HRCTour.start()">? Take the one-minute tour</button></p>
-      <h2>Your workspace</h2>
-      <p>While you read, save paragraphs (Reports tab), resolutions and mechanisms with the <b>Save</b> buttons.
-      They collect in the <b>☆ Workspace</b> (top right), where you can add a note to each item, copy all the
-      citations, download the selection as a text file or a spreadsheet, or copy a link that opens the same
-      selection for a colleague. The workspace lives only in your browser — nothing is sent anywhere.</p>
       <h2>What is included</h2>
       <p>Every HRC resolution or decision adopted 2006–2026 (in regular session, special session
       or organizational meeting) that <b>(a) establishes</b> a country-specific investigative or
@@ -1744,17 +1782,15 @@
     } else if (h.startsWith("#/reports/")) {
       // deep link into a document/paragraph: keep the hash for reports.js
       setTab("reports", false);
-    } else if (h.startsWith("#/workspace")) {
-      // shared selection or the drawer itself: workspace.js reads the hash
-      setTab("mechs", false);
     } else if (h === "#/about") {
       setTab("about");
-    } else if (h === "#/other") {
-      setTab("other");
-    } else if (h === "#/summary") {
-      setTab("summary");
-    } else {
+    } else if (h === "#/other" || h === "#/mechs") {
       setTab("mechs");
+    } else if (h === "#/overview" || h === "#/summary") {
+      // "#/summary" is the old name of this tab; links shared before the rename still work
+      setTab("overview");
+    } else {
+      setTab("overview");
     }
   }
 
@@ -1775,22 +1811,6 @@
     const y0 = (b.start_date || "").slice(0, 4), y1 = (b.end_date || "").slice(0, 4);
     return y0 ? (y1 ? (y0 === y1 ? y0 : `${y0}–${y1}`) : `${y0}–ongoing`) : "";
   };
-  // items the Workspace can save from this module (keyed "r:<symbol>", "m:<short name>")
-  const wsItems = {
-    r: (sym) => {
-      const r = bySym.get(sym);
-      if (!r) return null;
-      return { sym, title: r.title || "", date: fmtDate(r.date_adopted), mode: r.adoption_mode || "",
-        tally: r.tally || "", bodies: r.bodies || [], role: r.resolution_role || "", unlink: unLink(sym) };
-    },
-    m: (name) => {
-      const b = bodyByName.get(name);
-      if (!b) return null;
-      return { name, full_name: b.full_name || "", country: countryName(b.country) || "", years: yearsOf(b),
-        verbs: (b.mandate_action_verbs || []).join(", "), frameworks: (b.mandate_legal_frameworks || []).join(", "),
-        link: b.links || "" };
-    },
-  };
-  window.HRCApp = { openResolution, openMechanism, setTab, esc, fmtDate, unLink, downloadCSV, bySym, bodyByName, wsItems };
+  window.HRCApp = { openResolution, openMechanism, setTab, esc, fmtDate, unLink, downloadCSV, bySym, bodyByName };
   boot();
 })();

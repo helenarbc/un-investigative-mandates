@@ -1057,9 +1057,7 @@
       }));
     });
 
-    const NOTE = `One dot per founding text (n = ${E_DATA.n}), coded from its mandate paragraphs on a ` +
-      `15-verb taxonomy. The dash and line show each year's mean, which one text can move. ` +
-      `No founding text in ${E_DATA.emptyYears.join(" or ")}.`;
+    const NOTE = `One dot per founding text (n = ${E_DATA.n}); the dash is the year’s mean.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 626 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -1214,9 +1212,7 @@
       }
     });
 
-    const NOTE = `One column per founding text (n = ${F_DATA.n}), coded from its mandate paragraphs. ` +
-      `Evidence task: collect, consolidate, preserve, analyse evidence or document. ` +
-      `No founding text in ${F_DATA.emptyYears.join(" or ")}.`;
+    const NOTE = `One column per founding text (n = ${F_DATA.n}), coded from its mandate paragraphs.`;
     const noteLines = wrapTo(NOTE, 14, D_W - padR - 28);
     noteLines.forEach((ln, i) => text(svg, ln, { x: 28, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: 28, y: 626 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -1549,9 +1545,7 @@
       }));
     });
 
-    const NOTE = `One dot per founding text (n = ${E_DATA.n}), coded from its mandate paragraphs on a `
-      + `15-verb taxonomy. No yearly mean is shown, since one text would move it. `
-      + `No founding text in ${E_DATA.emptyYears.join(" or ")}.`;
+    const NOTE = `One dot per founding text (n = ${E_DATA.n}); no yearly mean is drawn.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 640 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 640 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -1668,8 +1662,7 @@
       }
     });
 
-    const NOTE = `Counts of texts, of ${H_DATA.total}. ‘In the instruction to the body’: named in the mandate ` +
-      `paragraphs. A group named only in the body’s composition or resources is not counted.`;
+    const NOTE = `Counts of texts, of ${H_DATA.total}.`;
     const noteLines = wrapTo(NOTE, 14, D_W - padR - L);
     noteLines.forEach((ln, i) => text(svg, ln, { x: L, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: L, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -1772,8 +1765,7 @@
     });
     svg.appendChild(el("line", { x1: padL, x2: D_W - padR, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
 
-    const NOTE = `Each bar: the texts of that year that create, renew, expand or task a body. ` +
-      `‘Adopted without a vote’ means no member requested a recorded vote; it does not mean every member agreed.`;
+    const NOTE = `Each bar is the texts of that year that create, renew, expand or task a body.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -1864,8 +1856,7 @@
     text(svg, `${J_MAJORITY} = more than half of the ${J_SEATS} seats`,
       { x: labX, y: yAt(J_MAJORITY) - 9, "font-size": 14, "font-weight": 600, fill: PAL.ink });
 
-    const NOTE = `Averages per voted text in each year (n under the bars). Abstentions do not count as votes, ` +
-      `so a text can pass with fewer than ${J_MAJORITY} in favour. The gap to ${J_SEATS} is members absent or not voting.`;
+    const NOTE = `Averages per voted text in each year; n under the bars.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 614 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 614 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -1989,7 +1980,7 @@
 
     // panel headings
     text(svg, "Which body of law it names", { x: xA, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
-    text(svg, "How far it goes toward crime", { x: xB, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
+    text(svg, "How far it goes toward criminal accountability", { x: xB, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
 
     // panel legends
     let lx = xA;
@@ -2078,11 +2069,7 @@
     });
     svg.appendChild(el("line", { x1: xB, x2: xB + pw, y1: plotB, y2: plotB, stroke: PAL.baseline, "stroke-width": 1 }));
 
-    const NOTE = `Founding mandates only (${M_DATA.n} texts); each band is read against its own n. ` +
-      `Left: a text may name both bodies of law, so the bars are not a division of the band. ` +
-      `Right: an ordered ladder, each text on one rung only. The dataset codes international criminal law wherever a mandate ` +
-      `names crimes or criminal proceedings — the top rung — so that coding appears there, not on the left. ` +
-      `Naming a body of law is not applying it: this counts words in the mandate paragraph.`;
+    const NOTE = `Founding mandates only (${M_DATA.n} texts); each band is read against its own n.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -2108,14 +2095,13 @@
       file: "chart-01-resolutions-per-year-by-role.png",
       title: () => `Resolutions and decisions adopted each year, by function`,
       legend: () => legendHTML(A_LEGEND),
-      note: () => `Each column is one calendar year, split by the role of the text; the figure above is the year's total. ` +
-        `${A_DATA.total} texts in all, 2006–${YEAR_MAX}. ` +
-        `There is no role for ending a mandate, because in twenty years the Council has never adopted a text that ` +
+      note: () => `One column per calendar year, split by the role of the text; ${A_DATA.total} texts in all, 2006–${YEAR_MAX}.`,
+      long: () => `There is no role for ending a mandate: in twenty years the Council has never adopted a text that ` +
         `closes an investigative body. The nearest is 50/23 (Libya, 2022), which ends one by extending it ` +
-        `“for a final, non-extendable period of nine months” and is counted as a renewal. Mandates end by the ` +
-        `absence of a decision rather than by one: a renewal defeated on the floor (Yemen, 7 October 2021, the ` +
+        `“for a final, non-extendable period of nine months”, and is counted as a renewal. Mandates end by the ` +
+        `absence of a decision rather than by one — a renewal defeated on the floor (Yemen, 7 October 2021, the ` +
         `only draft ever rejected by this Council), a renewal never tabled (Ethiopia, October 2023), or a term ` +
-        `that simply expires (Eritrea, 2016). None of those produced an adopted text, so none can appear here — ` +
+        `that simply expires (Eritrea, 2016). None of those produced an adopted text, so none appears here, ` +
         `which is why the practice looks like uninterrupted growth.`,
       draw: drawA,
     },
@@ -2126,7 +2112,8 @@
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         B_DATA.regionCounts.map(({ region, n }) =>
           `<span class="lg"><span class="sw" style="background:${REGION_COLOR[region]}"></span>${esc(region)} ${n}</span>`).join(""),
-      note: () => `OPT / Israel is counted in two groups, so the five counts total ` +
+      note: () => `One row per situation; ${B_DATA.rows.length} situations in all.`,
+      long: () => `OPT / Israel is counted in two groups, so the five regional counts total ` +
         `${B_DATA.regionCounts.reduce((a, x) => a + x.n, 0)} for ${B_DATA.rows.length} situations.` +
         (B_DATA.unassigned ? ` ${word(B_DATA.unassigned)} further text created no body and is not shown.` : ""),
       draw: drawB,
@@ -2138,9 +2125,8 @@
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         BR_DATA.rows.map(r =>
           `<span class="lg"><span class="sw" style="background:${REGION_COLOR[r.region]}"></span>${esc(BR_SHORT[r.region] || r.region)} ${r.situations}</span>`).join(""),
-      note: () => `The same two columns as the chart above, summarised by region. Each situation is ` +
-        `counted once here, so the rows total ${BR_DATA.totalSituations} situations, ` +
-        `${BR_DATA.totalBodies} bodies and ${BR_DATA.totalTexts} texts. OPT / Israel is placed in ` +
+      note: () => `The chart above by region: ${BR_DATA.totalSituations} situations, ${BR_DATA.totalBodies} bodies, ${BR_DATA.totalTexts} texts.`,
+      long: () => `Each situation is counted once here. OPT / Israel is placed in ` +
         `Asia-Pacific on geography; the chart above shows it in two groups because Israel has sat with ` +
         `the Western European and others group in Geneva since 1 January 2014. ` +
         `The Western European and others row is empty, and is shown rather than left out: on geography ` +
@@ -2155,13 +2141,14 @@
       title: () => `Mandates in operation in each year`,
       legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
         `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
-      note: () => `A body is counted in every year its mandate is in force; the ` +
-        `${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}. ` +
+      note: () => `A body is counted in every year its mandate is in force.`,
+      long: () => `The ${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}. ` +
         `S-1/1 (2006), never implemented, is not counted.`,
       draw: drawC,
     },
     {
       id: "4",
+      long: () => `Texts that create or extend a body, coded from the mandate paragraphs; taskings, which set no new period, are not counted.`,
       head: "Duration of mandate as set by the establishing or extending resolution",
       // the SVG carries its own title, legend, note and source so the PNG is
       // a finished slide; the card head only holds the controls
@@ -2176,11 +2163,12 @@
       title: () => `Duration of mandate in practice`,
       legend: () => `<span class="lg"><span class="sw" style="background:${DL_RUNNING}"></span>Still running (${DL_DATA.live})</span>` +
         `<span class="lg"><span class="sw" style="background:${DL_ENDED}"></span>Ended (${DL_DATA.total - DL_DATA.live})</span>`,
-      note: () => `One bar per body, in the order they began. A body still running is drawn to the build date, ` +
+      note: () => `One bar per body, in the order they began; median ${DL_DUR(DL_DATA.median)}.`,
+      long: () => `A body still running is drawn to the build date, ` +
         `not to its End Date, which for an active fixed-term body is the expiry of its current period. ` +
         `Most common outcome, to the nearest year: ${DL_DATA.mode.k === 1 ? "one year" : DL_DATA.mode.k + " years"}, ` +
         `${DL_DATA.mode.n} of the ${DL_DATA.total}, and ${DL_DATA.modeEnded.n} of the ${DL_DATA.endedCount} that have ended. ` +
-        `Median ${DL_DUR(DL_DATA.median)}; median of those that have ended ${DL_DUR(DL_DATA.medianEnded)}; ` +
+        `Median of those that have ended ${DL_DUR(DL_DATA.medianEnded)}; ` +
         `mean ${DL_DUR(DL_DATA.mean)} \u2014 the distance between mean and median is the three longest-running bodies. ` +
         DL_DATA.bands.filter(b => b.n).map(b => `${b.label} ${b.n}`).join(" · ") + `. ` +
         `S-1/1 (2006), never implemented, is not counted. ` +
@@ -2191,6 +2179,7 @@
     },
     {
       id: "5",
+      long: () => `Coded from the mandate paragraphs on a 15-verb taxonomy. No mean is drawn, because a single text would move it. No founding text in ${E_DATA.emptyYears.join(" or ")}.`,
       head: "Scope of mandate: tasks assigned in founding resolutions",
       selfContained: true,
       file: "chart-05-task-verbs-per-founding-text.png",
@@ -2198,6 +2187,7 @@
     },
     {
       id: "6",
+      long: () => `A cell marks a year in which at least one founding mandate carries that verb; the dark cell is its first use. Renewals and taskings are not shown.`,
       head: "First appearance of each mandated task in a founding resolution",
       selfContained: true,
       file: "chart-06-task-verbs-first-use.png",
@@ -2205,6 +2195,7 @@
     },
     {
       id: "7",
+      long: () => `Left: a text may name both bodies of law, so the bars are not a division of the band. Right: an ordered ladder, each text on one rung only. The dataset codes international criminal law wherever a mandate names crimes or criminal proceedings — the top rung — so that coding appears on the right, not on the left. Naming a body of law is not applying it: this counts words in the mandate paragraph.`,
       head: "Applicable law and criminal-accountability language in founding mandates",
       selfContained: true,
       file: "chart-07-law-named-and-criminal-register.png",
@@ -2212,6 +2203,7 @@
     },
     {
       id: "8",
+      long: () => `“In the instruction to the body” means named in the mandate paragraphs. A group named only in the body’s composition or resources is not counted.`,
       head: "Groups named in the resolution and groups included in the mandate",
       selfContained: true,
       file: "chart-08-groups-named-vs-instructed.png",
@@ -2219,6 +2211,7 @@
     },
     {
       id: "9",
+      long: () => `“Adopted without a vote” means no member requested a recorded vote; it does not mean every member agreed.`,
       head: "Mode of adoption of mandating texts",
       selfContained: true,
       modes: [["counts", "Counts"], ["shares", "Shares"]],
@@ -2227,6 +2220,7 @@
     },
     {
       id: "10",
+      long: () => `Abstentions do not count as votes, so a text can pass with fewer than ${J_MAJORITY} in favour. The gap to ${J_SEATS} is members absent or not voting.`,
       head: "Average distribution of votes per recorded vote",
       selfContained: true,
       file: "chart-10-votes-by-year.png",
@@ -2234,6 +2228,7 @@
     },
     {
       id: "11",
+      long: () => `Membership changes every year. “Israel docket”: texts on the Occupied Palestinian Territory and Israel, and Lebanon 2006.`,
       head: "Voting record by regional group and year",
       selfContained: true,
       modes: [["all", "All voted texts"], ["noisrael", "Without the Israel docket"]],
@@ -2244,6 +2239,16 @@
     },
     {
       id: "12",
+      long: () => {
+        const W = L_DATA.weog;
+        const rest = W.other.length === 1
+          ? `the remaining ${W.not - W.isr} are all on one text, ${shortSymbol(W.other[0])} (Burundi, 2017)`
+          : `${W.not - W.isr} are on other texts`;
+        return `Years of membership differ, so totals are not comparable across States. ` +
+          `“Texts concerning Israel”: OPT/Israel and Lebanon 2006. The same exceptions appear at the other ` +
+          `end of the Council: Western group members cast ${W.not} votes that were not Yes, ${W.isr} of them ` +
+          `(${Math.round(100 * W.isr / W.not)}%) on those same texts, and ${rest}.`;
+      },
       head: "Members with the highest proportion of votes against",
       selfContained: true,
       file: "chart-12-habitual-opponents.png",
@@ -2386,9 +2391,7 @@
       }
     });
 
-    const NOTE = `Shares of each group's members voting or abstaining on the texts put to a vote that year ` +
-      `(absences excluded); membership changes every year. ‘Israel docket’: texts on the Occupied Palestinian ` +
-      `Territory and Israel, and Lebanon 2006.`;
+    const NOTE = `Shares of each group’s members voting or abstaining that year; absences excluded.`;
     const noteLines = wrapTo(NOTE, 13.5, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 640 + i * 18,
       "font-size": 13.5, fill: PAL.muted }));
@@ -2519,12 +2522,7 @@
     const wRest = W.other.length === 1
       ? `the remaining ${W.not - W.isr} are all on one text, ${shortSymbol(W.other[0])} (Burundi, 2017)`
       : `${W.not - W.isr} are on other texts`;
-    const NOTE = `Council members with ${L_MIN_VOTES} or more votes cast on the ` +
-      `${TEXTS.filter(r => r.adoption_mode === "Recorded vote").length} recorded votes. Years of membership ` +
-      `differ, so totals are not comparable across States. ‘Texts concerning Israel’: OPT/Israel and Lebanon 2006. ` +
-      `The same exceptions appear at the other end of the Council: Western group members cast ${W.not} votes ` +
-      `that were not Yes, ${W.isr} of them (${Math.round(100 * W.isr / W.not)}%) on those same texts, and ` +
-      `${wRest} — the one text on which the two camps swap sides.`;
+    const NOTE = `Council members with ${L_MIN_VOTES} or more votes cast on the ${TEXTS.filter(r => r.adoption_mode === "Recorded vote").length} recorded votes.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 626 + i * 19, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL, y: 626 + noteLines.length * 19 + 8, "font-size": 13, fill: PAL.muted });
@@ -2626,9 +2624,7 @@
         fill: i && V_DATA.cum[i] > V_DATA.cum[i - 1] ? V_FIRST : PAL.muted });
     });
 
-    const NOTE = `One row per verb, ordered by the year it first appears in a founding mandate ` +
-      `(n = ${V_DATA.nFounding}). A cell marks a year in which at least one founding mandate carries ` +
-      `that verb; the dark cell is its first use. Renewals and taskings are not shown.`;
+    const NOTE = `One row per verb, by the year it first appears in a founding mandate (n = ${V_DATA.nFounding}).`;
     const noteLines = wrapTo(NOTE, 14, D_W - padL - padR);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL, y: cumY + 44 + i * 20,
       "font-size": 14, fill: PAL.muted }));
@@ -2658,8 +2654,10 @@
           <div class="chart-host sg-chart"></div>
           ${c.selfContained ? "" : `<div class="legend sg-legend">${c.legend()}</div>`}
         </div>
-        ${c.selfContained ? "" : `<div class="panel-note">${esc(c.note())}</div>
-        <div class="sg-source">${esc(SOURCE_LINE)}</div>`}
+        ${c.selfContained ? "" : `<div class="panel-note">${esc(c.note())}</div>`}
+        ${c.long ? `<div class="panel-note sg-method"><details class="more"><summary>Notes on method</summary>
+          <div>${esc(c.long())}</div></details></div>` : ""}
+        ${c.selfContained ? "" : `<div class="sg-source">${esc(SOURCE_LINE)}</div>`}
       </div>`).join("");
     CARDS.forEach(c => {
       const card = host.querySelector(`.sg-card[data-card="${c.id}"]`);
@@ -2696,7 +2694,7 @@
   }
 
   /* ---------------- self-registration ---------------- */
-  const view = $("#view-summary");
+  const view = $("#view-overview");
   if (view) {
     const isOn = () => view.classList.contains("active");
     new MutationObserver(() => { if (isOn()) activate(); })
@@ -2711,10 +2709,10 @@
     new MutationObserver(() => { if (isOn() && built) redraw(); })
       .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     // Direct load / refresh on #/summary: app.js's boot() does not know this route and
-    // falls through to Mechanisms, rewriting the hash as it goes — which is why this file
+    // falls through to the default tab, rewriting the hash as it goes — which is why this file
     // is loaded before app.js and reads the entry hash now, then acts once boot() is done.
-    const open = () => { if (window.HRCApp) window.HRCApp.setTab("summary"); };
-    const wanted = location.hash === "#/summary";
+    const open = () => { if (window.HRCApp) window.HRCApp.setTab("overview"); };
+    const wanted = location.hash === "#/overview" || location.hash === "#/summary";
     if (wanted) {
       // after every script in the page has run, so HRCApp exists and boot() is done
       if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", open, { once: true });
@@ -2730,7 +2728,9 @@
       mo.observe(document.body, { childList: true });
       setTimeout(() => { if (!seen) mo.disconnect(); }, 4000);
     }
-    window.addEventListener("hashchange", () => { if (location.hash === "#/summary") open(); });
+    window.addEventListener("hashchange", () => {
+      if (location.hash === "#/overview" || location.hash === "#/summary") open();
+    });
   }
 
   window.HRCSummary = { activate, data: { A: A_DATA, B: B_DATA, C: C_DATA, texts: TEXTS.length, bodies: BODIES.length } };

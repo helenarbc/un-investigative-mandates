@@ -11,7 +11,6 @@
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   const $ = (sel, root) => (root || document).querySelector(sel);
   const fold = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const wsOn = (k) => !!(window.HRCWorkspace && window.HRCWorkspace.has(k));
 
   const M = window.HRC_PARAGRAPHS || null; // manifest, present once corpus is built
   const state = {
@@ -389,7 +388,6 @@
         <button class="pc-copy">Copy paragraph</button>
         <button class="pc-cite">Copy citation</button>
         <button class="pc-open">Open in document</button>
-        <button data-ws-key="p:${esc(p.id)}" data-ws-off="Save to workspace" data-ws-on="Saved ✓" aria-pressed="${wsOn("p:" + p.id)}">${wsOn("p:" + p.id) ? "Saved ✓" : "Save to workspace"}</button>
         ${d.symbol ? `<a href="${esc(A().unLink(d.symbol))}" target="_blank" rel="noopener">UN source ↗</a>` : ""}
       </div>
     </article>`;
@@ -512,7 +510,7 @@
     return `<div class="para" id="p-${esc(p.id)}" data-pid="${esc(p.id)}">
       <div class="pn" title="${p.unnumbered ? "sequential position (no printed number)" : p.printed ? `misprinted as ${esc(p.printed)} in the document` : "printed paragraph number"}">${p.unnumbered ? "·" + (p.seq + 1) : esc(p.n)}${p.annex ? `<div style="font-size:9px">ax${p.annex}</div>` : ""}${p.printed ? `<div style="font-size:9px">(${esc(p.printed)})</div>` : ""}</div>
       <div class="pt">${esc(p.text)}</div>
-      <div style="flex:0 0 auto;display:flex;gap:4px;align-items:flex-start"><button class="chip pc-cite" data-pid="${esc(p.id)}" title="Copy citation">cite</button><button class="chip" data-ws-key="p:${esc(p.id)}" data-ws-off="save" data-ws-on="saved ✓" aria-pressed="${wsOn("p:" + p.id)}">${wsOn("p:" + p.id) ? "saved ✓" : "save"}</button></div>
+      <div style="flex:0 0 auto;display:flex;gap:4px;align-items:flex-start"><button class="chip pc-cite" data-pid="${esc(p.id)}" title="Copy citation">cite</button></div>
     </div>`;
   }
   function gapRow(nums, prev, next) {
@@ -609,20 +607,7 @@
   }
   window.addEventListener("load", handleHash);
 
-  /* ---------- workspace items ("p:<paragraph id>") ---------- */
-  function wsItem(id) {
-    const p = state.paras.find(x => x.id === id);
-    if (!p) return null;
-    const d = docOf(p);
-    const label = p.unnumbered
-      ? `unnumbered ¶${p.seq + 1}${p.annex ? ` (annex ${p.annex})` : ""}`
-      : `¶ ${p.n}${p.annex ? ` (annex ${p.annex})` : ""}${p.printed ? ` (printed as ${p.printed})` : ""}`;
-    return { id: p.id, rec_id: p.rec_id, symbol: d.symbol || "", doc_id: d.doc_id || "", title: d.title || "",
-      body: (d.bodies || [])[0] || "", date: d.date ? A().fmtDate(d.date) : String(d.year || ""),
-      label, text: p.text, cite: citeOf(p), unlink: d.symbol ? A().unLink(d.symbol) : "" };
-  }
-
-  window.HRCReports = { activate, showMechanism, openDoc, wsItem, loadAll: () => loadAllShards() };
+  window.HRCReports = { activate, showMechanism, openDoc, loadAll: () => loadAllShards() };
 
   /* app.js is parsed BEFORE this file, and its boot() calls
      window.HRCReports.activate() for a page opened straight at #/reports —
