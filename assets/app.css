@@ -693,3 +693,53 @@ table.criteria td + td { color: var(--ink-2); border-left: 1px solid var(--grid)
 /* a label for an inline control in a panel head */
 .ctl-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.07em;
   font-weight: 650; color: var(--muted); margin-right: 2px; }
+
+
+/* ---------- Votes matrix, transposed (regional-groups view) ---------- */
+/* Five group columns fit any screen; the resolutions run down the page. */
+table.matrix-t { border-collapse: collapse; width: 100%; font-size: var(--fs-md); }
+table.matrix-t thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--surface);
+  text-align: left; font-weight: 650; font-size: var(--fs-sm);
+  padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: bottom;
+}
+table.matrix-t th.res { width: 148px; white-space: nowrap; }
+table.matrix-t th.gcol { width: auto; }
+table.matrix-t th.tcol, table.matrix-t td.tcol {
+  width: 104px; text-align: right; white-space: nowrap;
+  font-variant-numeric: tabular-nums; color: var(--ink-2);
+}
+table.matrix-t .gtot { margin-top: 3px; font-weight: 500; }
+table.matrix-t tbody th.res {
+  text-align: left; font-weight: 500; padding: 5px 10px; white-space: nowrap;
+  border-bottom: 1px solid var(--grid); cursor: pointer;
+}
+table.matrix-t tbody th.res b { font-weight: 650; }
+table.matrix-t tbody th.res .rdate { display: block; font-size: var(--fs-xs); color: var(--muted); }
+table.matrix-t tbody th.res:hover { background: var(--wash); }
+table.matrix-t tbody td { padding: 5px 6px; border-bottom: 1px solid var(--grid); }
+table.matrix-t tbody tr:hover td, table.matrix-t tbody tr:hover th.res { background: var(--wash); }
+table.matrix-t .hbar {
+  display: flex; height: 16px; width: 100%; border-radius: var(--r-sm);
+  overflow: hidden; background: var(--grid); cursor: pointer;
+}
+table.matrix-t .hbar b { display: block; height: 100%; }
+table.matrix-t .hbar .gy { background: var(--yes); }
+table.matrix-t .hbar .gn { background: var(--no); }
+table.matrix-t .hbar .ga { background: var(--abstain); }
+table.matrix-t .hbar .gx { background: var(--absent); }
+table.matrix-t tr.band th {
+  padding: 10px 10px 4px; font-size: var(--fs-sm); font-weight: 650; color: var(--ink);
+  background: var(--page); border-bottom: 1px solid var(--grid); cursor: pointer; text-align: left;
+}
+table.matrix-t tr.band th:hover { color: var(--accent-ink); }
+.mx-mech {
+  font: var(--fs-md) var(--sans); color: var(--ink); background: var(--page);
+  border: 1px solid var(--border); border-radius: var(--r-sm); padding: 4px 8px; max-width: 220px;
+}
+
+table.matrix-t .gtot { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--muted); }
+table.matrix-t .gtot b { font-weight: 650; }
+table.matrix-t .gtot .ty { color: var(--yes); }
+table.matrix-t .gtot .tn { color: var(--no); }
+table.matrix-t .gtot .ta { color: var(--ink-2); }

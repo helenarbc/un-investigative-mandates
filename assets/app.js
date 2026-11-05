@@ -453,6 +453,17 @@
   const totPills = (t) => `<span class="tots">
     <b class="ty" title="Yes votes">${t.Y}</b><b class="tn" title="No votes">${t.N}</b><b class="ta" title="Abstentions">${t.A}</b></span>`;
 
+  // Mechanisms that actually have a recorded vote, for the matrix's own selector.
+  let MATRIX_MECHS_CACHE = null;
+  const MATRIX_MECHS = () => {
+    if (!MATRIX_MECHS_CACHE) {
+      MATRIX_MECHS_CACHE = [...new Set(RES
+        .filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol))
+        .flatMap(r => r.bodies || []))].sort();
+    }
+    return MATRIX_MECHS_CACHE;
+  };
+
   function viewMatrix(R) {
     const host = $("#votes-content");
     let recorded = R.filter(r => r.adoption_mode === "Recorded vote" && votesOf(r.symbol));
@@ -528,7 +539,12 @@
           <span class="count">${recorded.length} recorded votes · ${active.size} states</span>
           ${filterChip()}
           <span class="spacer"></span>
-          <span class="ctl-label">Columns</span>
+          <span class="ctl-label">Mechanism</span>
+          <select id="mx-mech" class="mx-mech" title="Narrow the matrix to one mechanism">
+            <option value="">All mechanisms</option>
+            ${MATRIX_MECHS().map(m => `<option value="${esc(m)}"${F.body === m ? " selected" : ""}>${esc(m)}</option>`).join("")}
+          </select>
+          <span class="ctl-label">${matrixRows === "groups" ? "Order" : "Columns"}</span>
           <div class="seg" id="mx-cols">
             <button data-v="mechanism" aria-pressed="${matrixCols === "mechanism"}">by mechanism</button>
             <button data-v="date" aria-pressed="${matrixCols === "date"}">by date</button>
@@ -542,13 +558,66 @@
           <details class="menu"><summary class="icon-btn" title="More actions" aria-label="More actions">⋯</summary><div class="menu-list"><button class="menu-item" id="csv-matrix">Download CSV</button></div></details>
         </div>
         <div class="matrix-wrap" id="matrix-host"></div>
-        <div class="panel-note"><b>Rows:</b> ${matrixRows === "states"
-          ? `Council members; a faint cell means the state was not a member for that vote.`
-          : `the five regional groups; each cell splits the group's votes proportionally.`}
-        The three figures after each name are its Yes · No · Abstain totals.
-        <b>Columns:</b> resolutions ${matrixCols === "date" ? "by date" : "by mechanism"}. Hover for the title,
-        click for details.</div>
+        <div class="panel-note">${matrixRows === "groups"
+          ? `<b>Rows:</b> one per recorded vote, ${matrixCols === "date" ? "in date order" : "grouped by mechanism"}.
+             <b>Columns:</b> the five regional groups; each bar splits that group's votes on that resolution
+             — Yes, abstentions, No, absences, left to right. The figures under each group name are its
+             Yes · No · Abstain totals across the votes shown.`
+          : `<b>Rows:</b> Council members; a faint cell means the state was not a member for that vote. The three
+             figures after each name are its Yes · No · Abstain totals.
+             <b>Columns:</b> resolutions ${matrixCols === "date" ? "by date" : "by mechanism"}.`}
+        Hover for the detail, click for the resolution.</div>
       </div>`;
+
+    // Groups view: the table is turned on its side. Five group columns fit any screen,
+    // and the long axis — the resolutions — runs down the page, where scrolling is free.
+    if (matrixRows === "groups") {
+      const gList = [...groups.entries()];
+      const gTot = new Map(gList.map(([k]) => [k, { Y: 0, N: 0, A: 0, X: 0 }]));
+      recorded.forEach(r => {
+        const row = votesOf(r.symbol);
+        gList.forEach(([k, g]) => {
+          const t = voteTotals(row, g.idxs);
+          const a = gTot.get(k);
+          a.Y += t.Y; a.N += t.N; a.A += t.A; a.X += t.X;
+        });
+      });
+      let t_html = `<table class="matrix-t"><thead><tr>
+        <th class="res">Resolution</th>
+        ${gList.map(([k, g]) => `<th class="gcol"><span class="dotkey" style="background:var(${g.meta.color})"></span>${esc(k)}
+          <div class="gtot" title="Yes · No · Abstain across the votes shown">
+            <b class="ty">${gTot.get(k).Y}</b> · <b class="tn">${gTot.get(k).N}</b> · <b class="ta">${gTot.get(k).A}</b>
+          </div></th>`).join("")}
+        <th class="tcol" title="The official tally: Yes · No · Abstaining">Tally</th></tr></thead><tbody>`;
+      let band = null;
+      recorded.forEach(r => {
+        const key = matrixCols === "mechanism" ? ((r.bodies || [])[0] || "—") : String(r.year);
+        if (key !== band) {
+          band = key;
+          t_html += matrixCols === "mechanism"
+            ? `<tr class="band"><th class="mech-group" colspan="${gList.length + 2}" data-body="${esc(key)}"
+                 title="${esc(key)} — click for the mechanism profile"><span>${esc(key)}</span></th></tr>`
+            : `<tr class="band"><th class="year-band" colspan="${gList.length + 2}" data-year="${esc(key)}"
+                 title="${esc(key)} — click to focus this year">${esc(key)}</th></tr>`;
+        }
+        const row = votesOf(r.symbol);
+        const cells = gList.map(([k, g]) => {
+          const t = voteTotals(row, g.idxs);
+          const sum = t.Y + t.N + t.A + t.X;
+          if (!sum) return `<td class="cell gcell" data-sym="${esc(r.symbol)}" data-group="${esc(k)}"></td>`;
+          const seg = (n, cls) => n ? `<b class="${cls}" style="width:${(100 * n / sum).toFixed(2)}%"></b>` : "";
+          return `<td class="cell gcell" data-sym="${esc(r.symbol)}" data-group="${esc(k)}"
+            data-t="${t.Y}|${t.N}|${t.A}|${t.X}"><div class="hbar">${seg(t.Y, "gy")}${seg(t.A, "ga")}${seg(t.N, "gn")}${seg(t.X, "gx")}</div></td>`;
+        }).join("");
+        t_html += `<tr data-sym="${esc(r.symbol)}"><th class="res reslink" data-sym="${esc(r.symbol)}">
+          <b>${esc(r.symbol.replace("A/HRC/RES/", "").replace("A/HRC/DEC/", "DEC ").replace("A/HRC/", ""))}</b><span class="rdate">${esc(fmtDate(r.date_adopted))}</span></th>
+          ${cells}<td class="tcol tt">${r.votes_yes ?? ""} · ${r.votes_no ?? ""} · ${r.votes_abstain ?? ""}</td></tr>`;
+      });
+      t_html += `</tbody></table>`;
+      $("#matrix-host").innerHTML = t_html;
+      wireMatrix($("#matrix-host"), recorded, groups);
+      return;
+    }
 
     const nCols = recorded.length;
     let html = `<table class="matrix"><thead>`;
@@ -601,30 +670,21 @@
           html += `<tr><th class="state statelink" data-state="${esc(STATES[si].state)}">${esc(STATES[si].state)} ${totPills(trow)}</th>${cells}</tr>`;
         }
       }
-    } else {
-      for (const [gname, g] of groups) {
-        const gTot = { Y: 0, N: 0, A: 0, X: 0 };
-        let cells = "";
-        recorded.forEach((r, ci) => {
-          const t = voteTotals(votesOf(r.symbol), g.idxs);
-          gTot.Y += t.Y; gTot.N += t.N; gTot.A += t.A; gTot.X += t.X;
-          const sum = t.Y + t.N + t.A + t.X;
-          if (!sum) { cells += `<td class="cell gcell${blk(ci)}" data-sym="${esc(r.symbol)}" data-group="${esc(gname)}"><i></i></td>`; return; }
-          const seg = (n, cls) => n ? `<b class="${cls}" style="height:${Math.max(2, Math.round(n / sum * 26))}px"></b>` : "";
-          cells += `<td class="cell gcell${blk(ci)}" data-sym="${esc(r.symbol)}" data-group="${esc(gname)}"
-            data-t="${t.Y}|${t.N}|${t.A}|${t.X}"><div class="gstack">${seg(t.Y, "gy")}${seg(t.N, "gn")}${seg(t.A, "ga")}${seg(t.X, "gx")}</div></td>`;
-        });
-        html += `<tr class="grow"><th class="state" data-group="${esc(gname)}">
-          <span class="dotkey" style="background:var(${g.meta.color})"></span>${esc(gname)} ${totPills(gTot)}</th>${cells}</tr>`;
-      }
     }
     html += `</tbody></table>`;
     const mh = $("#matrix-host");
     mh.innerHTML = html;
+    wireMatrix(mh, recorded, groups);
+  }
+
+  // Tooltip, clicks and CSV for either matrix layout.
+  function wireMatrix(mh, recorded, groups) {
     $("#mx-cols").addEventListener("click", (e) => {
       const v = e.target.dataset && e.target.dataset.v;
       if (v) { matrixCols = v; viewMatrix(filtered()); }
     });
+    const mxm = $("#mx-mech");
+    if (mxm) mxm.addEventListener("change", (e) => { F.body = e.target.value; renderFilters(); update(); });
 
     const CODE_LABEL = { Y: "Yes", N: "No", A: "Abstain", X: "Absent / did not vote", ".": "Not a Council member" };
     mh.addEventListener("pointermove", (e) => {
