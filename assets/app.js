@@ -1567,6 +1567,18 @@
         between roughly 2009 and 2021 there are none, so for those years the session report shows that the State
         concerned spoke but not what it said. <i>Vote requested by</i> is coded only where a record names the
         requesting delegation.</li>
+        <li><b>5 November 2026, three coding decisions.</b> (a) <i>Terms set by reference to a session.</i>
+        25/23 (Syria, 2014) extends the commission "through to the twenty-eighth session" and S-35/1 (Iran, 2022)
+        establishes the fact-finding mission "until the end of the fifty-fifth session". A session reference is a
+        real end point, so both are now counted as <i>other set term</i> rather than <i>not stated</i>. No other
+        text in the corpus sets its term this way. (b) <i>Special-Rapporteur paragraphs carry no verbs.</i> The
+        three Belarus texts each extend both the Special Rapporteur and the Group of Independent Experts in
+        separate paragraphs. Only the paragraphs addressed to the Group are coded, so the Special Rapporteur's
+        tasks in 55/27 and 58/19 have been removed: 55/27 loses <i>monitor</i> and 58/19, a renewal by reference
+        that adds no task, loses all four of its verbs. 61/26 was already correct. (c) <i>57/34 (DRC, 2024).</i>
+        Its verbs differ from the earlier DRC renewals because the mandate changed: OP15 asks the team for
+        technical support, transitional-justice design and concrete measures, so it is coded <i>provide guidance</i>
+        and <i>make recommendations</i>, with no instruction to investigate or report.</li>
         <li>Sponsorship lists come from the draft L-documents and their addenda; for a minority of
         resolutions no sponsor list has been recorded yet.</li>
         <li>In the Reports tab, search is verbatim only — the site never paraphrases or generates
