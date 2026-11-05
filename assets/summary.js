@@ -627,7 +627,11 @@
       const i = TERMS.indexOf(r.mandate_term);
       if (per.has(y) && i >= 0) {
         per.get(y)[i]++;
-        items.get(y)[i].push(shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body"));
+        // For a term set in another form, show the wording itself: "six months",
+        // "until it presents a final report", and so on. Asked for 5 November 2026.
+        const phrase = r.mandate_term === "other set term" && r.mandate_term_phrase
+          ? " \u2014 \u201c" + r.mandate_term_phrase + "\u201d" : "";
+        items.get(y)[i].push(shortSymbol(r.symbol) + " \u2014 " + ((r.bodies || [])[0] || "no body") + phrase);
       }
     });
     const totals = TERMS.map((_, i) => YEARS.reduce((a, y) => a + per.get(y)[i], 0));
@@ -640,6 +644,28 @@
       }))
       .sort((a, b) => a.year - b.year);
     return { per, items, totals, total: texts.length, first24, ongoing };
+  })();
+
+  // The eight texts that set a term in another form, grouped by the kind of term
+  // they set, so the chart note states the lengths instead of gesturing at them.
+  const D_OTHER_TERMS = (() => {
+    const kind = (ph) => {
+      const s = String(ph || "").toLowerCase();
+      if (/six months/.test(s)) return "six months";
+      if (/nine months/.test(s)) return "nine months";
+      if (/final report/.test(s)) return "until a final report";
+      if (/session/.test(s)) return "to a named session";
+      if (/until/.test(s)) return "until a political event";
+      return "term not recorded";
+    };
+    const ORDER = ["six months", "nine months", "to a named session", "until a final report",
+      "until a political event", "term not recorded"];
+    const texts = TEXTS.filter(r => r.mandate_term === "other set term");
+    const counts = new Map();
+    texts.forEach(r => { const k = kind(r.mandate_term_phrase); counts.set(k, (counts.get(k) || 0) + 1); });
+    const parts = ORDER.filter(k => counts.has(k))
+      .map(k => counts.get(k) > 1 ? k + " (" + counts.get(k) + ")" : k);
+    return { total: texts.length, summary: parts.join(", ") };
   })();
 
   // Fixed 16:9 canvas so the exported PNG drops straight onto a slide and the
@@ -740,7 +766,8 @@
 
     // note, wrapped on word boundaries so it never runs off the canvas
     const NOTE = "Texts that create or extend a body, coded from the mandate paragraphs; taskings, which set no " +
-      "term, are not shown. ‘Other set term’: under twelve months, until a final report, or until an event.";
+      "term, are not shown. ‘Other set term’, " + lower(word(D_OTHER_TERMS.total)) + " texts: " +
+      D_OTHER_TERMS.summary + ".";
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln,
       { x: padL - 4, y: 626 + i * 20, "font-size": 14, fill: PAL.muted }));
