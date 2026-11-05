@@ -1631,7 +1631,9 @@
           paragraph names them. This counts the words in the instruction, not the law the body went on to use.</li>
         <li><b>Terms set by a condition are measured, not guessed.</b> Where a text runs "to the twenty-eighth
           session" or until a final report, the term is measured against the record — the closing date of that
-          session, or the date of the next renewal.</li>
+          session, or the date of the next renewal. This is what the Sri Lanka series does: none of its five
+          texts names a period, each sets its horizon by the session at which the comprehensive report falls
+          due, and measured out they run 12, 18.5, 24, 12 and 24 months.</li>
         <li><b>End Date is not always an ending.</b> For a body still running under a renewable term it is the
           expiry of the current period, a future date. Read it with the mandate status; the duration chart draws
           a running body to the build date instead.</li>

@@ -816,8 +816,8 @@
     return { per, items, totals, total: texts.length, first24, ongoing };
   })();
 
-  // The eight texts that set a term in another form, grouped by the kind of term
-  // they set, so the chart note states the lengths instead of gesturing at them.
+  // The texts that set a term in another form, grouped by the kind of term they
+  // set, so the chart note states the lengths instead of gesturing at them.
   const D_OTHER_TERMS = (() => {
     const kind = (ph) => {
       const s = String(ph || "").toLowerCase();
@@ -825,11 +825,12 @@
       if (/nine months/.test(s)) return "nine months";
       if (/final report/.test(s)) return "until a final report";
       if (/session/.test(s)) return "to a named session";
+      if (/renewal/.test(s)) return "measured to the next renewal";
       if (/until/.test(s)) return "until a political event";
       return "term not recorded";
     };
     const ORDER = ["six months", "nine months", "to a named session", "until a final report",
-      "until a political event", "term not recorded"];
+      "measured to the next renewal", "until a political event", "term not recorded"];
     const texts = TEXTS.filter(r => r.mandate_term === "other set term");
     const counts = new Map();
     texts.forEach(r => { const k = kind(r.mandate_term_phrase); counts.set(k, (counts.get(k) || 0) + 1); });

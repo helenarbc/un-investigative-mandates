@@ -152,6 +152,32 @@ TERM_OVERRIDES = {
     "A/HRC/RES/S-35/1": ("other set term",
                          "until the end of the fifty-fifth session of the Human "
                          "Rights Council (ran 16.3 months, to 5 April 2024)"),
+    # Sri Lanka. None of these texts states a term in months or years; each sets its
+    # horizon by naming the session at which the comprehensive report is due, or is
+    # measured to the next renewal where the mandate paragraphs name no session.
+    # Reviewed 5 November 2026. The body's End Date of 8 October 2027 is the horizon
+    # 60/1 sets, so the dataset already treated these horizons as real.
+    # The twenty-eighth session closed on 27 March 2015: 12.0 months.
+    "A/HRC/RES/25/1": ("12 months",
+                       "a comprehensive report at the twenty-eighth session "
+                       "(ran 12.0 months, to 27 March 2015)"),
+    # Renewed by 51/1 on 6 October 2022: 18.5 months, so it keeps its own category.
+    "A/HRC/RES/46/1": ("other set term",
+                       "no term stated in the mandate paragraphs (ran 18.5 months, "
+                       "to the renewal of 6 October 2022)"),
+    # Renewed by 57/1 on 9 October 2024: 24.1 months.
+    "A/HRC/RES/51/1": ("24 months",
+                       "no term stated in the mandate paragraphs (ran 24.1 months, "
+                       "to the renewal of 9 October 2024)"),
+    # OP2 sets the comprehensive report at the sixtieth session; renewed there on
+    # 6 October 2025: 11.9 months.
+    "A/HRC/RES/57/1": ("12 months",
+                       "a comprehensive report at the sixtieth session "
+                       "(ran 11.9 months, to the renewal of 6 October 2025)"),
+    # OP14 sets the comprehensive report at the sixty-sixth session: 24.0 months.
+    "A/HRC/RES/60/1": ("24 months",
+                       "a comprehensive report at the sixty-sixth session "
+                       "(24.0 months, to 8 October 2027)"),
 }
 # Texts that create a body or extend its mandate in time always get a value, even
 # when the text states no term. An expansion or a tasking gets one only when its
