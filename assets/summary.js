@@ -1951,22 +1951,29 @@
   const M_HARM = /torture|enforced disappearance|summary execution|sexual violence|arbitrary (?:arrest|detention)|extrajudicial|killing/gi;
   const M_DATA = (() => {
     const found = TEXTS.filter(r => r.resolution_role === "founding");
-    const rows = YEARS.map(y => {
-      const S = found.filter(r => (r.year || 0) === y);
+    // Year-by-year, a single founding text makes a bar 100% and three make it 33%:
+    // the counts were unreadable as proportions. Five-year bands give each bar a
+    // denominator worth dividing by.
+    const BANDS = [[2006, 2010], [2011, 2015], [2016, 2020], [2021, YEAR_MAX]];
+    const rows = BANDS.map(([a, b]) => {
+      const S = found.filter(r => (r.year || 0) >= a && (r.year || 0) <= b);
       const pick = (k) => k === "neither"
         ? S.filter(r => !(r.legal_frameworks || []).length)
         : S.filter(r => (r.legal_frameworks || []).includes(k));
       const lbl = (r) => shortSymbol(r.symbol) + " — " + ((r.bodies || [])[0] || "no body");
       return {
-        year: y, n: S.length,
-        fw: M_FW.map(([k]) => { const L = pick(k); return { k, v: L.length, items: L.map(lbl) }; }),
+        year: a + "\u2013" + b, n: S.length,
+        fw: M_FW.map(([k]) => {
+          const L = pick(k);
+          return { k, v: L.length, pct: S.length ? Math.round(L.length / S.length * 100) : 0, items: L.map(lbl) };
+        }),
       };
     });
     const none = found.filter(r => !(r.legal_frameworks || []).length);
     const named = none.filter(r => { M_HARM.lastIndex = 0; return M_HARM.test(String(r.verbatim_mandate || "")); });
     return {
       rows, n: found.length,
-      maxV: Math.max(1, ...rows.map(r => Math.max(...r.fw.map(f => f.v)))),
+      maxV: 100,
       noneN: none.length, noneHarm: named.length,
       harmItems: named.map(r => shortSymbol(r.symbol)),
       harmTerms: [...new Set(named.flatMap(r => {
@@ -1989,7 +1996,7 @@
     }));
 
     const headY = 44 + titleLines.length * 32 + 28;
-    text(svg, "Which body of law the mandate paragraph names, by year",
+    text(svg, "Share of founding mandates naming each body of law",
       { x: padL, y: headY, "font-size": 18, "font-weight": 650, fill: PAL.ink });
 
     // legend
@@ -2005,15 +2012,17 @@
     const ih = plotB - plotT;
     const maxV = M_DATA.maxV;
     const slot = iw / M_DATA.rows.length;
-    const bw = Math.min(14, (slot - 10) / 3);
+    const bw = Math.min(46, (slot - 30) / 3);
 
-    // gridlines, one per whole mandate
-    for (let t = 0; t <= maxV; t++) {
+    // gridlines every 25 per cent
+    for (let t = 0; t <= 100; t += 25) {
       const yy = plotB - ih * t / maxV;
       svg.appendChild(el("line", { x1: padL, x2: padL + iw, y1: yy, y2: yy,
         stroke: PAL.grid, "stroke-width": 1 }));
-      text(svg, t, { x: padL - 10, y: yy + 5, "text-anchor": "end", "font-size": 13, fill: PAL.muted });
+      text(svg, t + "%", { x: padL - 10, y: yy + 5, "text-anchor": "end", "font-size": 13, fill: PAL.muted });
     }
+    text(svg, "of that period's", { x: padL - 10, y: plotT - 30, "text-anchor": "end",
+      "font-size": 12.5, fill: PAL.muted });
     text(svg, "founding mandates", { x: padL - 10, y: plotT - 14, "text-anchor": "end",
       "font-size": 12.5, fill: PAL.muted });
 
@@ -2021,21 +2030,21 @@
       const x0 = padL + slot * i + (slot - bw * 3 - 4) / 2;
       r.fw.forEach((f, j) => {
         const x = x0 + j * (bw + 2);
-        const h = ih * f.v / maxV;
+        const h = ih * f.pct / maxV;
         if (f.v) {
           svg.appendChild(el("rect", { x, y: plotB - h, width: bw, height: Math.max(2, h), rx: 1.5,
             fill: M_FW[j][2],
-            _tip: `${r.year} — ${M_FW[j][1]}\n${plural(f.v, "founding mandate")} of ${r.n} that year\n` +
+            _tip: `${r.year} — ${M_FW[j][1]}\n${f.pct}% — ${plural(f.v, "founding mandate")} of ${r.n}\n` +
               listTip(f.items) }));
-          text(svg, f.v, { x: x + bw / 2, y: plotB - h - 5, "text-anchor": "middle",
-            "font-size": 11.5, "font-weight": 650, fill: PAL.ink2 });
+          text(svg, f.pct + "%", { x: x + bw / 2, y: plotB - h - 5, "text-anchor": "middle",
+            "font-size": 12, "font-weight": 650, fill: PAL.ink2 });
         }
       });
       // year label, every year, rotated so all twenty-one fit
-      text(svg, String(r.year), { x: padL + slot * (i + 0.5), y: plotB + 20,
-        "text-anchor": "middle", "font-size": 12, fill: r.n ? PAL.ink2 : PAL.muted });
-      text(svg, r.n ? "n=" + r.n : "—", { x: padL + slot * (i + 0.5), y: plotB + 36,
-        "text-anchor": "middle", "font-size": 11, fill: PAL.muted });
+      text(svg, String(r.year), { x: padL + slot * (i + 0.5), y: plotB + 22,
+        "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: PAL.ink2 });
+      text(svg, r.n + " founding mandates", { x: padL + slot * (i + 0.5), y: plotB + 40,
+        "text-anchor": "middle", "font-size": 12.5, fill: PAL.muted });
     });
     svg.appendChild(el("line", { x1: padL, x2: padL + iw, y1: plotB, y2: plotB,
       stroke: PAL.baseline, "stroke-width": 1 }));
@@ -2045,7 +2054,7 @@
       `(${M_DATA.harmTerms.join(", ")}); the other ${M_DATA.noneN - M_DATA.noneHarm} speak of the human rights situation.`,
       { x: padL - 4, y: plotB + 62, "font-size": 13.5, fill: PAL.ink2 });
 
-    const NOTE = `Founding mandates only (${M_DATA.n} texts). A text may name both bodies of law, so the bars are not a division of the year.`;
+    const NOTE = `Founding mandates only (${M_DATA.n} texts). A text may name both bodies of law, so the three bars do not sum to 100%.`;
     const noteLines = wrapTo(NOTE, 14, iw);
     noteLines.forEach((ln, i) => text(svg, ln, { x: padL - 4, y: 622 + i * 20, "font-size": 14, fill: PAL.muted }));
     text(svg, SOURCE_LINE, { x: padL - 4, y: 622 + noteLines.length * 20 + 6, "font-size": 13, fill: PAL.muted });
@@ -2055,7 +2064,7 @@
   }
 
   function M_TITLE() {
-    return `Which body of law founding mandates name, year by year`;
+    return `Which body of law founding mandates name`;
   }
 
   /* ---------------- cards ---------------- */
@@ -2235,7 +2244,65 @@
     attachTips(svg);
   }
 
+
+  /* ---------- the two mandates, side by side ----------
+     Lebanon 2006 and Ukraine 2022: the same instrument, sixteen years apart.
+     The task verbs are marked in the text so the count is visible, not asserted. */
+  const CMP_MARK = (t, verbs) => {
+    let out = esc(t);
+    verbs.forEach(v => {
+      out = out.replace(new RegExp("(" + v + ")", "g"), '<mark class="cmp-v">$1</mark>');
+    });
+    return out;
+  };
+  const CMP_LEB = {
+    sym: "A/HRC/RES/S-2/1", date: "11 August 2006", body: "Commission of inquiry on Lebanon",
+    n: 3, vote: "Adopted 27–11–8",
+    paras: [
+      ["OP7", "Decides to establish urgently and immediately dispatch a high-level commission of inquiry comprising eminent experts on human rights law and international humanitarian law:"],
+      ["(a)", "To investigate the systematic targeting and killings of civilians by Israel in Lebanon;"],
+      ["(b)", "To examine the types of weapons used by Israel and their conformity with international law;"],
+      ["(c)", "To assess the extent and deadly impact of Israeli attacks on human life, property, critical infrastructure and the environment;"],
+      ["OP10", "Requests the Commission of Inquiry to report to the Council no later than 1 September 2006 on progress made towards the fulfilment of its mandate."],
+    ],
+    verbs: ["investigate", "examine", "assess", "report"],
+  };
+  const CMP_UKR = {
+    sym: "A/HRC/RES/49/1", date: "4 March 2022", body: "Commission of inquiry on Ukraine",
+    n: 13, vote: "Adopted 32–2–13",
+    paras: [
+      ["OP11", "Decides to urgently establish an independent international commission of inquiry, comprising three human rights experts, for an initial duration of one year:"],
+      ["(a)", "To investigate all alleged violations and abuses of human rights and violations of international humanitarian law, and related crimes in the context of the aggression against Ukraine by the Russian Federation, and to establish the facts, circumstances and root causes of any such violations and abuses;"],
+      ["(b)", "To collect, consolidate and analyse evidence of such violations and abuses, including their gender dimension, and to systematically record and preserve all information, documentation and evidence, including interviews, witness testimony and forensic material, in view of any future legal proceedings;"],
+      ["(c)", "To document and verify relevant information and evidence, including through field engagement, and to cooperate with judicial and other entities, as appropriate;"],
+      ["(d)", "To identify, where possible, those individuals and entities responsible for violations or abuses … with a view to ensuring that those responsible are held accountable;"],
+      ["(e)", "To make recommendations, in particular on accountability measures, all with a view to ending impunity and ensuring accountability …;"],
+      ["(f)", "To provide the Human Rights Council … with an oral update … and a comprehensive written report …"],
+    ],
+    verbs: ["investigate", "establish the facts", "collect", "consolidate", "analyse", "record", "preserve",
+            "document", "verify", "cooperate", "identify", "make recommendations", "provide"],
+  };
+  const cmpCol = (m) => `
+    <div class="cmp-col">
+      <p class="cmp-h"><b>${esc(m.sym)}</b> · ${esc(m.date)}</p>
+      <p class="cmp-sub">${esc(m.body)} · ${esc(m.vote)}</p>
+      <div class="cmp-body">${m.paras.map(([op, t]) =>
+        `<p><span class="cmp-op">${esc(op)}</span> ${CMP_MARK(t, m.verbs)}</p>`).join("")}</div>
+      <p class="cmp-n"><b>${m.n}</b> task verb${m.n === 1 ? "" : "s"}</p>
+    </div>`;
+  const COMPARE_HTML = `
+    <p class="sg-prose-kicker">The same instrument, 16 years apart</p>
+    <h2 class="cmp-title">3 tasks, and 13</h2>
+    <div class="cmp-wrap">${cmpCol(CMP_LEB)}${cmpCol(CMP_UKR)}</div>
+    <p class="sg-prose-note">Mandate paragraphs as adopted, lightly shortened where marked …. The marked
+      words are the coded task verbs.</p>`;
+
   const CARDS = [
+    {
+      id: "11b",
+      prose: true,
+      html: () => COMPARE_HTML,
+    },
     {
       id: "1",
       file: "chart-01-resolutions-per-year-by-role.png",
@@ -2353,7 +2420,7 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
     },
     {
       id: "13",
-      long: () => `A text may name both bodies of law, so the bars are not a division of the year. The third category means the mandate paragraph names none of IHRL, IHL or international criminal law, and reaches for the conduct instead — 42/25 (Venezuela, 2019) and 4/8 (Darfur, 2007) name torture and extrajudicial killing without naming the law they breach.`,
+      long: () => `A text may name both bodies of law, so the three bars do not sum to 100%. The third category means the mandate paragraph names none of IHRL, IHL or international criminal law, and reaches for the conduct instead — 42/25 (Venezuela, 2019) and 4/8 (Darfur, 2007) name torture and extrajudicial killing without naming the law they breach.`,
       head: "Which body of law the mandate names",
       selfContained: true,
       file: "chart-13-law-named-and-criminal-register.png",
@@ -2383,11 +2450,11 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
   const SECTION_OF = {
     1: "1 · Number", 2: "1 · Number",
     3: "2 · Duration",
-    4: "3 · Scope", 5: "3 · Scope",
+    4: "3 · Scope", 5: "3 · Scope", 6: "3 · Scope",
   };
 
   (() => {
-    const ORDER = ["1", "2", "11", "12", "3", "13", "14", "4", "5", "6", "7", "8", "9", "10", "10b"];
+    const ORDER = ["1", "2", "11", "12", "11b", "3", "13", "14", "4", "5", "6", "7", "8", "9", "10", "10b"];
     const byId = {};
     CARDS.forEach(c => { byId[c.id] = c; });
     const missing = ORDER.filter(id => !byId[id]);
