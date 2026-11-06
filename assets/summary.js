@@ -2899,7 +2899,9 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
 
     // year headings
     YEARS.forEach((yr, i) => {
-      text(svg, String(yr).slice(2), { x: gridL + slot * (i + 0.5), y: top - 10,
+      // full years, every other one: "06 07 08" read as a code, not a date
+      if (i % 2 && i !== YEARS.length - 1) return;
+      text(svg, String(yr), { x: gridL + slot * (i + 0.5), y: top - 10,
         "text-anchor": "middle", "font-size": 12.5, fill: PAL.muted });
     });
 
@@ -2937,13 +2939,15 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
     });
 
     const gridB = top + V_DATA.rows.length * rowH;
-    text(svg, "first used", { x: gridR + 50, y: top - 10, "text-anchor": "end",
+    text(svg, "first used", { x: gridR + 50, y: top - 28, "text-anchor": "end",
       "font-size": 12.5, fill: PAL.muted });
 
     // the staircase, stated: how many of the fifteen the Council had reached by each year
     const cumY = gridB + 26;
-    text(svg, "verbs in use by then", { x: gridL - 10, y: cumY + 5, "text-anchor": "end",
+    text(svg, "how many of the 15 are in use", { x: gridL - 10, y: cumY + 1, "text-anchor": "end",
       "font-size": 13, "font-weight": 600, fill: PAL.ink2 });
+    text(svg, "running total, by that year", { x: gridL - 10, y: cumY + 16, "text-anchor": "end",
+      "font-size": 11.5, fill: PAL.muted });
     YEARS.forEach((yr, i) => {
       text(svg, V_DATA.cum[i], { x: gridL + slot * (i + 0.5), y: cumY + 5,
         "text-anchor": "middle", "font-size": 13, "font-weight": 650,
