@@ -2450,7 +2450,7 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
   const SECTION_OF = {
     1: "1 · Number", 2: "1 · Number",
     3: "2 · Duration",
-    4: "3 · Scope", 5: "3 · Scope", 6: "3 · Scope",
+    4: "3 · Scope", 5: "3 · Scope",
   };
 
   (() => {
@@ -2459,9 +2459,15 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
     CARDS.forEach(c => { byId[c.id] = c; });
     const missing = ORDER.filter(id => !byId[id]);
     if (missing.length) { console.warn("summary: unknown card id", missing); return; }
-    const charts = ORDER.map((id, i) => {
-      const c = byId[id]; c.id = String(i + 1);
-      if (SECTION_OF[i + 1]) c.section = SECTION_OF[i + 1];
+    // Only the charts are numbered: the comparison slide is prose and carries none,
+    // so the chart numbers stay contiguous and match the spoken cues.
+    let n = 0;
+    const charts = ORDER.map((id) => {
+      const c = byId[id];
+      if (c.prose) { c.id = "cmp"; return c; }
+      n += 1;
+      c.id = String(n);
+      if (SECTION_OF[n]) c.section = SECTION_OF[n];
       return c;
     });
     CARDS.length = 0;
