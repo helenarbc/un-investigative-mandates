@@ -487,6 +487,11 @@ details.menu > .menu-list {
 .sg-crit-lead li { margin-bottom: 12px; }
 .sg-crit-ref { color: var(--muted, #6d6b65); font-size: 13px; white-space: nowrap; margin-left: 6px; }
 .pr-prose .sg-crit-ref { font-size: clamp(10px, 0.8vw, 13px); }
+.ex-h {
+  margin: 26px 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ex-h:first-of-type { margin-top: 18px; }
 .sg-shot { margin: 0; }
 .sg-shot img { display: block; width: 100%; height: auto; border: 1px solid var(--rule, #e6e4df); border-radius: 8px; }
 .sg-prose-figs {

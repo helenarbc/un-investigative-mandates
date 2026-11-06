@@ -1040,12 +1040,26 @@
       return `${parts.join(" and ")} (${running ? (b.end_date ? "in force" : "ongoing") : "ended"})`;
     };
     const nHere = [...grouped.values()].reduce((a, g) => a + g.rows.length, 0);
+    // Key figures for the Mechanisms tab: how many bodies, across how many situations,
+    // and the split between independent formats and the ones OHCHR hosts.
+    const MECH_KEY = (() => {
+      const g = (k) => (grouped.get(k) ? grouped.get(k).rows : []);
+      const independent = g("HRC investigative mandate");
+      const ohchr = g("OHCHR investigation (broader)");
+      const all = [...independent, ...ohchr];
+      return {
+        total: all.length,
+        situations: new Set(all.map(b => countryName(b.country)).filter(Boolean)).size,
+        independent: independent.length,
+        ohchr: ohchr.length,
+      };
+    })();
     const intro = isOther ? `
       <div class="panel"><div class="panel-body" style="font-size:13.5px;color:var(--ink-2)">
         <b style="color:var(--ink)">${nHere} mechanisms and ${(D.excluded_texts || []).length} resolutions that
         no figure on this site counts.</b> They are listed so the inclusion test can be checked against what it
         leaves out, and so the material stays available: open any mechanism for its mandate and dates, and its
-        reports are searchable in the Reports tab. Mechanisms first, then the resolutions.
+        reports are searchable in the Reports tab.
         <details class="more"><summary>Why each one is out</summary>
           <div>Bodies mandated by the Secretary-General, the General Assembly or the Security Council are outside the
           Council's own practice, which is what this dataset measures; the list of them is a selection, not a complete one.
@@ -1057,6 +1071,16 @@
           </div></details>
       </div></div>
 ` : `
+      <div class="tiles">
+        <div class="tile"><div class="t-label">Mechanisms</div><div class="t-value">${MECH_KEY.total}</div>
+          <div class="t-sub">mandated by this Council</div></div>
+        <div class="tile"><div class="t-label">Situations covered</div><div class="t-value">${MECH_KEY.situations}</div>
+          <div class="t-sub">one body or several</div></div>
+        <div class="tile"><div class="t-label">Independent bodies</div><div class="t-value">${MECH_KEY.independent}</div>
+          <div class="t-sub">commissions, missions, groups of experts</div></div>
+        <div class="tile"><div class="t-label">OHCHR-hosted</div><div class="t-value">${MECH_KEY.ohchr}</div>
+          <div class="t-sub">investigations and accountability projects</div></div>
+      </div>
       <div class="filterbar">
         <div class="filter-row">
           <div class="f-item"><label for="mf-country">Situation</label>
@@ -1106,6 +1130,7 @@
     host.innerHTML = `
       ${intro}
       ${periodBar}
+      ${isOther ? `<h3 class="ex-h">Mechanisms excluded</h3>` : ""}
       ${[...grouped.values()].filter(g => g.rows.length).map(g => `
       <div class="panel">
         <div class="panel-head"><h2>${esc(g.label)}</h2><span class="count">${g.rows.length}</span></div>
@@ -1155,8 +1180,9 @@
         }).join("")}</tbody></table></div>
       </div>`).join("")}
       ${isOther && (D.excluded_texts || []).length ? `
+      <h3 class="ex-h">Resolutions excluded</h3>
       <div class="panel">
-        <div class="panel-head"><h2>Resolutions excluded from the corpus</h2><span class="count">${(D.excluded_texts || []).length}</span></div>
+        <div class="panel-head"><h2>Adopted by the Council, but outside the four criteria</h2><span class="count">${(D.excluded_texts || []).length}</span></div>
         <div class="tblwrap"><table class="data"><thead><tr><th class="no-sort">Resolution</th><th class="no-sort">Why it is excluded</th></tr></thead>
         <tbody>${(D.excluded_texts || []).map(x => `<tr>
           <td style="white-space:nowrap"><a href="${esc(unLink(x.symbol))}" target="_blank" rel="noopener">${esc(x.symbol)}</a></td>
