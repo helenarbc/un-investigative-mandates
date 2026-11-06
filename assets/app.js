@@ -349,18 +349,31 @@
   }
   // What the text says about gender and about children, and — for gender — whether it
   // says it in the mandate paragraph, which is the part the body is told to carry out.
-  function genderBadges(r) {
-    const g = r.gender_language || {};
-    const parts = [];
-    if ((g.mandate || []).length) {
-      parts.push(`<span class="badge on" style="background:var(--c5)" title="Gender language in the mandate paragraph: ${esc((g.mandate || []).join(", "))}">gender · in mandate</span>`);
-    } else if (genderAll(r).length) {
-      parts.push(`<span class="badge" title="Gender language, but not in the mandate paragraph: ${esc(genderAll(r).join(", "))}">gender · elsewhere</span>`);
-    }
-    if ((r.children_language || []).length) {
-      parts.push(`<span class="badge" title="Children language: ${esc((r.children_language || []).join(", "))}">children</span>`);
-    }
+  // The seven groups coded across the corpus, in the order the Overview chart uses.
+  // Where a group is named decides everything: a solid badge means the group reaches the
+  // paragraph that instructs the body, a plain one means it is named only elsewhere.
+  const FOCUS_GROUPS = [
+    ["women", "women"],
+    ["girls", "girls"],
+    ["gender", "gender"],
+    ["children", "children"],
+    ["persons with disabilities", "disabilities"],
+    ["older persons", "older persons"],
+    ["minorities", "minorities"],
+  ];
+  function groupBadges(r) {
+    const any = r.differentiated_analysis_whole_text || [];
+    const man = r.differentiated_analysis_mandate || [];
+    const parts = FOCUS_GROUPS.filter(([k]) => any.includes(k) || man.includes(k)).map(([k, label]) =>
+      man.includes(k)
+        ? `<span class="badge on" style="background:var(--c5)" title="${esc(label)} — in the paragraph that instructs the body">${esc(label)}</span>`
+        : `<span class="badge" title="${esc(label)} — named in the text, but not in the instruction to the body">${esc(label)}</span>`);
     return parts.length ? parts.join(" ") : `<span style="color:var(--muted)">—</span>`;
+  }
+  function frameworkBadges(r) {
+    const fw = r.legal_frameworks || [];
+    if (!fw.length) return `<span style="color:var(--muted)">—</span>`;
+    return fw.map(v => `<span class="badge" title="${esc(FW_TITLE[v] || "")}">${esc(v)}</span>`).join(" ");
   }
   const resLink = (r, label) =>
     `<a class="reslink sym" data-sym="${esc(r.symbol)}">${esc(label || r.symbol)}</a>`;
@@ -417,18 +430,21 @@
     const cols = [
       ["symbol", "Symbol"], ["date_adopted", "Date"], ["title", "Title"],
       ["resolution_role", "Role"],
-      ["adoption_mode", "Adoption"], [null, "Gender · children"],
+      ["adoption_mode", "Adoption"],
+      [null, "Focus groups", "The groups the text names. A solid badge means the group reaches the paragraph that instructs the body; a plain one means it is named only elsewhere in the text."],
+      [null, "Legal frameworks", "The body of law the mandate paragraph names: IHRL, IHL or ICL."],
     ];
     const rows = sortRows(R.concat(REFR || []));
-    $("#res-table").innerHTML = `<table class="data"><thead><tr>${cols.map(([k, l]) =>
-      `<th ${k ? `data-sort="${k}"` : 'class="no-sort"'}>${l}${k === sortKey ? ` <span class="dir">${sortDir > 0 ? "↑" : "↓"}</span>` : ""}</th>`).join("")}</tr></thead>
+    $("#res-table").innerHTML = `<table class="data"><thead><tr>${cols.map(([k, l, t]) =>
+      `<th ${k ? `data-sort="${k}"` : 'class="no-sort"'}${t ? ` title="${esc(t)}"` : ""}>${l}${k === sortKey ? ` <span class="dir">${sortDir > 0 ? "↑" : "↓"}</span>` : ""}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(r => `<tr data-sym="${esc(r.symbol)}"${r.reference_only ? ' class="ref-row" style="color:var(--muted)"' : ""}>
         <td>${resLink(r)}${r.reference_only ? ` <span class="badge" title="Shown for reference only; not counted in any figure">reference only</span>` : ""}</td>
         <td class="num" style="white-space:nowrap">${fmtDate(r.date_adopted)}</td>
         <td>${esc(r.title)}<div style="font-size:12px;color:var(--muted)">${esc((r.bodies || []).join(" · "))}</div></td>
         <td>${roleBadge(r)}</td>
         <td style="white-space:nowrap">${tallyPills(r)}</td>
-        <td>${genderBadges(r)}</td>
+        <td style="min-width:13em">${groupBadges(r)}</td>
+        <td style="white-space:nowrap">${frameworkBadges(r)}</td>
       </tr>`).join("")}</tbody></table>`;
     $("#res-table thead").addEventListener("click", (e) => {
       const k = e.target.closest("th") && e.target.closest("th").dataset.sort;
