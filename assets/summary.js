@@ -2072,8 +2072,8 @@
      each of them, and the verdicts at the end. They carry no number and no
      Download PNG; `prose: true` gives them the plain panel shell. */
 
-  const H1_TEXT = "The number and scope of investigative mandates are on the rise.";
-  const H2_TEXT = "Support for them is therefore growing.";
+  const H1_TEXT = "The number, scope and duration of investigative mandates are on the rise.";
+  const H2_TEXT = "Support for them is also increasing.";
 
   const proseCard = (id, eyebrow, title, bodyHTML) => ({
     id, prose: true,
@@ -2099,20 +2099,30 @@
     <p class="sg-prose-figs"><b>137</b> texts \u00b7 <b>47</b> bodies \u00b7 <b>23</b> situations \u00b7 <b>87</b> recorded votes \u00b7
       <b>4,089</b> recorded positions</p>`);
 
+  // A reminder to leave the slides and navigate the live dashboard. Presentation tab only.
+  const DASHBOARD_CARD = proseCard("dashboard", "The dataset, live", "The dashboard", `
+    <figure class="sg-shot"><img src="assets/img/dashboard.png" alt="The UN Investigative Mandates dashboard"></figure>`);
+
   const HYPO_CARD = proseCard("hypotheses", "Two hypotheses", "What this paper sets out to test", `
-    <p class="sg-prose-lead">Two things are said with confidence in the consultations where these texts are
-      negotiated. The second is usually offered as a consequence of the first. Both are stated here as hypotheses
-      and tested against the whole corpus.</p>
+    <p class="sg-prose-lead">Two simple hypotheses, tested against the whole corpus.</p>
     <ol class="sg-hyp">
       <li><span class="sg-hyp-n">1</span><span>${H1_TEXT}</span></li>
       <li><span class="sg-hyp-n">2</span><span>${H2_TEXT}</span></li>
     </ol>`);
 
   const H1_CARD = proseCard("h1", "Hypothesis one", H1_TEXT, `
-    <p class="sg-prose-lead">The first three charts count the texts, the bodies and the tasks each founding
-      resolution assigns. The four that follow ask a harder question: whether that growth was carried out with
-      any attention — whether the time given matches the work asked for, where the wording comes from, which
-      body of law is named, and which groups reach the paragraphs that actually instruct a body.</p>`);
+    <p class="sg-prose-lead sg-prose-tight">Three claims in one. Each is measured separately.</p>
+    <ol class="sg-crit sg-crit-lead">
+      <li><b>Number.</b> How many texts the Council adopts, and how many bodies it is running at once.
+        <span class="sg-crit-ref">charts 1\u20132</span></li>
+      <li><b>Scope.</b> How many tasks a founding mandate assigns.
+        <span class="sg-crit-ref">chart 3</span></li>
+      <li><b>Duration.</b> How long the Council gives a body to do them.
+        <span class="sg-crit-ref">chart 4</span></li>
+    </ol>
+    <p class="sg-prose-note">Charts 5 to 7 then ask the harder question: whether that growth was carried out
+      with any attention \u2014 where the wording comes from, which body of law is named, and which groups reach
+      the paragraphs that actually instruct a body.</p>`);
 
   const H2_CARD = proseCard("h2", "Hypothesis two", H2_TEXT, `
     <p class="sg-prose-lead">If the practice has grown, the support for it should have grown too. These charts
@@ -2125,7 +2135,8 @@
         <p class="sg-v-h"><span class="sg-hyp-n">1</span>${H1_TEXT}</p>
         <p class="sg-v-a"><b class="sg-yes">Yes — but it has not happened with attention.</b> Three bodies running
           at once in 2006, between fourteen and sixteen every year since 2021. Three task verbs in the Lebanon
-          mandate of 2006; 9.6 on average since 2021, and no founding mandate below eight since 2022. But term
+          mandate of 2006, and no founding mandate above five before 2014; since 2022 none below eight, averaging
+          almost eleven. But term
           length and task load are uncorrelated (r = −0.05): more is asked without more time. Formulas travel word
           for word across continents and six years. And groups are named where naming is free and absent where the
           text binds — women appear in 112 texts and in seven mandates, girls in fifty-two texts and in one.</p>
@@ -2302,7 +2313,7 @@
     const charts = ORDER.map((id, i) => { const c = byId[id]; c.id = String(i + 1); return c; });
     CARDS.length = 0;
     CARDS.push(
-      INCLUDED_CARD, HYPO_CARD,
+      INCLUDED_CARD, DASHBOARD_CARD, HYPO_CARD,
       H1_CARD, ...charts.slice(0, 7),
       H2_CARD, ...charts.slice(7),
       VERDICT_CARD
