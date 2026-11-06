@@ -743,7 +743,7 @@
       const h = ih * v / yMax;
       svg.appendChild(el("rect", {
         x, y: padT + ih - h, width: bw, height: Math.max(1, h), rx: 1.5,
-        fill: yr >= 2021 ? C_RECENT : C_EARLY,
+        fill: C_RECENT,
         _tip: `${yr} — ${plural(v, "body", "bodies")} running at some point that year\n` +
           listTip(C_DATA.bodiesPer[i].map(b => b.short_name).sort()),
       }));
@@ -2157,15 +2157,16 @@
       title: () => `Resolutions and decisions adopted each year, by function`,
       legend: () => legendHTML(A_LEGEND),
       note: () => `One column per calendar year, split by the role of the text.`,
-      long: () => `No text in the corpus closes a body: mandates end when a renewal is defeated, never tabled, or simply left to expire, so none of those endings can appear here.`,
+      long: () => `No text in the corpus closes a body: mandates end when a renewal is defeated, never tabled, or simply left to expire, so none of those endings can appear here.
+
+What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopted without a vote. OP17 requests the fact-finding mission for the Sudan "to conduct, within its existing resources, an urgent inquiry into any violations and abuses of international human rights law and violations of international humanitarian law and related international crimes, allegedly committed in and around El Obeid". A new theatre of the same conflict, a new inquiry, and the resources clause written into the instruction.`,
       draw: drawA,
     },
     {
       id: "2",
       file: "chart-02-bodies-running-per-year.png",
       title: () => `Mandates in operation in each year`,
-      legend: () => `<span class="lg"><span class="sw" style="background:${C_RECENT}"></span>2021 onwards</span>` +
-        `<span class="lg"><span class="sw" style="background:${C_EARLY}"></span>2006–2020</span>`,
+      legend: () => "",
       note: () => `A body is counted in every year its mandate is in force.`,
       long: () => `A body is counted in every year its mandate is in force; the ${lower(word(C_DATA.openEnded.length))} with no end date run through ${YEAR_MAX}.`,
       draw: drawC,
