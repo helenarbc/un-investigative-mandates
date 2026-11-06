@@ -2126,10 +2126,19 @@
       <li><b>Scope.</b> Which tasks a founding mandate assigns, and how many.</li>
     </ol>`);
 
-  const H2_CARD = proseCard("h2", "Hypothesis two", H2_TEXT, `
-    <p class="sg-prose-lead">If the practice has grown, the support for it should have grown too. These charts
-      ask whether a text is voted at all, by what margin, how the regional groups vote, which situations recur,
-      how mandates end, and who opposes and who supports.</p>`);
+  // The hypothesis stated as the inference it actually is: the premise in grey,
+  // the conclusion that is drawn from it in black. That conclusion is what fails.
+  const H2_CARD = {
+    id: "h2", prose: true,
+    html: () => `<div class="sg-prose-in">
+      <p class="sg-eyebrow">Hypothesis two</p>
+      <p class="sg-if">
+        <span class="sg-if-a">If the number, scope and length of investigative mandates is increasing\u2026</span>
+        <span class="sg-if-b">\u2026support for them must therefore be increasing too.</span>
+      </p>
+    </div>`,
+  };
+
 
   /* Conclusion cards for the talk: keywords only, so the slide does not
      compete with what is being said. The full sentences live in the script. */
