@@ -34,6 +34,7 @@
       const legend = (!c.selfContained && c.legend) ? c.legend() : "";
       el.innerHTML =
         `<div class="pr-inner">
+           ${c.section ? `<p class="pr-eyebrow">${c.section}</p>` : ""}
            <h2 class="pr-title">${(c.head || c.title())}</h2>
            ${legend ? `<div class="legend pr-legend">${legend}</div>` : ""}
            <div class="pr-chart-host"></div>

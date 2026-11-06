@@ -2296,13 +2296,24 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
        hypothesis 2  consent, margins, groups, docket, endings,
                      opponents and supporters                    (8-15)
      PNG filenames keep their original numbers; only the on-screen id moves. */
+  // Which part of hypothesis one each chart measures, shown as a kicker on the slide.
+  const SECTION_OF = {
+    1: "1 · Number", 2: "1 · Number",
+    3: "2 · Duration",
+    4: "3 · Scope", 5: "3 · Scope",
+  };
+
   (() => {
     const ORDER = ["1", "2", "11", "12", "3", "13", "14", "4", "5", "6", "7", "8", "9", "10", "10b"];
     const byId = {};
     CARDS.forEach(c => { byId[c.id] = c; });
     const missing = ORDER.filter(id => !byId[id]);
     if (missing.length) { console.warn("summary: unknown card id", missing); return; }
-    const charts = ORDER.map((id, i) => { const c = byId[id]; c.id = String(i + 1); return c; });
+    const charts = ORDER.map((id, i) => {
+      const c = byId[id]; c.id = String(i + 1);
+      if (SECTION_OF[i + 1]) c.section = SECTION_OF[i + 1];
+      return c;
+    });
     CARDS.length = 0;
     CARDS.push(
       INCLUDED_CARD, DASHBOARD_CARD, HYPO_CARD,
