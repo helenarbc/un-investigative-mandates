@@ -1583,7 +1583,7 @@
   }
 
   function E2_TITLE() {
-    return `Tasks assigned in each founding mandate, with the range before ${E2_EARLY_END + 1} and since ${E2_LATE_START}`;
+    return `Tasks assigned in each founding mandate`;
   }
 
   /* ---------------- chart 14 (was 8): groups named vs groups instructed ---------------- */
