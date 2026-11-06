@@ -2110,16 +2110,10 @@
   const H1_CARD = proseCard("h1", "Hypothesis one", H1_TEXT, `
     <p class="sg-prose-lead sg-prose-tight">Three claims in one. Each is measured separately.</p>
     <ol class="sg-crit sg-crit-lead">
-      <li><b>Number.</b> How many texts the Council adopts, and how many bodies it is running at once.
-        <span class="sg-crit-ref">charts 1\u20132</span></li>
-      <li><b>Duration.</b> How long the Council gives a body to do the work.
-        <span class="sg-crit-ref">chart 3</span></li>
-      <li><b>Scope.</b> Which tasks a founding mandate assigns, and how many.
-        <span class="sg-crit-ref">charts 4\u20135</span></li>
-    </ol>
-    <p class="sg-prose-note">Charts 5 to 7 then ask the harder question: whether that growth was carried out
-      with any attention \u2014 where the wording comes from, which body of law is named, and which groups reach
-      the paragraphs that actually instruct a body.</p>`);
+      <li><b>Number.</b> How many texts the Council adopts, and how many bodies it is running at once.</li>
+      <li><b>Duration.</b> How long the Council gives a body to do the work.</li>
+      <li><b>Scope.</b> Which tasks a founding mandate assigns, and how many.</li>
+    </ol>`);
 
   const H2_CARD = proseCard("h2", "Hypothesis two", H2_TEXT, `
     <p class="sg-prose-lead">If the practice has grown, the support for it should have grown too. These charts
