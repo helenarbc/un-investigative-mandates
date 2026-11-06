@@ -2156,7 +2156,7 @@
       file: "chart-01-resolutions-per-year-by-role.png",
       title: () => `Resolutions and decisions adopted each year, by function`,
       legend: () => legendHTML(A_LEGEND),
-      note: () => `One column per calendar year, split by the role of the text; ${A_DATA.total} texts in all, 2006–${YEAR_MAX}.`,
+      note: () => `One column per calendar year, split by the role of the text.`,
       long: () => `No text in the corpus closes a body: mandates end when a renewal is defeated, never tabled, or simply left to expire, so none of those endings can appear here.`,
       draw: drawA,
     },
