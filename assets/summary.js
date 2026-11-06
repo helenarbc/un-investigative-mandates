@@ -2774,6 +2774,21 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
       `${list.length} distinct formulations\n\n` + show.join("\n") + more;
   };
 
+  // The 15 verbs fall into four families. Grouping the rows by family shows what
+  // kind of work entered the repertoire, not only when.
+  const V_FAMILIES = [
+    ["Inquiry", ["investigate", "establish facts", "identify perpetrators"]],
+    ["Evidence", ["collect", "consolidate", "preserve", "analyse evidence", "document", "verify"]],
+    ["The situation", ["monitor", "assess"]],
+    ["Outputs", ["report", "make recommendations", "provide guidance", "engage"]],
+  ];
+  const V_FAMILY_OF = {};
+  const V_FAM_IX = {};
+  V_FAMILIES.forEach(([name, verbs], i) => {
+    V_FAM_IX[name] = i;
+    verbs.forEach(v => (V_FAMILY_OF[v] = name));
+  });
+
   const V_DATA = (() => {
     const founding = TEXTS.filter(r => r.resolution_role === "founding");
     const rows = V_ORDER.map(v => {
@@ -2787,7 +2802,8 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
       const firstText = firstYear ? per.get(firstYear)
         .slice().sort((a, b) => (a.date_adopted || "").localeCompare(b.date_adopted || ""))[0] : null;
       return { verb: v, per, firstYear, firstText, n: founding.filter(r => (r.action_verbs || []).indexOf(v) >= 0).length };
-    }).sort((a, b) => (a.firstYear || 9999) - (b.firstYear || 9999) || b.n - a.n);
+    }).sort((a, b) => (V_FAM_IX[V_FAMILY_OF[a.verb]] - V_FAM_IX[V_FAMILY_OF[b.verb]])
+      || (a.firstYear || 9999) - (b.firstYear || 9999) || b.n - a.n);
     // how many of the fifteen are in use in each year, counted cumulatively
     const cum = YEARS.map(y => rows.filter(r => r.firstYear !== null && r.firstYear <= y).length);
     return { rows, cum, nFounding: founding.length };
@@ -2903,6 +2919,20 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
       if (i % 2 && i !== YEARS.length - 1) return;
       text(svg, String(yr), { x: gridL + slot * (i + 0.5), y: top - 10,
         "text-anchor": "middle", "font-size": 12.5, fill: PAL.muted });
+    });
+
+    // a rule and a label where each family begins
+    V_DATA.rows.forEach((r, ri) => {
+      const famHere = V_FAMILY_OF[r.verb];
+      if (ri === 0 || V_FAMILY_OF[V_DATA.rows[ri - 1].verb] !== famHere) {
+        const yb = top + ri * rowH;
+        if (ri) svg.appendChild(el("line", { x1: padL, y1: yb, x2: gridR + 54, y2: yb,
+          stroke: PAL.baseline, "stroke-width": 1 }));
+        const nrows = V_DATA.rows.filter(x => V_FAMILY_OF[x.verb] === famHere).length;
+        text(svg, famHere.toUpperCase(), { x: padL, y: yb + rowH * nrows / 2 + 4,
+          "text-anchor": "start", "font-size": 12, "font-weight": 700,
+          "letter-spacing": "0.07em", fill: V_FIRST });
+      }
     });
 
     V_DATA.rows.forEach((r, ri) => {
