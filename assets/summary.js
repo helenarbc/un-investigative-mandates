@@ -2150,6 +2150,91 @@
       runs under both hypotheses: every creation leaves a document, and almost no ending does.</p>`);
 
 
+
+  /* ---------- mandate term, per mechanism ----------
+     Each body's term, in months, derived from the founding or latest term-setting
+     text. Source of each: "s" the text states a period; "r" the text states no
+     period but asks for a report at a named session, which is the end the Council
+     implied; "e" the text does neither, so the body's recorded end date is used.
+     A mandate the Council never ends is "ongoing", its own word, and has no months.
+     (Method agreed with Helena, 6 November 2026.) */
+  const TERM_ROWS = [["COI 2014 Gaza Conflict",8,"r"],["COI 2018 Gaza protests",4,"r"],["COI Cote d'Ivoire",2,"r"],["COI DRC (2025)",8,"r"],["COI Lebanon",3,"e"],["COI Libya (2011)",4,"r"],["Committee of experts (Goldstone follow-up)",5,"r"],["Designated Expert Sudan (2021)",8,"r"],["FFM DRC (2025)",4,"r"],["FFM Gaza flotilla",3,"r"],["FFM Libya (2020)",8,"r"],["FFM OPT (2006, not implemented)",0,"e"],["FFM Syria (2011)",1,"r"],["GE Darfur",3,"r"],["Gaza 2009 (Goldstone Report)",8,"e"],["HLM Darfur",3,"e"],["Investigation on Burundi",9,"e"],["OHCHR FFM CAR (2013)",4,"r"],["OHCHR Investigation Iraq (2014)",9,"e"],["OHCHR Investigation Libya",11,"r"],["OHCHR Mission South Sudan (2015)",2,"r"],["COI Burundi",12,"s"],["COI DPRK",12,"s"],["COI Eritrea",12,"s"],["COI Syria (2011)",12,"s"],["COI Ukraine",12,"s"],["Commission South Sudan",12,"s"],["FFM Israeli settlements in OPT",12,"e"],["FFM Myanmar",12,"s"],["FFM Sudan",12,"s"],["GEE Yemen",12,"s"],["GIEHR Belarus",12,"s"],["ICHRE Ethiopia",12,"s"],["ITE Kasai DRC (2017)",14,"r"],["OHCHR Investigation on Sri Lanka",12,"s"],["OHCHR Mission Burundi (2017)",12,"e"],["OHCHR OBE Belarus",12,"s"],["TOE DRC (2018)",12,"s"],["DPRK accountability project (OHCHR)",24,"s"],["FFM Beit Hanoun",22,"e"],["FFM Iran",24,"s"],["FFM Venezuela",24,"s"],["GHRE Nicaragua",24,"s"],["Sri Lanka accountability project (OHCHR)",24,"s"],["COI OPT & Israel",null,"s"],["IIM Afghanistan (2025)",null,"s"],["IIMM Myanmar",null,"s"]];
+  const TERM_ONGOING = ["IIMM Myanmar", "COI OPT & Israel", "IIM Afghanistan (2025)"];
+  const TERM_SRC_LABEL = {
+    s: "period stated in the text",
+    r: "implied by the reporting session the text names",
+    e: "no period and no session named; the body's recorded end date",
+  };
+  const TERM_BUCKETS = [
+    { key: "lt1", label: "Under 1 year", color: "#1d3f73" },
+    { key: "y1", label: "1 year", color: "#2a78d6" },
+    { key: "y2", label: "2 years", color: "#86b6ef" },
+    { key: "on", label: "Ongoing \u2014 no end date", color: "#c9dcf5" },
+  ];
+  const TERM_DATA = (() => {
+    const of = (m) => (m === null ? "on" : m < 12 ? "lt1" : m <= 14 ? "y1" : "y2");
+    const groups = {};
+    TERM_BUCKETS.forEach(b => (groups[b.key] = []));
+    TERM_ROWS.forEach(([name, months, src]) => {
+      const k = TERM_ONGOING.indexOf(name) >= 0 ? "on" : of(months);
+      groups[k].push({ name, months, src });
+    });
+    const total = TERM_ROWS.length;
+    return { groups, total,
+      counts: TERM_BUCKETS.map(b => groups[b.key].length),
+      year_or_less: groups.lt1.length + groups.y1.length };
+  })();
+
+  function drawTerm(host) {
+    const W = D_W, H = 620;
+    const svg = svgRoot(W, H);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+    const cx = 300, cy = 330, R = 205, r = 120;
+    const total = TERM_DATA.total;
+    let a0 = -Math.PI / 2;
+    TERM_BUCKETS.forEach((b, i) => {
+      const n = TERM_DATA.counts[i];
+      if (!n) return;
+      const a1 = a0 + (n / total) * Math.PI * 2;
+      const big = a1 - a0 > Math.PI ? 1 : 0;
+      const pt = (ang, rad) => [cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad];
+      const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
+      const [x2, y2] = pt(a1, r), [x3, y3] = pt(a0, r);
+      const path = el("path", {
+        d: `M${x0},${y0} A${R},${R} 0 ${big} 1 ${x1},${y1} L${x2},${y2} A${r},${r} 0 ${big} 0 ${x3},${y3} Z`,
+        fill: b.color, stroke: "#fff", "stroke-width": 2,
+      });
+      const items = TERM_DATA.groups[b.key].map(x =>
+        x.name + (x.months === null ? "" : " \u2014 " + x.months + " months (" + TERM_SRC_LABEL[x.src] + ")"));
+      path.setAttribute("data-tip", `<b>${esc(b.label)}</b><br>${n} of ${total} mechanisms` +
+        `<br><span style="opacity:.8">${items.map(esc).join("<br>")}</span>`);
+      svg.appendChild(path);
+      // slice label, outside the ring
+      const mid = (a0 + a1) / 2;
+      const lx = cx + Math.cos(mid) * (R + 34), ly = cy + Math.sin(mid) * (R + 34);
+      text(svg, String(n), { x: lx, y: ly, "font-size": 22, "font-weight": 700,
+        fill: PAL.ink, "text-anchor": Math.cos(mid) < -0.2 ? "end" : Math.cos(mid) > 0.2 ? "start" : "middle" });
+      a0 = a1;
+    });
+    // centre figure
+    text(svg, String(TERM_DATA.year_or_less), { x: cx, y: cy + 2, "font-size": 58,
+      "font-weight": 700, fill: PAL.ink, "text-anchor": "middle" });
+    text(svg, "of " + total + " run on", { x: cx, y: cy + 32, "font-size": 15, fill: PAL.ink2, "text-anchor": "middle" });
+    text(svg, "a year or less", { x: cx, y: cy + 52, "font-size": 15, fill: PAL.ink2, "text-anchor": "middle" });
+    // key, to the right
+    let ky = 170;
+    TERM_BUCKETS.forEach((b, i) => {
+      const n = TERM_DATA.counts[i];
+      svg.appendChild(el("rect", { x: 620, y: ky - 14, width: 16, height: 16, rx: 3, fill: b.color }));
+      text(svg, b.label, { x: 646, y: ky, "font-size": 18, fill: PAL.ink });
+      text(svg, n + (n === 1 ? " mechanism" : " mechanisms"), { x: 646, y: ky + 24, "font-size": 15, fill: PAL.ink2 });
+      ky += 76;
+    });
+    host.innerHTML = "";
+    host.appendChild(svg);
+    attachTips(svg);
+  }
+
   const CARDS = [
     {
       id: "1",
@@ -2251,14 +2336,12 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
     },
     {
       id: "11",
-      long: () => `Terms are read from the text that sets them. Taskings set no new period and are not counted here.`,
-      head: "Duration of mandate as set by the resolution",
-      // the SVG carries its own title, legend, note and source so the PNG is
-      // a finished slide; the card head only holds the controls
+      head: "How long each mechanism is given",
       selfContained: true,
-      modes: [["counts", "Counts"], ["shares", "Shares"]],
-      file: (mode) => `chart-11-mandate-terms-${mode}.png`,
-      draw: drawD,
+      file: "chart-mandate-term-per-mechanism.png",
+      note: () => `One mechanism per slice, by the term it runs on.`,
+      long: () => `The term is read from the founding or latest term-setting text. Where the text states a period, that period is used. Where it states none but asks the body to report at a named session, that session is the end the Council implied, and the months to it are used. Where it does neither, the body's recorded end date is used. Beit Hanoun is the one case where that last rule flatters the Council: mandated in November 2006, the mission could not deploy until 2008.`,
+      draw: drawTerm,
     },
     {
       id: "12",
