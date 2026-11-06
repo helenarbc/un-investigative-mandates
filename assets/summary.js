@@ -2622,6 +2622,7 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
       byId["3"],
       byId["12"],
       byId["9"],
+      byId["14"],
       H1_CONCL_CARD,
 
       H2_CARD,
@@ -2646,6 +2647,7 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
       [byId["3"], "1 \u00b7 Scope"],
       [byId["12"], "1 \u00b7 Scope"],
       [byId["9"], "1 \u00b7 Duration"],
+      [byId["14"], "1 \u00b7 Who the mandate names"],
       [byId["4"], "2 \u00b7 Consent"],
       [byId["5"], "2 \u00b7 Margins"],
       [byId["sp"], "2 \u00b7 Who proposes"],
