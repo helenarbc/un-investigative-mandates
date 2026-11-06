@@ -22,6 +22,12 @@
   "use strict";
   const $ = (sel, root) => (root || document).querySelector(sel);
 
+  // Every chart carries its own notice: slides get screenshotted, reproduced and
+  // exported to PDF one by one, and a credit in the footer of the site does not
+  // travel with them.
+  const CREDIT =
+    '<p class="pr-credit">\u00a9 2026 Helena Rodr\u00edguez-Bronch\u00fa Carceller \u00b7 mandates.helenarbc.com</p>';
+
   let built = false, idx = 0, slides = [], stage = null, deck = null;
 
   // The talk is a curated deck, not every chart on the Overview: a selection of
@@ -52,6 +58,7 @@
             ${sub}
             ${lg ? `<div class="legend pr-legend">${lg}</div>` : ""}
             <div class="pr-chart-host"></div>
+            ${CREDIT}
           </div>`;
       };
       el.innerHTML =
@@ -73,6 +80,7 @@
            ${legend ? `<div class="legend pr-legend">${legend}</div>` : ""}
            <div class="pr-chart-host"></div>
            <p class="pr-note"></p>
+           ${CREDIT}
          </div>`;
       const note = $(".pr-note", el);
       if (note && c.note && !c.selfContained) note.textContent = c.note();

@@ -578,6 +578,12 @@ mark.cmp-v { background: #2a78d6; color: #fff; border-radius: 3px; padding: 0 3p
   margin: 0; max-width: 115ch;
 }
 .pr-fail { font-size: 16px; color: var(--ink-2); }
+/* rights notice under every chart on a slide: slides leave the site as images */
+.pr-credit {
+  margin: 0.5% 0 0; font-size: clamp(9px, 0.72vw, 12px); line-height: 1.4;
+  color: var(--muted);
+}
+.pr-pair .pr-credit { font-size: clamp(8px, 0.62vw, 11px); margin-top: 0.4%; }
 .pr-num {
   position: absolute; right: 2.4%; bottom: 2.2%; margin: 0;
   font-size: clamp(10px, 0.8vw, 13px); color: var(--muted);
