@@ -1,0 +1,28 @@
+THIRD-PARTY NOTICES
+UN Investigative Mandates — © 2026 Helena Rodríguez-Bronchú Carceller
+
+This work is dependency-free at runtime: no frameworks, no chart libraries, no
+analytics, no external requests. It bundles one third-party component.
+
+1. Inter typeface
+   Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+   Licensed under the SIL Open Font License, Version 1.1.
+   Full licence text: assets/fonts/Inter-LICENSE.txt
+   Files: assets/fonts/inter-*.woff2
+
+   The SIL Open Font License requires that this copyright notice and the
+   licence be retained with the font files. Both are retained. Do not remove
+   assets/fonts/Inter-LICENSE.txt.
+
+2. United Nations documents
+   The resolutions, decisions and reports from which this dataset is compiled
+   are official United Nations documents, cited by symbol and linked to their
+   source at docs.un.org and the OHCHR Search Library. No rights over those
+   texts are claimed by the rightsholder of this work.
+
+ACKNOWLEDGEMENT
+
+The design of this explorer was inspired by Łukasz Szoszkiewicz's HRC voting
+explorer (https://lszoszk.github.io/hrc-voting/) and UN Human Rights Database
+(https://lszoszk.github.io/generalcomments/). This site is an independent
+implementation; its dataset, coding scheme and code are the author's own.

@@ -25,9 +25,28 @@ def load(name):
     return json.load(open(os.path.join(EXP, name), encoding="utf-8"))["rows"]
 
 
+BANNER = """/*! © 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.
+ *  UN Investigative Mandates — https://helenarbc.github.io/un-investigative-mandates/
+ *  Original work. Text and data mining rights expressly reserved:
+ *  art. 4(3) Directive (EU) 2019/790; art. L.122-5-3 French Intellectual Property Code;
+ *  art. 67 Spanish Consolidated Copyright Act (TRLPI). No licence is granted for the
+ *  training of artificial-intelligence models. See LICENSE and /tdm-policy.json.
+ */
+"""
+
+RIGHTS = {
+    "_copyright": "© 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.",
+    "_license": "No licence granted. See https://helenarbc.github.io/un-investigative-mandates/LICENSE",
+    "_cite": "Rodríguez-Bronchú Carceller, H., UN Investigative Mandates (2026)",
+    "_tdm_reservation": 1,
+    "_tdm_policy": "https://helenarbc.github.io/un-investigative-mandates/tdm-policy.json",
+}
+
+
 def dump_js(path, var, obj):
     payload = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     with open(path, "w", encoding="utf-8") as fh:
+        fh.write(BANNER)
         fh.write("window.%s=%s;" % (var, payload))
     return len(payload)
 
@@ -109,6 +128,7 @@ def main():
         excluded = json.load(open(exc_path, encoding="utf-8"))["rows"]
 
     core = {
+        **RIGHTS,
         "built": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "excluded_texts": excluded,
         "resolutions": resolutions,

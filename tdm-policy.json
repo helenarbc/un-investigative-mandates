@@ -1,0 +1,33 @@
+{
+  "policy_id": "https://helenarbc.github.io/un-investigative-mandates/tdm-policy.json",
+  "work": "UN Investigative Mandates — dataset, coding scheme, site code and charts",
+  "site": "https://helenarbc.github.io/un-investigative-mandates/",
+  "rightsholder": {
+    "name": "Helena Rodríguez-Bronchú Carceller",
+    "contact": "https://helenarbc.com"
+  },
+  "copyright": "© 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.",
+  "tdm_reservation": 1,
+  "legal_basis": [
+    "Article 4(3) of Directive (EU) 2019/790 on copyright in the Digital Single Market",
+    "Article L.122-5-3 of the French Intellectual Property Code",
+    "Article 67 of the Spanish Consolidated Copyright Act (TRLPI)",
+    "Articles 2 and 24d of the Swiss Federal Copyright Act (LDA, RS 231.1)",
+    "Articles L.341-1 et seq. of the French Intellectual Property Code and Articles 133 et seq. TRLPI (database producer's right)"
+  ],
+  "prohibited_without_prior_written_authorisation": [
+    "Text and data mining of any part of this work",
+    "Use of any part of this work for the training, fine-tuning, evaluation or grounding of artificial-intelligence models",
+    "Extraction or re-utilisation of a substantial part of the database",
+    "Reproduction or adaptation of the site code, the coding scheme or the coded dataset"
+  ],
+  "permitted": [
+    "Reading and consulting the site",
+    "Quotation and citation for research, teaching, journalism and review, with attribution in the form given below",
+    "Indexing by general-purpose search engines and by AI assistants that cite and link to the source"
+  ],
+  "not_claimed": "The underlying United Nations resolutions, decisions and reports are official UN documents. No rights over those texts are claimed by the rightsholder.",
+  "citation": "Rodríguez-Bronchú Carceller, H., UN Investigative Mandates (2026), with the UN document symbol of the resolution or report concerned.",
+  "requests": "Written authorisation may be requested via https://helenarbc.com",
+  "last_updated": "2026-11-06"
+}
