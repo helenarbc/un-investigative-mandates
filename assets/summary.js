@@ -2097,7 +2097,7 @@
     <p class="sg-prose-lead sg-prose-tight"><b>create</b> such a mechanism, <b>renew or extend</b> it in time, or
       give it a <b>new investigative, monitoring, evidence or reporting task</b>.</p>
     <p class="sg-prose-figs"><b>137</b> texts \u00b7 <b>47</b> bodies \u00b7 <b>23</b> situations \u00b7 <b>87</b> recorded votes \u00b7
-      <b>4,089</b> recorded positions</p>`);
+      <b>4,089</b> country positions</p>`);
 
   // A reminder to leave the slides and navigate the live dashboard. Presentation tab only.
   const DASHBOARD_CARD = proseCard("dashboard", "The dataset", "The dashboard", `
