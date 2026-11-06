@@ -1,7 +1,7 @@
 {
-  "policy_id": "https://helenarbc.github.io/un-investigative-mandates/tdm-policy.json",
+  "policy_id": "https://mandates.helenarbc.com/tdm-policy.json",
   "work": "UN Investigative Mandates — dataset, coding scheme, site code and charts",
-  "site": "https://helenarbc.github.io/un-investigative-mandates/",
+  "site": "https://mandates.helenarbc.com/",
   "rightsholder": {
     "name": "Helena Rodríguez-Bronchú Carceller",
     "contact": "https://helenarbc.com"

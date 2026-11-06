@@ -26,7 +26,7 @@ def load(name):
 
 
 BANNER = """/*! © 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.
- *  UN Investigative Mandates — https://helenarbc.github.io/un-investigative-mandates/
+ *  UN Investigative Mandates — https://mandates.helenarbc.com/
  *  Original work. Text and data mining rights expressly reserved:
  *  art. 4(3) Directive (EU) 2019/790; art. L.122-5-3 French Intellectual Property Code;
  *  art. 67 Spanish Consolidated Copyright Act (TRLPI). No licence is granted for the
@@ -36,10 +36,10 @@ BANNER = """/*! © 2026 Helena Rodríguez-Bronchú Carceller. All rights reserve
 
 RIGHTS = {
     "_copyright": "© 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.",
-    "_license": "No licence granted. See https://helenarbc.github.io/un-investigative-mandates/LICENSE",
+    "_license": "No licence granted. See https://mandates.helenarbc.com/LICENSE",
     "_cite": "Rodríguez-Bronchú Carceller, H., UN Investigative Mandates (2026)",
     "_tdm_reservation": 1,
-    "_tdm_policy": "https://helenarbc.github.io/un-investigative-mandates/tdm-policy.json",
+    "_tdm_policy": "https://mandates.helenarbc.com/tdm-policy.json",
 }
 
 

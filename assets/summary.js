@@ -1,5 +1,5 @@
 /*! © 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.
- *  UN Investigative Mandates — https://helenarbc.github.io/un-investigative-mandates/
+ *  UN Investigative Mandates — https://mandates.helenarbc.com/
  *  Original work. Text and data mining rights expressly reserved:
  *  art. 4(3) Directive (EU) 2019/790; art. L.122-5-3 French Intellectual Property Code;
  *  art. 67 Spanish Consolidated Copyright Act (TRLPI). No licence is granted for the
@@ -2179,7 +2179,7 @@
     html: () => {
       const Q = window.HRCQr;
       const svg = Q ? Q.svg(360).outerHTML : "";
-      const url = (Q ? Q.url : "https://helenarbc.github.io/un-investigative-mandates/")
+      const url = (Q ? Q.url : "https://mandates.helenarbc.com/")
         .replace(/^https?:\/\//, "").replace(/\/$/, "");
       return `<div class="sg-prose-in sg-qr">
         <p class="sg-eyebrow">The dataset is public</p>
