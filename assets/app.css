@@ -618,12 +618,18 @@ mark.cmp-v { background: #2a78d6; color: #fff; border-radius: 3px; padding: 0 3p
 .sg-checks { display: flex; gap: 46px; flex-wrap: wrap; margin: 10px 0 26px; padding: 0; list-style: none; }
 .sg-checks li { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 650; color: var(--ink); }
 .sg-tick { color: #1a8a4b; font-size: 1.15em; line-height: 1; }
-.sg-but { font-size: 18px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: 62ch; }
+.sg-but-block { margin-top: 6px; }
+.sg-but-word {
+  display: inline-block; margin: 0 0 14px; padding-bottom: 4px;
+  font-size: 40px; font-weight: 700; line-height: 1; letter-spacing: -0.015em;
+  color: var(--ink); border-bottom: 5px solid #eb6834;
+}
+.sg-but { font-size: 19px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: 58ch; }
 .sg-but b { color: var(--ink); font-weight: 650; }
-.sg-but-k { font-size: 1.12em; }
 .pr-prose .sg-checks { gap: 4.5vw; margin: 1.6% 0 3.4%; }
 .pr-prose .sg-checks li { font-size: clamp(20px, 2.6vw, 44px); gap: 0.7vw; }
-.pr-prose .sg-but { font-size: clamp(14px, 1.6vw, 28px); max-width: 48ch; }
+.pr-prose .sg-but-word { font-size: clamp(26px, 3.4vw, 60px); margin-bottom: 2.2%; padding-bottom: 0.5%; border-bottom-width: 0.35vw; }
+.pr-prose .sg-but { font-size: clamp(14px, 1.6vw, 28px); max-width: 46ch; }
 
 /* two charts on one slide */
 .pr-pair-grid {

@@ -2148,9 +2148,11 @@
       <li><span class="sg-tick">\u2713</span>Duration</li>
       <li><span class="sg-tick">\u2713</span>Scope</li>
     </ul>
-    <p class="sg-but"><b class="sg-but-k">But</b> it grew by <b>copying</b>, without ever
-      <b>assessing</b> what a body did \u2014 and without the <b>survivor</b> in the paragraph
-      that binds.</p>`);
+    <div class="sg-but-block">
+      <p class="sg-but-word">But</p>
+      <p class="sg-but">it grew by <b>copying</b>, without ever <b>assessing</b> what a body did
+        \u2014 and without the <b>survivor</b> in the paragraph that binds.</p>
+    </div>`);
 
   const H2_CONCL_CARD = proseCard("c2", "Conclusions \u00b7 Hypothesis two", "Not increasing \u2014 thinning", `
     <ul class="sg-keys">
