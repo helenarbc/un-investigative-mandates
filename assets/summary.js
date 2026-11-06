@@ -2102,7 +2102,6 @@
     <figure class="sg-shot"><img src="assets/img/dashboard.png" alt="The UN Investigative Mandates dashboard"></figure>`);
 
   const HYPO_CARD = proseCard("hypotheses", "Two hypotheses", "What this paper tests", `
-    <p class="sg-prose-lead">Two simple hypotheses, tested against the whole corpus.</p>
     <ol class="sg-hyp">
       <li><span class="sg-hyp-n">1</span><span>${H1_TEXT}</span></li>
       <li><span class="sg-hyp-n">2</span><span>${H2_TEXT}</span></li>
