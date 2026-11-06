@@ -1583,7 +1583,7 @@
   }
 
   function E2_TITLE() {
-    return `Tasks assigned in each founding mandate`;
+    return `Number of tasks in each founding mandate`;
   }
 
   /* ---------------- chart 14 (was 8): groups named vs groups instructed ---------------- */
@@ -2084,7 +2084,7 @@
     </div>`,
   });
 
-  const INCLUDED_CARD = proseCard("included", "What is counted", "Which bodies and which texts are in this dataset", `
+  const INCLUDED_CARD = proseCard("included", "What is counted", "Scope of this study", `
     <p class="sg-prose-kicker">Mechanisms that\u2026</p>
     <ol class="sg-crit">
       <li>are <b>mandated by the Human Rights Council</b> \u2014 not the General Assembly, not the Security
@@ -2100,10 +2100,10 @@
       <b>4,089</b> recorded positions</p>`);
 
   // A reminder to leave the slides and navigate the live dashboard. Presentation tab only.
-  const DASHBOARD_CARD = proseCard("dashboard", "The dataset, live", "The dashboard", `
+  const DASHBOARD_CARD = proseCard("dashboard", "The dataset", "The dashboard", `
     <figure class="sg-shot"><img src="assets/img/dashboard.png" alt="The UN Investigative Mandates dashboard"></figure>`);
 
-  const HYPO_CARD = proseCard("hypotheses", "Two hypotheses", "What this paper sets out to test", `
+  const HYPO_CARD = proseCard("hypotheses", "Two hypotheses", "What this paper tests", `
     <p class="sg-prose-lead">Two simple hypotheses, tested against the whole corpus.</p>
     <ol class="sg-hyp">
       <li><span class="sg-hyp-n">1</span><span>${H1_TEXT}</span></li>
@@ -2129,7 +2129,7 @@
       ask whether a text is voted at all, by what margin, how the regional groups vote, which situations recur,
       how mandates end, and who opposes and who supports.</p>`);
 
-  const VERDICT_CARD = proseCard("verdicts", "Conclusions", "The two hypotheses, and what the texts answer", `
+  const VERDICT_CARD = proseCard("verdicts", "Conclusions", "What the texts answer", `
     <div class="sg-verdict">
       <div class="sg-v-row">
         <p class="sg-v-h"><span class="sg-hyp-n">1</span>${H1_TEXT}</p>
@@ -2182,7 +2182,7 @@
     {
       id: "3",
       long: () => `Verbs are read from the mandate paragraphs only, on a fixed 15-verb taxonomy. No yearly mean is drawn, because one text would move it.`,
-      head: "Scope of mandate: tasks assigned in founding resolutions",
+      head: "Number of tasks in each founding mandate",
       selfContained: true,
       file: "chart-03-task-verbs-per-founding-text.png",
       draw: drawE2,
@@ -2190,7 +2190,7 @@
     {
       id: "4",
       long: () => `“Adopted without a vote” means no member asked for a vote. It does not mean every member agreed.`,
-      head: "Mode of adoption of mandating texts",
+      head: "How the texts were adopted: by vote, or without one",
       selfContained: true,
       file: "chart-04-adoption-by-year.png",
       draw: drawI,
@@ -2198,7 +2198,7 @@
     {
       id: "5",
       long: () => `Abstentions are not votes, so a text can pass with fewer than ${J_MAJORITY} in favour. The gap to ${J_SEATS} is members absent or not voting.`,
-      head: "Average distribution of votes per recorded vote",
+      head: "Average votes for, against and abstaining, by year",
       selfContained: true,
       file: "chart-05-votes-by-year.png",
       draw: drawJ,
@@ -2214,7 +2214,7 @@
     {
       id: "7",
       file: "chart-07-texts-and-bodies-per-situation.png",
-      title: () => `Mandating texts and bodies, by situation`,
+      title: () => `Texts and bodies, by situation`,
       legend: () => `<span class="sg-legend-title">Region of the situation</span>` +
         B_DATA.regionCounts.map(({ region, n }) =>
           `<span class="lg"><span class="sw" style="background:${REGION_COLOR[region]}"></span>${esc(region)} ${n}</span>`).join(""),
@@ -2225,7 +2225,7 @@
     {
       id: "8",
       file: "chart-08-texts-and-bodies-by-region.png",
-      title: () => `Mandating texts and bodies, by regional group of the situation`,
+      title: () => `Texts and bodies, by region of the situation`,
       legend: () => "",
       note: () => `Each ring segment is a regional group's share of the ${BR_DATA.totalTexts} mandating texts; ${BR_DATA.totalBodies} bodies across ${BR_DATA.totalSituations} situations.`,
       long: () => `Each situation is counted once, placed on geography — which puts OPT / Israel in Asia-Pacific, though Israel has sat with the Western European and others group since 2014.`,
@@ -2260,7 +2260,7 @@
     {
       id: "11",
       long: () => `Terms are read from the text that sets them. Taskings set no new period and are not counted here.`,
-      head: "Duration of mandate as set by the establishing or extending resolution",
+      head: "Duration of mandate as set by the resolution",
       // the SVG carries its own title, legend, note and source so the PNG is
       // a finished slide; the card head only holds the controls
       selfContained: true,
@@ -2271,7 +2271,7 @@
     {
       id: "12",
       long: () => `A cell marks a year in which at least one founding mandate carries that verb; the dark cell is its first use. The bracketed phrase is the object the verb recurrently takes in the mandate paragraphs. Renewals and taskings are not shown.`,
-      head: "First appearance of each mandated task in a founding resolution",
+      head: "Task verbs in founding mandates",
       selfContained: true,
       file: "chart-12-task-verbs-first-use.png",
       draw: drawV,
@@ -2279,7 +2279,7 @@
     {
       id: "13",
       long: () => `A text may name both bodies of law, so the bars are not a division of the year. The third category means the mandate paragraph names none of IHRL, IHL or international criminal law, and reaches for the conduct instead — 42/25 (Venezuela, 2019) and 4/8 (Darfur, 2007) name torture and extrajudicial killing without naming the law they breach.`,
-      head: "Which body of law founding mandates name, year by year",
+      head: "Which body of law the mandate names",
       selfContained: true,
       file: "chart-13-law-named-and-criminal-register.png",
       draw: drawM,
