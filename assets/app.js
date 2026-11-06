@@ -965,6 +965,7 @@
   // body to examine. Three values, read off the founding text and nothing else:
   // a closed episode, everything since a stated date, or no period at all.
   const PERIOD_ORDER = ["bounded episode", "open since a date", "none stated"];
+  // Kept for the dataset coding and for filtering; not shown beside the quotation.
   const PERIOD_LABEL = {
     "bounded episode": "A specific episode",
     "open since a date": "From a date, no end",
@@ -1137,9 +1138,12 @@
             <td style="white-space:nowrap">${durationOf(b)}</td>
             ${isOther ? "" : (() => {
               const ps = b.period_scope || "none stated";
-              return `<td title="${esc(b.period_phrase ? "\u201c" + b.period_phrase + "\u201d" : PERIOD_TITLE[ps] || "")}">
-                ${esc(PERIOD_LABEL[ps] || ps)}
-                ${b.period_phrase ? `<div style="font-size:12px;color:var(--muted);max-width:26em;white-space:normal">\u201c${esc(b.period_phrase)}\u201d</div>` : ""}</td>`;
+              // The founding resolution's own words. The coded scope stays in the data
+              // and in the tooltip; showing the label beside the quotation read as a
+              // second, conflicting answer.
+              return `<td title="${esc(PERIOD_TITLE[ps] || "")}" style="max-width:26em;white-space:normal">
+                ${b.period_phrase ? `\u201c${esc(b.period_phrase)}\u201d`
+                  : `<span style="color:var(--muted)">not stated</span>`}</td>`;
             })()}
             <td style="white-space:nowrap">
               ${isRef ? `<span style="color:var(--muted)">${nres} resolution${nres > 1 ? "s" : ""} (reference only)</span>`
@@ -1312,8 +1316,8 @@
         ${predecessor ? `<div class="panel-note" style="margin:10px 0">${esc(predecessor)}</div>` : ""}
         <div class="meta-grid">
           <div class="m"><b>Mandate action verbs</b>${esc((b.mandate_action_verbs || []).join(", ") || "—")}</div>
-          ${b.period_scope ? `<div class="m"><b>Period under investigation</b>${esc(PERIOD_LABEL[b.period_scope] || b.period_scope)}${
-            b.period_phrase ? ` — \u201c${esc(b.period_phrase)}\u201d` : ""}${
+          ${b.period_scope ? `<div class="m" title="${esc(PERIOD_TITLE[b.period_scope] || "")}"><b>Period under investigation</b>${
+            b.period_phrase ? `\u201c${esc(b.period_phrase)}\u201d` : "not stated"}${
             b.period_source ? `<div style="font-size:12px;color:var(--muted)">from ${esc(b.period_source)}</div>` : ""}</div>` : ""}
           ${b.links ? (() => {
             const isRes = /undocs\.org|docs\.un\.org/i.test(b.links);
