@@ -11,4 +11,5 @@ Dataset compiled and coded by **Helena Rodríguez-Bronchú Carceller** from the 
 UN documents. Design concepts inspired by Łukasz Szoszkiewicz's
 [HRC voting explorer](https://lszoszk.github.io/hrc-voting/) and
 [UN Human Rights Database](https://lszoszk.github.io/generalcomments/); this site is an
-independent implementation. Static, dependency-free, no analytics.
+independent implementation. Static and dependency-free. The only external request is Cloudflare Web Analytics,
+which is cookieless, collects no personal data and does not track visitors across sites.
