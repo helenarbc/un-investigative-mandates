@@ -1,3 +1,10 @@
+/*! © 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.
+ *  UN Investigative Mandates — https://helenarbc.github.io/un-investigative-mandates/
+ *  Original work. Text and data mining rights expressly reserved:
+ *  art. 4(3) Directive (EU) 2019/790; art. L.122-5-3 French Intellectual Property Code;
+ *  art. 67 Spanish Consolidated Copyright Act (TRLPI). No licence is granted for the
+ *  training of artificial-intelligence models. See LICENSE and /tdm-policy.json.
+ */
 /* Presentation tab.
 
    The same cards as the Overview tab, one to a slide, sized for a projector.

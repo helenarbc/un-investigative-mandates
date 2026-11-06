@@ -1,6 +1,12 @@
+/*! © 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.
+ *  UN Investigative Mandates — https://helenarbc.github.io/un-investigative-mandates/
+ *  Original work. Text and data mining rights expressly reserved:
+ *  art. 4(3) Directive (EU) 2019/790; art. L.122-5-3 French Intellectual Property Code;
+ *  art. 67 Spanish Consolidated Copyright Act (TRLPI). No licence is granted for the
+ *  training of artificial-intelligence models. See LICENSE and /tdm-policy.json.
+ */
 /* HRC Investigative Mandates — core app + Votes tab.
-   Original code for this project (2026). UI patterns inspired by
-   L. Szoszkiewicz's hrc-voting explorer (re-implemented from scratch). */
+   Original code for this project (2026). */
 (function () {
   "use strict";
   const D = window.HRC_DATA;
@@ -1857,8 +1863,22 @@
       from the literal text; the verbatim mandate quotes on each resolution card are the coding evidence. Every
       figure links back to the document it comes from.</p>
       <p class="prose"><b>Cite as:</b> Rodríguez-Bronchú Carceller, H., <i>UN Investigative Mandates</i> (2026),
-      with the UN document symbol of the resolution or report concerned.</p>`;
-    $("#footer").innerHTML = `Dataset: Helena Rodríguez-Bronchú Carceller · compiled from official UN documents
+      with the UN document symbol of the resolution or report concerned.</p>
+      <p class="prose"><b>Rights.</b> © 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.
+      The site code, the coding scheme and the coded dataset are the author's own work; the underlying
+      United Nations documents are official UN texts and no rights over them are claimed. Text and data
+      mining rights are expressly reserved under article 4(3) of Directive (EU) 2019/790, article
+      L.122-5-3 of the French Intellectual Property Code and article 67 of the Spanish Consolidated
+      Copyright Act. No licence is granted for the training of artificial-intelligence models. The same
+      reservation is published in machine-readable form at <code>/tdm-policy.json</code> and
+      <code>/.well-known/tdmrep.json</code>.</p>
+      <p class="prose"><b>Acknowledgement.</b> The design of this explorer was inspired by
+      Łukasz Szoszkiewicz's <a href="https://lszoszk.github.io/hrc-voting/" target="_blank"
+      rel="noopener">HRC voting explorer</a> and <a href="https://lszoszk.github.io/generalcomments/"
+      target="_blank" rel="noopener">UN Human Rights Database</a>. This site is an independent
+      implementation: the dataset, the coding scheme and the code are the author's own.</p>`;
+    $("#footer").innerHTML = `© 2026 Helena Rodríguez-Bronchú Carceller. All rights reserved.
+      · Dataset compiled from official UN documents
       · last updated on ${esc(fmtLongDate(D.built))}
       · <a href="#/about" id="foot-about">Methodology</a>`;
     $("#foot-about").addEventListener("click", (e) => { e.preventDefault(); setTab("about"); });
