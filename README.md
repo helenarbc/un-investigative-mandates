@@ -5,7 +5,7 @@ the Human Rights Council resolutions that create, renew, expand or task them, ev
 recorded vote and sponsorship, the mandates' language (criminal accountability, gender,
 children), and a verbatim paragraph-level search of the mechanisms' reports.
 
-Live site: https://helenarbc.github.io/un-investigative-mandates/
+Live site: https://mandates.helenarbc.com/
 
 Dataset compiled and coded by **Helena Rodríguez-Bronchú Carceller** from the official
 UN documents. Design concepts inspired by Łukasz Szoszkiewicz's
