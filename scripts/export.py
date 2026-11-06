@@ -60,6 +60,19 @@ EXCLUDED_RESOLUTIONS = {
     # reports onward. A paragraph addressed to States is not a task given to the
     # body and welcoming a report is an assessment, so all seven fail limb (c).
     # Decision of 5 November 2026; the reason for each is shown on the site.
+    # Myanmar, 6 July 2026, previously coded "tasking" on the IIMM. Every operative
+    # paragraph is addressed to the High Commissioner; the Mechanism appears only as
+    # a participant in an interactive dialogue and as a body whose work another
+    # mandate complements. Same rule as the seven Syria texts. Decision of 6 Nov 2026.
+    "A/HRC/RES/62/3": (
+        "Myanmar, 6 July 2026: OP55 to OP57 are addressed to the High Commissioner, "
+        "who is asked to present reports and oral updates and to follow up on the "
+        "fact-finding mission's recommendations. The Independent Investigative "
+        "Mechanism appears only as a participant in the enhanced interactive "
+        "dialogue and as a body whose work the High Commissioner is to complement. "
+        "Neither is a task given to the Mechanism, so the text fails limb (c) of "
+        "the inclusion test (decision of 6 November 2026)."
+    ),
     "A/HRC/RES/20/22": (
         "Syria, 6 July 2012: calls upon the Syrian authorities to cooperate with "
         "the commission of inquiry and decides to transmit its reports to all "

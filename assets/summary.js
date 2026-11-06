@@ -2159,7 +2159,7 @@
       note: () => `One column per calendar year, split by the role of the text.`,
       long: () => `No text in the corpus closes a body: mandates end when a renewal is defeated, never tabled, or simply left to expire, so none of those endings can appear here.
 
-What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopted without a vote. OP17 requests the fact-finding mission for the Sudan "to conduct, within its existing resources, an urgent inquiry into any violations and abuses of international human rights law and violations of international humanitarian law and related international crimes, allegedly committed in and around El Obeid". A new theatre of the same conflict, a new inquiry, and the resources clause written into the instruction.`,
+What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopted without a vote. OP17 requests the fact-finding mission for the Sudan "to conduct, within its existing resources, an urgent inquiry into any violations and abuses of international human rights law and violations of international humanitarian law and related international crimes, allegedly committed in and around El Obeid". The founding mandate of 2023 already reached it: OP18(a) of resolution 54/2 covers all violations "in the context of the ongoing armed conflict that began on 15 April 2023, between the Sudanese Armed Forces and the Rapid Support Forces, as well as other warring parties", with no geographic limit. The El Fasher text of November 2025 says as much, asking for its inquiry "consistent with its mandate". So both expansions add urgency and a name, not legal authority — and the second adds the resources clause as well.`,
       draw: drawA,
     },
     {
