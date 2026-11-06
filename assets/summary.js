@@ -2133,16 +2133,15 @@
 
   /* Conclusion cards for the talk: keywords only, so the slide does not
      compete with what is being said. The full sentences live in the script. */
-  const H1_CONCL_CARD = proseCard("c1", "Conclusions \u00b7 Hypothesis one", "More, longer, wider \u2014 but not considered", `
-    <ul class="sg-keys">
-      <li><b>Yes on the numbers.</b> 3 bodies running in 2006 \u2192 14\u201316 every year since 2021.</li>
-      <li><b>Yes on scope.</b> No founding mandate above 5 tasks before 2014; none below 8 since 2022.</li>
-      <li><b>Yes on duration</b> \u2014 median term 3 months \u2192 12.</li>
-      <li><b>But growth is not design.</b> Formulas travel word for word across continents and years.</li>
-      <li><b>No assessment.</b> Nothing in the texts weighs what a body did, or what the next one needs.</li>
-      <li><b>No survivor at the centre.</b> Groups named where naming is free, absent where the text binds.</li>
-      <li><b>Every creation leaves a document. Almost no ending does.</b></li>
-    </ul>`);
+  const H1_CONCL_CARD = proseCard("c1", "Conclusions \u00b7 Hypothesis one", "Hypothesis one", `
+    <ul class="sg-checks">
+      <li><span class="sg-tick">\u2713</span>Number</li>
+      <li><span class="sg-tick">\u2713</span>Duration</li>
+      <li><span class="sg-tick">\u2713</span>Scope</li>
+    </ul>
+    <p class="sg-but"><b class="sg-but-k">But</b> it grew by <b>copying</b>, without ever
+      <b>assessing</b> what a body did \u2014 and without the <b>survivor</b> in the paragraph
+      that binds.</p>`);
 
   const H2_CONCL_CARD = proseCard("c2", "Conclusions \u00b7 Hypothesis two", "Not increasing \u2014 thinning", `
     <ul class="sg-keys">
