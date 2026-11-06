@@ -478,6 +478,12 @@ details.menu > .menu-list {
 .sg-prose-h { font-size: 26px; line-height: 1.22; font-weight: 650; color: var(--ink); margin: 0 0 16px; }
 .sg-prose-lead { font-size: 16px; line-height: 1.6; color: var(--ink); margin: 0 0 16px; }
 .sg-prose-note { font-size: 14px; line-height: 1.6; color: var(--ink-2); margin: 14px 0 0; }
+.sg-prose-kicker {
+  font-size: 13px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--accent, #2a78d6); margin: 0 0 10px;
+}
+.sg-crit + .sg-prose-kicker { margin-top: 22px; }
+.sg-prose-tight { margin-bottom: 0; }
 .sg-prose-figs {
   font-size: 15px; line-height: 1.6; color: var(--ink); margin: 16px 0 0;
   border-top: 1px solid var(--border); padding-top: 14px;
@@ -554,6 +560,8 @@ details.menu > .menu-list {
 .pr-prose .sg-hyp-n { min-width: 1.7vw; height: 1.7vw; font-size: clamp(10px, 0.85vw, 14px); }
 .pr-prose .sg-v-h { font-size: clamp(13px, 1.2vw, 20px); }
 .pr-prose .sg-prose-note, .pr-prose .sg-prose-figs { font-size: clamp(11px, 0.95vw, 16px); }
+.pr-prose .sg-prose-kicker { font-size: clamp(10px, 0.85vw, 14px); margin-bottom: 0.9%; }
+.pr-prose .sg-crit + .sg-prose-kicker { margin-top: 2%; }
 .pr-bar { display: flex; align-items: center; gap: 10px; }
 .pr-bar .spacer { flex: 1; }
 .pr-pos { font-size: 13px; color: var(--ink-2); min-width: 64px; text-align: center; }

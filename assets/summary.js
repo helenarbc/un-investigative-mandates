@@ -2085,24 +2085,18 @@
   });
 
   const INCLUDED_CARD = proseCard("included", "What is counted", "Which bodies and which texts are in this dataset", `
-    <p class="sg-prose-lead">Every Human Rights Council resolution and decision adopted since July 2006 that
-      <b>creates</b> a country-specific investigative body, <b>renews or extends</b> it in time, or gives it a
-      <b>new investigative, monitoring, evidence or reporting task</b>.</p>
+    <p class="sg-prose-kicker">Mechanisms that\u2026</p>
     <ol class="sg-crit">
-      <li><b>Created by this Council.</b> Not the General Assembly, not the Security Council, not the
-        Secretary-General. So the Syria mechanism (IIIM, 2016) and UNITAD (2017) are out: they carry no Council
-        resolution and no Council vote, and the vote is half of what is studied here.</li>
-      <li><b>Country-specific, not thematic.</b> A body turned on one situation, not on a phenomenon across all
-        States.</li>
-      <li><b>A body, defined by what it does.</b> Commissions of inquiry, fact-finding missions, groups and teams
-        of experts, investigative mechanisms — and the investigations and accountability projects OHCHR carries
-        out at the Council's request, which are ten of the forty-seven.</li>
+      <li>are <b>mandated by the Human Rights Council</b> \u2014 not the General Assembly, not the Security
+        Council, not the Secretary-General;</li>
+      <li>are <b>country-specific</b>, not thematic;</li>
+      <li>carry a mandate to <b>investigate, find facts or build accountability</b>;</li>
+      <li>are a <b>stand-alone team</b>, whether independent or OHCHR-hosted.</li>
     </ol>
-    <p class="sg-prose-note">Each text is coded from its <b>mandate paragraphs alone</b>: not the preamble, which
-      characterises the situation rather than instructing anyone, and not the terms of reference adopted afterwards.
-      Country Special Rapporteurs are out unless the same text also creates or tasks a body, and so are texts that
-      only welcome a report or urge a State to cooperate.</p>
-    <p class="sg-prose-figs"><b>137</b> texts · <b>47</b> bodies · <b>23</b> situations · <b>87</b> recorded votes ·
+    <p class="sg-prose-kicker">Resolutions that\u2026</p>
+    <p class="sg-prose-lead sg-prose-tight"><b>create</b> such a mechanism, <b>renew or extend</b> it in time, or
+      give it a <b>new investigative, monitoring, evidence or reporting task</b>.</p>
+    <p class="sg-prose-figs"><b>137</b> texts \u00b7 <b>47</b> bodies \u00b7 <b>23</b> situations \u00b7 <b>87</b> recorded votes \u00b7
       <b>4,089</b> recorded positions</p>`);
 
   const HYPO_CARD = proseCard("hypotheses", "Two hypotheses", "What this paper sets out to test", `
