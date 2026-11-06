@@ -2877,10 +2877,8 @@
     const host = $("#summary-content");
     if (!host) return;
     PAL = screenPalette();
-    host.innerHTML = CARDS.map(c => c.prose ? `
-      <div class="panel sg-card sg-prose" data-card="${c.id}">
-        <div class="panel-body">${c.html()}</div>
-      </div>` : `
+    // Overview shows charts only; the spoken/prose cards live in the Presentation tab.
+    host.innerHTML = CARDS.filter(c => !c.prose).map(c => `
       <div class="panel sg-card" data-card="${c.id}">
         <div class="panel-head"><h2><span class="sg-num">${esc(c.id)}</span>${esc(c.head || c.title())}</h2>
           <span class="spacer"></span>
