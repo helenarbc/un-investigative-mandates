@@ -57,6 +57,9 @@
     document.body.appendChild(overlay);
   }
 
+  // The Presentation tab closes on a QR slide, so it needs the same matrix.
+  window.HRCQr = { svg: qrSvg, url: URL_ };
+
   function wire() {
     var btn = document.getElementById("qr-btn");
     if (btn) btn.addEventListener("click", function (e) { e.stopPropagation(); open(); });

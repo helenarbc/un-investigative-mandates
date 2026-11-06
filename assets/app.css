@@ -618,6 +618,19 @@ mark.cmp-v { background: #2a78d6; color: #fff; border-radius: 3px; padding: 0 3p
 .sg-checks { display: flex; gap: 46px; flex-wrap: wrap; margin: 10px 0 26px; padding: 0; list-style: none; }
 .sg-checks li { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 650; color: var(--ink); }
 .sg-tick { color: #1a8a4b; font-size: 1.15em; line-height: 1; }
+.sg-qr { text-align: center; }
+.sg-qr-img { margin: 22px auto 14px; line-height: 0; }
+.sg-qr-img svg { width: min(340px, 60vw); height: auto; }
+.sg-qr-url { margin: 0; font-size: 17px; color: var(--ink-2); }
+.pr-prose .sg-qr .sg-prose-h { margin-bottom: 0; }
+.pr-prose .sg-qr-img { margin: 2.4% auto 1.6%; }
+.pr-prose .sg-qr-img svg { width: clamp(180px, 26vh, 420px); }
+.pr-prose .sg-qr-url { font-size: clamp(12px, 1.2vw, 22px); }
+
+.sg-checks-no { margin-bottom: 20px; }
+.sg-cross { color: #eb6834; font-size: 1.1em; line-height: 1; }
+.pr-prose .sg-checks-no { margin-bottom: 2.6%; }
+
 .sg-but-block { margin-top: 6px; }
 .sg-but-word {
   display: inline-block; margin: 0 0 14px; padding-bottom: 4px;

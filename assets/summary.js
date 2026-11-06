@@ -2150,19 +2150,38 @@
     </ul>
     <div class="sg-but-block">
       <p class="sg-but-word">But</p>
-      <p class="sg-but">it grew by <b>copying</b>, without ever <b>assessing</b> what a body did
-        \u2014 and without the <b>survivor</b> in the paragraph that binds.</p>
+      <p class="sg-but">it grew by <b>copying</b> \u2014 and the <b>survivor</b> is not in the
+        paragraph that binds.</p>
     </div>`);
 
-  const H2_CONCL_CARD = proseCard("c2", "Conclusions \u00b7 Hypothesis two", "Not increasing \u2014 thinning", `
+  const H2_CONCL_CARD = proseCard("c2", "Conclusions \u00b7 Hypothesis two", "Hypothesis two", `
+    <ul class="sg-checks sg-checks-no">
+      <li><span class="sg-cross">\u2717</span>Support increasing</li>
+    </ul>
     <ul class="sg-keys">
-      <li><b>No.</b> Two thirds of members in favour before 2016; half since, and flat for 10 years.</li>
-      <li><b>The movement is to abstention, not to opposition.</b> Abstentions are not votes \u2014 a narrower base costs the drafters nothing.</li>
-      <li><b>Consent, not drafting, decides the vote.</b> Redrafting mandate language will not widen the majority.</li>
-      <li><b>Double standards run both ways.</b> Habitual opponents vote yes on Israel and on 3% of the rest; the Western group, 97% of the rest and 18% of those.</li>
-      <li><b>The sponsors stay WEOG.</b> 16 of the top 20 \u2014 the solution is believed in by the states that proposed it.</li>
-      <li><b>Contestation is intrinsic.</b> The work names governments; it was never going to be consensual.</li>
+      <li><b>64%</b> of texts go to a vote \u2014 and that tracks the <b>State</b>, not the text.</li>
+      <li>Abstentions <b>up 70%</b>: 9 \u2192 15 per vote. Opposition barely moved.</li>
+      <li>Average Yes: <b>68% of the room \u2192 52%</b>. Flat for 10 years.</li>
+      <li><b>Double standards, both ways.</b></li>
     </ul>`);
+
+  // The talk ends on the dashboard, not on a summary: the argument has been made,
+  // and what the room can take away is the data.
+  const QR_CARD = {
+    id: "qr", prose: true,
+    html: () => {
+      const Q = window.HRCQr;
+      const svg = Q ? Q.svg(360).outerHTML : "";
+      const url = (Q ? Q.url : "https://helenarbc.github.io/un-investigative-mandates/")
+        .replace(/^https?:\/\//, "").replace(/\/$/, "");
+      return `<div class="sg-prose-in sg-qr">
+        <p class="sg-eyebrow">The dataset is public</p>
+        <h2 class="sg-prose-h">Scan to open the dashboard</h2>
+        <div class="sg-qr-img">${svg}</div>
+        <p class="sg-qr-url">${url}</p>
+      </div>`;
+    },
+  };
 
   const VERDICT_CARD = proseCard("verdicts", "Conclusions", "What the texts answer", `
     <div class="sg-verdict">
@@ -2650,7 +2669,7 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
         "1fr 1fr"),
       H2_CONCL_CARD,
 
-      VERDICT_CARD
+      QR_CARD
     );
     // Sections are a property of the chart object, and the deck reuses the same
     // objects, so set them after the Overview numbering has had its turn.
