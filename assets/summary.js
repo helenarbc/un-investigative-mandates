@@ -2115,10 +2115,10 @@
     <ol class="sg-crit sg-crit-lead">
       <li><b>Number.</b> How many texts the Council adopts, and how many bodies it is running at once.
         <span class="sg-crit-ref">charts 1\u20132</span></li>
-      <li><b>Scope.</b> How many tasks a founding mandate assigns.
+      <li><b>Duration.</b> How long the Council gives a body to do the work.
         <span class="sg-crit-ref">chart 3</span></li>
-      <li><b>Duration.</b> How long the Council gives a body to do them.
-        <span class="sg-crit-ref">chart 4</span></li>
+      <li><b>Scope.</b> Which tasks a founding mandate assigns, and how many.
+        <span class="sg-crit-ref">charts 4\u20135</span></li>
     </ol>
     <p class="sg-prose-note">Charts 5 to 7 then ask the harder question: whether that growth was carried out
       with any attention \u2014 where the wording comes from, which body of law is named, and which groups reach
@@ -2305,7 +2305,7 @@
                      opponents and supporters                    (8-15)
      PNG filenames keep their original numbers; only the on-screen id moves. */
   (() => {
-    const ORDER = ["1", "2", "3", "11", "12", "13", "14", "4", "5", "6", "7", "8", "9", "10", "10b"];
+    const ORDER = ["1", "2", "11", "12", "3", "13", "14", "4", "5", "6", "7", "8", "9", "10", "10b"];
     const byId = {};
     CARDS.forEach(c => { byId[c.id] = c; });
     const missing = ORDER.filter(id => !byId[id]);
@@ -2800,7 +2800,7 @@
     const svg = svgRoot(D_W, D_H);
     svg.setAttribute("style", "display:block;width:100%;height:auto");
 
-    const titleLines = wrapTo("Task verbs in founding mandates: the year each one first appears, and the years it is used",
+    const titleLines = wrapTo("Task verbs in founding mandates",
       24, D_W - padL - padR);
     titleLines.forEach((ln, i) => text(svg, ln, { x: padL, y: 36 + i * 29,
       "font-size": 24, "font-weight": 650, fill: PAL.ink }));
