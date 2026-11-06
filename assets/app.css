@@ -546,7 +546,8 @@ details.menu > .menu-list {
   font-size: clamp(20px, 2.1vw, 34px); line-height: 1.2; font-weight: 650;
   color: var(--ink); margin: 0;
 }
-.pr-legend { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4%; }
+.pr-legend { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4%;
+  font-size: clamp(11px, 0.95vw, 16px); margin: 0; }
 .pr-legend .sw { width: clamp(10px, 0.9vw, 14px); height: clamp(10px, 0.9vw, 14px); }
 .pr-chart-host { flex: 1; min-height: 0; display: flex; align-items: center; }
 .pr-chart-host svg { width: 100%; height: auto; max-height: 100%; }
