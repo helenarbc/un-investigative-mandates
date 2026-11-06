@@ -433,7 +433,8 @@
           "font-size": Math.max(8.5, segFont), "font-weight": 650, fill: PAL.ink,
         });
       }
-      const every = slot < 20 ? 5 : 1;
+      // Two charts to a slide halves the width: thin the year labels before they touch.
+      const every = slot < 20 ? 5 : (slot < 30 ? 2 : 1);
       if (i % every === 0 || i === YEARS.length - 1) {
         text(svg, yr, { x: x + bw / 2, y: H - 8, "text-anchor": "middle", "font-size": yearFont, fill: PAL.ink2 });
       }
@@ -525,7 +526,9 @@
     const empty = BR_DATA.rows.filter(r => !r.texts);
     const total = BR_DATA.totalTexts;
 
-    const H = narrow ? 420 : 360;
+    // In the stacked layout the key sits under the ring, so the box has to grow
+    // with it: two charts to a slide is narrower than the Overview ever is.
+    const H = narrow ? 300 + rows.length * 34 + empty.length * 44 + 20 : 360;
     const cy = narrow ? 150 : H / 2;
     const cx = narrow ? W / 2 : Math.min(230, W * 0.3);
     const R = Math.min(narrow ? 108 : 132, cy - 18);
@@ -752,7 +755,7 @@
         "font-size": valFont, "font-weight": 650, fill: PAL.ink,
       });
       const yearFont = Math.max(8, Math.min(11.5, slot * 0.42));
-      const every = slot < 20 ? 5 : 1;
+      const every = slot < 20 ? 5 : (slot < 30 ? 2 : 1);
       if (i % every === 0 || i === YEARS.length - 1) {
         text(svg, yr, { x: x + bw / 2, y: H - 8, "text-anchor": "middle", "font-size": yearFont, fill: PAL.ink2 });
       }
@@ -2110,14 +2113,13 @@
   const DASHBOARD_CARD = proseCard("dashboard", "The dataset", "The dashboard", `
     <figure class="sg-shot"><img src="assets/img/dashboard.png" alt="The UN Investigative Mandates dashboard"></figure>`);
 
-  const HYPO_CARD = proseCard("hypotheses", "Two hypotheses", "What this paper tests", `
+  const HYPO_CARD = proseCard("hypotheses", "", "Two hypotheses", `
     <ol class="sg-hyp">
       <li><span class="sg-hyp-n">1</span><span>${H1_TEXT}</span></li>
       <li><span class="sg-hyp-n">2</span><span>${H2_TEXT}</span></li>
     </ol>`);
 
   const H1_CARD = proseCard("h1", "Hypothesis one", H1_TEXT, `
-    <p class="sg-prose-lead sg-prose-tight">Three claims in one. Each is measured separately.</p>
     <ol class="sg-crit sg-crit-lead">
       <li><b>Number.</b> How many texts the Council adopts, and how many bodies it is running at once.</li>
       <li><b>Duration.</b> How long the Council gives a body to do the work.</li>
@@ -2128,6 +2130,29 @@
     <p class="sg-prose-lead">If the practice has grown, the support for it should have grown too. These charts
       ask whether a text is voted at all, by what margin, how the regional groups vote, which situations recur,
       how mandates end, and who opposes and who supports.</p>`);
+
+  /* Conclusion cards for the talk: keywords only, so the slide does not
+     compete with what is being said. The full sentences live in the script. */
+  const H1_CONCL_CARD = proseCard("c1", "Conclusions \u00b7 Hypothesis one", "More, longer, wider \u2014 but not considered", `
+    <ul class="sg-keys">
+      <li><b>Yes on the numbers.</b> 3 bodies running in 2006 \u2192 14\u201316 every year since 2021.</li>
+      <li><b>Yes on scope.</b> No founding mandate above 5 tasks before 2014; none below 8 since 2022.</li>
+      <li><b>Yes on duration</b> \u2014 median term 3 months \u2192 12.</li>
+      <li><b>But growth is not design.</b> Formulas travel word for word across continents and years.</li>
+      <li><b>No assessment.</b> Nothing in the texts weighs what a body did, or what the next one needs.</li>
+      <li><b>No survivor at the centre.</b> Groups named where naming is free, absent where the text binds.</li>
+      <li><b>Every creation leaves a document. Almost no ending does.</b></li>
+    </ul>`);
+
+  const H2_CONCL_CARD = proseCard("c2", "Conclusions \u00b7 Hypothesis two", "Not increasing \u2014 thinning", `
+    <ul class="sg-keys">
+      <li><b>No.</b> Two thirds of members in favour before 2016; half since, and flat for 10 years.</li>
+      <li><b>The movement is to abstention, not to opposition.</b> Abstentions are not votes \u2014 a narrower base costs the drafters nothing.</li>
+      <li><b>Consent, not drafting, decides the vote.</b> Redrafting mandate language will not widen the majority.</li>
+      <li><b>Double standards run both ways.</b> Habitual opponents vote yes on Israel and on 3% of the rest; the Western group, 97% of the rest and 18% of those.</li>
+      <li><b>The sponsors stay WEOG.</b> 16 of the top 20 \u2014 the solution is believed in by the states that proposed it.</li>
+      <li><b>Contestation is intrinsic.</b> The work names governments; it was never going to be consensual.</li>
+    </ul>`);
 
   const VERDICT_CARD = proseCard("verdicts", "Conclusions", "What the texts answer", `
     <div class="sg-verdict">
@@ -2215,8 +2240,8 @@
       });
       const items = TERM_DATA.groups[b.key].map(x =>
         x.name + (x.months === null ? "" : " \u2014 " + x.months + " months (" + TERM_SRC_LABEL[x.src] + ")"));
-      path.setAttribute("data-tip", `<b>${esc(b.label)}</b><br>${n} of ${total} mechanisms` +
-        `<br><span style="opacity:.8">${items.map(esc).join("<br>")}</span>`);
+      // The tooltip is rendered as text, not HTML: plain lines, like every other chart.
+      path.setAttribute("data-tip", `${b.label}\n${n} of ${total} mechanisms\n` + items.join("\n"));
       svg.appendChild(path);
       // slice label, outside the ring
       const mid = (a0 + a1) / 2;
@@ -2546,6 +2571,8 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
     4: "3 · Scope", 5: "3 · Scope",
   };
 
+  const DECK = [];
+
   (() => {
     const ORDER = ["1", "2", "11", "12", "11b", "3", "13", "14", "4", "5", "6", "sp", "7", "8", "9", "10", "10b"];
     const byId = {};
@@ -2570,6 +2597,61 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
       H2_CARD, ...charts.slice(7),
       VERDICT_CARD
     );
+
+    /* ---------------- the spoken deck ----------------
+       The Overview keeps every chart. The talk does not: it is a narrative with
+       two hypotheses, and the charts are there to illustrate, not to be read out.
+       So this deck is a selection of the same card objects - same draw functions,
+       same tooltips - with some pairs shown side by side on one slide, and a
+       keyword conclusion card closing each hypothesis.
+       `byId` is keyed on the ORIGINAL chart ids, which is why it is used here
+       rather than the renumbered c.id. */
+    const pair = (eyebrow, head, a, b, note, cols) =>
+      ({ pair: true, id: "p-" + a + "-" + b, eyebrow, head, note, cols,
+         parts: [byId[a], byId[b]] });
+
+    DECK.push(
+      INCLUDED_CARD,
+      DASHBOARD_CARD,
+      HYPO_CARD,
+
+      H1_CARD,
+      pair("1 \u00b7 Number", "How many texts, and how many bodies at once",
+        "1", "2",
+        "Left: one column per calendar year, split by the role of the text. " +
+        "Right: a body is counted in every year its mandate is in force."),
+      byId["3"],
+      byId["12"],
+      byId["9"],
+      H1_CONCL_CARD,
+
+      H2_CARD,
+      byId["4"],
+      byId["5"],
+      pair("2 \u00b7 The docket", "Which situations the Council returns to",
+        "7", "8",
+        "Left: one row per situation. Right: each ring segment is a regional group's share of the mandating texts."),
+      byId["sp"],
+      pair("2 \u00b7 Both ends of the room", "Who opposes, and who supports",
+        "10", "10b",
+        "The same members and the same bars, read from each end. " +
+        "Years of membership differ, so totals are not comparable across states.",
+        "1fr 1fr"),
+      H2_CONCL_CARD,
+
+      VERDICT_CARD
+    );
+    // Sections are a property of the chart object, and the deck reuses the same
+    // objects, so set them after the Overview numbering has had its turn.
+    const DECK_SECTION = new Map([
+      [byId["3"], "1 \u00b7 Scope"],
+      [byId["12"], "1 \u00b7 Scope"],
+      [byId["9"], "1 \u00b7 Duration"],
+      [byId["4"], "2 \u00b7 Consent"],
+      [byId["5"], "2 \u00b7 Margins"],
+      [byId["sp"], "2 \u00b7 Who proposes"],
+    ]);
+    DECK_SECTION.forEach((v, k) => { if (k) k.section = v; });
   })();
 
 
@@ -3259,6 +3341,6 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
 
   // CARDS is exposed so the Presentation tab can render the same cards full screen,
   // calling the same draw functions - so the charts there keep their tooltips.
-  window.HRCSummary = { activate, cards: () => CARDS, palette: () => PAL,
+  window.HRCSummary = { activate, cards: () => CARDS, deck: () => DECK, palette: () => PAL,
     data: { A: A_DATA, B: B_DATA, C: C_DATA, texts: TEXTS.length, bodies: BODIES.length } };
 })();

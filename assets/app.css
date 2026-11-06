@@ -593,6 +593,38 @@ mark.cmp-v { background: #2a78d6; color: #fff; border-radius: 3px; padding: 0 3p
 .pr-prose .sg-crit + .sg-prose-kicker { margin-top: 2%; }
 .pr-prose .sg-shot img { max-height: 76vh; width: auto; max-width: 100%; margin: 0 auto; }
 .pr-prose .sg-shot { display: flex; justify-content: center; }
+/* keyword conclusion lists: the slide carries the words, the speaker the sentences */
+.sg-keys { margin: 0; padding-left: 0; list-style: none; }
+.sg-keys li {
+  position: relative; padding-left: 20px; margin-bottom: 10px;
+  font-size: 16px; line-height: 1.5; color: var(--ink-2);
+}
+.sg-keys li::before {
+  content: ""; position: absolute; left: 2px; top: 0.6em;
+  width: 7px; height: 7px; border-radius: 2px; background: var(--accent);
+}
+.sg-keys b { color: var(--ink); font-weight: 650; }
+.pr-prose .sg-keys li { font-size: clamp(13px, 1.3vw, 23px); margin-bottom: 1.3%; padding-left: 1.8vw; }
+.pr-prose .sg-keys li::before { width: 0.55vw; height: 0.55vw; min-width: 7px; min-height: 7px; top: 0.55em; }
+
+/* two charts on one slide */
+.pr-pair-grid {
+  flex: 1; min-height: 0; display: grid; grid-template-columns: 1.14fr 0.86fr;
+  gap: 2.2%; align-items: stretch;
+}
+.pr-pair .pr-cell { display: flex; flex-direction: column; gap: 0.6%; min-height: 0; min-width: 0; }
+.pr-pair .pr-sub {
+  margin: 0; font-size: clamp(12px, 1.15vw, 19px); font-weight: 650;
+  line-height: 1.25; color: var(--ink);
+}
+.pr-pair .pr-legend { font-size: clamp(9px, 0.8vw, 13px); flex-direction: row; flex-wrap: wrap; gap: 0 10px; }
+.pr-pair .pr-chart-host { flex: 1; min-height: 0; align-items: center; justify-content: center; }
+/* half-width cells are shorter than the charts are tall, so scale to the height,
+   not the width, and let the aspect ratio set the width. */
+.pr-pair .pr-chart-host svg { width: auto !important; height: 100% !important; max-width: 100% !important; }
+
+@media (max-width: 760px) { .pr-pair-grid { grid-template-columns: 1fr; } }
+
 .pr-bar { display: flex; align-items: center; gap: 10px; }
 .pr-bar .spacer { flex: 1; }
 .pr-pos { font-size: 13px; color: var(--ink-2); min-width: 64px; text-align: center; }

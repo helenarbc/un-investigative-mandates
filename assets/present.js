@@ -17,16 +17,43 @@
 
   let built = false, idx = 0, slides = [], stage = null, deck = null;
 
+  // The talk is a curated deck, not every chart on the Overview: a selection of
+  // the same card objects, with some shown two to a slide. Fall back to the full
+  // set if an older summary.js is cached.
   function cards() {
-    return (window.HRCSummary && window.HRCSummary.cards) ? window.HRCSummary.cards() : [];
+    const S = window.HRCSummary;
+    if (!S) return [];
+    const d = S.deck ? S.deck() : null;
+    return (d && d.length) ? d : (S.cards ? S.cards() : []);
   }
 
   function slideFor(c, n, total) {
     const el = document.createElement("section");
-    el.className = "pr-slide" + (c.prose ? " pr-prose" : " pr-chart");
+    el.className = "pr-slide" + (c.prose ? " pr-prose" : (c.pair ? " pr-chart pr-pair" : " pr-chart"));
     el.setAttribute("aria-hidden", "true");
     if (c.prose) {
       el.innerHTML = `<div class="pr-inner">${c.html()}</div>`;
+    } else if (c.pair) {
+      // Two charts on one slide. Each keeps its own legend, because the colours
+      // mean different things on either side.
+      const cell = (p) => {
+        // A self-contained chart draws its own title inside the SVG, so repeating
+        // it above the cell would print it twice.
+        const lg = (!p.selfContained && p.legend) ? p.legend() : "";
+        const sub = p.selfContained ? "" : `<h3 class="pr-sub">${(p.head || p.title())}</h3>`;
+        return `<div class="pr-cell">
+            ${sub}
+            ${lg ? `<div class="legend pr-legend">${lg}</div>` : ""}
+            <div class="pr-chart-host"></div>
+          </div>`;
+      };
+      el.innerHTML =
+        `<div class="pr-inner">
+           ${c.eyebrow ? `<p class="pr-eyebrow">${c.eyebrow}</p>` : ""}
+           <h2 class="pr-title">${c.head}</h2>
+           <div class="pr-pair-grid"${c.cols ? ` style="grid-template-columns:${c.cols}"` : ""}>${c.parts.map(cell).join("")}</div>
+           <p class="pr-note">${c.note || ""}</p>
+         </div>`;
     } else {
       // The legend is a sibling of the chart on the Overview, not part of the SVG.
       // A slide without it is a slide of unexplained colours - the exact fault
@@ -57,6 +84,21 @@
   function drawSlide(el) {
     const c = el._card;
     if (!c || c.prose) return;
+    if (c.pair) {
+      const hosts = el.querySelectorAll(".pr-chart-host");
+      c.parts.forEach((p, i) => {
+        const h = hosts[i];
+        if (!h) return;
+        h.innerHTML = "";
+        try { p.draw(h, p.modes ? p.modes[0][0] : null); }
+        catch (err) {
+          h.innerHTML = '<p class="pr-fail">This chart could not be drawn here.</p>';
+          console.warn("present: draw failed for card", p.id, err);
+        }
+      });
+      el._drawn = true;
+      return;
+    }
     const host = $(".pr-chart-host", el);
     if (!host) return;
     host.innerHTML = "";
