@@ -2297,7 +2297,100 @@
     <p class="sg-prose-note">Mandate paragraphs as adopted, lightly shortened where marked …. The marked
       words are the coded task verbs.</p>`;
 
+
+  /* ---------- who holds the pen ----------
+     Sponsorship by state, coloured by regional group. Voting is one thing; putting
+     your name on the text is another, and the two do not come from the same places. */
+  const SP_GCOL = {
+    "WEOG (Western Europe & Others)": "#2a78d6",
+    "Eastern European Group": "#86b6ef",
+    "African Group": "#6fc096",
+    "Asia-Pacific Group": "#f0a93b",
+    "GRULAC (Latin America & Caribbean)": "#b98cd1",
+    "Observer / non-member": "#c9c8c3",
+  };
+  const SP_SHORT = {
+    "WEOG (Western Europe & Others)": "Western group",
+    "Eastern European Group": "Eastern European",
+    "African Group": "African",
+    "Asia-Pacific Group": "Asia-Pacific",
+    "GRULAC (Latin America & Caribbean)": "Latin American",
+    "Observer / non-member": "observer",
+  };
+  const SP_DATA = (() => {
+    const grp = {}; D.states.forEach(s => (grp[s.state] = s.regional_group));
+    const counted = new Set(TEXTS.map(r => r.symbol));
+    const tot = {}, main = {};
+    Object.entries(D.sponsorships || {}).forEach(([sym, v]) => {
+      if (!counted.has(sym)) return;
+      (v.m || []).forEach(i => { const n = D.states[i].state; tot[n] = (tot[n] || 0) + 1; main[n] = (main[n] || 0) + 1; });
+      (v.c || []).forEach(i => { const n = D.states[i].state; tot[n] = (tot[n] || 0) + 1; });
+    });
+    const rows = Object.entries(tot).map(([state, t]) =>
+      ({ state, total: t, main: main[state] || 0, group: grp[state] }))
+      .sort((a, b) => b.total - a.total);
+    const byG = {}, byGm = {};
+    rows.forEach(r => { byG[r.group] = (byG[r.group] || 0) + r.total; byGm[r.group] = (byGm[r.group] || 0) + r.main; });
+    const T = rows.reduce((a, r) => a + r.total, 0);
+    const top = rows.slice(0, 20);
+    const topG = {};
+    top.forEach(r => (topG[r.group] = (topG[r.group] || 0) + 1));
+    return { rows, top, T, byG, byGm, topG,
+      weogShare: Math.round(100 * (byG["WEOG (Western Europe & Others)"] || 0) / T),
+      groups: Object.keys(byG).sort((a, b) => byG[b] - byG[a]) };
+  })();
+
+  function drawSP(host) {
+    const padL = 210, padR = 64;
+    const iw = D_W - padL - padR;
+    const svg = svgRoot(D_W, 700);
+    svg.setAttribute("style", "display:block;width:100%;height:auto");
+    text(svg, "The 20 states that sponsor most often", { x: 28, y: 42,
+      "font-size": 26, "font-weight": 650, fill: PAL.ink });
+    text(svg, "Each state's resolutions as main sponsor or co-sponsor, coloured by its regional group",
+      { x: 28, y: 68, "font-size": 15, fill: PAL.ink2 });
+
+    // legend
+    let lx = 28;
+    SP_DATA.groups.filter(g => SP_DATA.topG[g]).forEach(g => {
+      svg.appendChild(el("rect", { x: lx, y: 86, width: 13, height: 13, rx: 2.5, fill: SP_GCOL[g] }));
+      const lbl = SP_SHORT[g] + " — " + SP_DATA.topG[g] + " of the 20";
+      text(svg, lbl, { x: lx + 18, y: 97, "font-size": 14, fill: PAL.ink2 });
+      lx += 18 + textW(lbl, 14) + 24;
+    });
+
+    const top = 122, rowH = 26;
+    const max = SP_DATA.top[0].total;
+    SP_DATA.top.forEach((r, i) => {
+      const y = top + i * rowH, mid = y + rowH / 2;
+      text(svg, r.state, { x: padL - 10, y: mid + 4, "text-anchor": "end",
+        "font-size": 14, fill: PAL.ink });
+      const w = iw * r.total / max;
+      svg.appendChild(el("rect", { x: padL, y: mid - 8, width: Math.max(2, w), height: 16, rx: 2.5,
+        fill: SP_GCOL[r.group] || "#c9c8c3",
+        _tip: `${r.state} — ${SP_SHORT[r.group] || r.group}\n${plural(r.total, "resolution")} sponsored` +
+          `\n${r.main} as main sponsor or core group` }));
+      text(svg, r.total, { x: padL + w + 8, y: mid + 5, "font-size": 13,
+        "font-weight": 650, fill: PAL.ink2 });
+    });
+
+    const gy = top + SP_DATA.top.length * rowH + 34;
+    text(svg, `Across all ${SP_DATA.rows.length} states that have ever sponsored one of these texts, ` +
+      `the Western group accounts for ${SP_DATA.weogShare}% of every sponsorship recorded.`,
+      { x: 28, y: gy, "font-size": 15, "font-weight": 600, fill: PAL.ink });
+    host.textContent = "";
+    host.appendChild(svg);
+    attachTips(svg);
+  }
+
   const CARDS = [
+    {
+      id: "sp",
+      head: "The 20 states that sponsor most often",
+      selfContained: true,
+      file: "chart-sponsors-by-group.png",
+      draw: drawSP,
+    },
     {
       id: "11b",
       prose: true,
@@ -2454,7 +2547,7 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
   };
 
   (() => {
-    const ORDER = ["1", "2", "11", "12", "11b", "3", "13", "14", "4", "5", "6", "7", "8", "9", "10", "10b"];
+    const ORDER = ["1", "2", "11", "12", "11b", "3", "13", "14", "4", "5", "6", "sp", "7", "8", "9", "10", "10b"];
     const byId = {};
     CARDS.forEach(c => { byId[c.id] = c; });
     const missing = ORDER.filter(id => !byId[id]);
