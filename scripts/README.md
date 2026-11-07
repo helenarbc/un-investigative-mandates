@@ -11,6 +11,7 @@ site was not reflected in any copy she could run.
     python3 scripts/fetch_airtable.py        # refresh data/airtable/*.json from the base
     python3 scripts/export.py                # data/airtable/*.json -> export/*.json
     python3 scripts/build_dashboard_data.py  # export/*.json        -> dashboard/data/*.js
+    cp dashboard/data/core.js data/core.js   # the site loads data/core.js; then bump ?v= in index.html
 
 `fetch_airtable.py` and `build_paragraphs.py` are not in this repository yet;
 they are on the machine and in Drive. Airtable stays the single source of truth —

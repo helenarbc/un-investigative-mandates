@@ -1,0 +1,4 @@
+data/airtable/
+export/
+dashboard/
+__pycache__/

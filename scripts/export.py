@@ -212,18 +212,24 @@ TERM_ROLES = ("founding", "renewal")
 
 def term_of(symbol, role, verbatim, airtable_value=None):
     """Return (value, op, phrase) for one text, or (None, None, None) to leave it out."""
-    if symbol in TERM_OVERRIDES:
-        value, phrase = TERM_OVERRIDES[symbol]
-        return (value, None, phrase)
-    if airtable_value:
-        return (airtable_value, None, "from Airtable")
     vm = verbatim or ""
+    found = None
     for value, pattern in TERM_RULES:
         m = re.search(pattern, vm, re.I)
         if m:
             before = vm[:m.start()]
             ops = re.findall(r"OP\s*([0-9]+[a-z]?(?:\([a-z]\))?)\s*:", before, re.I)
-            return (value, ("OP" + ops[-1]) if ops else None, m.group(0))
+            found = (value, ("OP" + ops[-1]) if ops else None, m.group(0))
+            break
+    if symbol in TERM_OVERRIDES:
+        # The hand decision wins on value and phrase; the paragraph the rule found
+        # is kept so the card can still cite it (as the live site did before 7 Nov).
+        value, phrase = TERM_OVERRIDES[symbol]
+        return (value, found[1] if found else None, phrase)
+    if airtable_value:
+        return (airtable_value, None, "from Airtable")
+    if found:
+        return found
     return ("not stated", None, None) if role in TERM_ROLES else (None, None, None)
 
 
