@@ -914,8 +914,8 @@
           <div id="sp-board"></div>
         </div>
         <div class="panel-note">Top 30 states by number of sponsored resolutions in the current selection.
-        Click a state for its profile. Sponsorship lists come from the L-documents and their addenda;
-        for a minority of resolutions no sponsor list has been recorded yet.</div>
+        Click a state for its profile. Sponsorship lists come from the Council's session reports (main sponsors, co-sponsors at tabling,
+        and States that joined before or after adoption); sponsorship on behalf of a group is counted for each member State.</div>
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Sponsorship by mechanism</h2>
@@ -1856,8 +1856,11 @@
 
       <h2>Sources and citation</h2>
       <p class="prose">Complete to the close of the Council's 63rd session, 7 October 2026, covering
-      ${COUNCIL_BODIES} Council-mandated bodies. Sponsorship lists come from the draft L-documents; for a
-      minority of resolutions they are not yet recorded.</p>
+      ${COUNCIL_BODIES} Council-mandated bodies. Sponsorship lists come from the session report of each session
+      (A/HRC/[session]/2), which records the sponsors at tabling and the States that joined later. A State sponsoring on
+      behalf of a group (the European Union, the African Group, the Arab Group, the OIC, the GCC) is counted for each member
+      of that group on the date of adoption, and each State is counted once per resolution. For texts of the 61st to 63rd
+      sessions, whose session reports are not yet issued, and for S-15/1 and S-16/1, the lists are provisional.</p>
       <p class="prose">Compiled and verified against the official UN documents (docs.un.org and the OHCHR Search
       Library) by <b>Helena Rodríguez-Bronchú Carceller</b>. The analytical codings are the author's own, applied
       from the literal text; the verbatim mandate quotes on each resolution card are the coding evidence. Every
