@@ -393,6 +393,141 @@
   const SOURCE_LINE = `Source: HRC investigative mandates dataset, build of ${BUILD_DATE} ` +
     `(${TEXTS.length} texts, ${BODIES.length} bodies, ${SITUATIONS.length} situations).`;
 
+  /* ---------------- rights notice ----------------
+     Charts leave this site as PNG files and get reused elsewhere, and anything
+     sitting in the page around a figure is lost the moment the image is saved.
+     The notice is therefore drawn INTO the SVG, in the gap between the legend
+     and the top of the plot: a crop tight enough to remove it also removes the
+     legend, and a crop that keeps the legend keeps the notice. */
+  const CREDIT_LINE = "\u00a9 2026 Helena Rodr\u00edguez-Bronch\u00fa Carceller \u00b7 mandates.helenarbc.com";
+
+  // The card's own background, so the panel behind the notice is invisible in
+  // either theme. The PNG export redraws with the light palette on white.
+  const surfaceColour = () => {
+    try {
+      const v = getComputedStyle(document.documentElement).getPropertyValue("--surface").trim();
+      return v || "#ffffff";
+    } catch (e) { return "#ffffff"; }
+  };
+
+  const rightOf = (n, tag) => {
+    const num = (a) => { const v = parseFloat(n.getAttribute(a)); return isFinite(v) ? v : null; };
+    if (tag === "rect") { const x = num("x"), w = num("width"); return x === null ? null : x + (w || 0); }
+    if (tag === "line") return Math.max(num("x1"), num("x2"));
+    if (tag === "circle" || tag === "ellipse") {
+      const cx = num("cx"); return cx === null ? null : cx + (num("r") || num("rx") || 0);
+    }
+    try { const b = n.getBBox(); return b ? b.x + b.width : null; } catch (e) { return null; }
+  };
+
+  function stampCredit(host) {
+    const svg = host && host.querySelector ? host.querySelector("svg") : null;
+    if (!svg || svg.querySelector(".hrc-credit")) return;
+    const vb = (svg.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
+    const W = vb[2] || +svg.getAttribute("width") || 960;
+    const H = vb[3] || +svg.getAttribute("height") || 400;
+
+    // The plot's top-left and right edges: the drawn marks. Type is ignored
+    // (titles and legend labels sit above it), and so are legend swatches,
+    // small annotation dots, dashed leader lines and any full-canvas backdrop.
+    let top = Infinity, left = Infinity, right = -Infinity;
+    svg.querySelectorAll("rect,line,circle,ellipse,path,polygon,polyline").forEach(n => {
+      if (n.getAttribute("stroke-dasharray")) return;
+      const num = (a) => { const v = parseFloat(n.getAttribute(a)); return isFinite(v) ? v : null; };
+      let t = null, l = null;
+      const tag = n.tagName.toLowerCase();
+      if (tag === "rect") {
+        const w = num("width") || 0, h = num("height") || 0;
+        if (w <= 24 && h <= 24) return;                     // legend swatch
+        if (w >= W * 0.97 && h >= H * 0.9) return;          // canvas backdrop
+        t = num("y"); l = num("x");
+      } else if (tag === "line") {
+        t = Math.min(num("y1"), num("y2")); l = Math.min(num("x1"), num("x2"));
+      } else if (tag === "circle" || tag === "ellipse") {
+        const r = num("r") || num("ry") || 0;
+        if (r <= 5) return;                                 // legend or annotation dot
+        t = num("cy") - r; l = num("cx") - r;
+      } else {
+        try { const b = n.getBBox(); if (b && b.width + b.height > 24) { t = b.y; l = b.x; } }
+        catch (e) { /* not laid out: the marks above are enough */ }
+      }
+      if (t !== null && isFinite(t)) top = Math.min(top, t);
+      if (l !== null && isFinite(l)) left = Math.min(left, l);
+      const r2 = rightOf(n, tag);
+      if (r2 !== null && isFinite(r2)) right = Math.max(right, r2);
+    });
+
+    const size = Math.round(Math.min(13, Math.max(9.5, W / 1280 * 12)) * 10) / 10;
+    if (!isFinite(top)) { top = H * 0.4; left = W * 0.04; }
+    if (!isFinite(left)) left = W * 0.04;
+    if (!isFinite(right)) right = W * 0.96;
+
+    const node = text(svg, CREDIT_LINE, {
+      x: 0, y: 0, "font-size": size, fill: PAL.muted, class: "hrc-credit",
+      "pointer-events": "none",
+    });
+
+    // Where exactly it goes depends on what is already there: these charts put
+    // row labels, sub-headings and axis figures at just that height, so each
+    // candidate is scored against everything already drawn and the clearest
+    // wins. Every candidate is flush against the plot - the notice is never
+    // further from the chart than the legend is.
+    const bb = (n) => { try { const b = n.getBBox(); return b && (b.width || b.height) ? b : null; }
+                        catch (e) { return null; } };
+    const self = bb(node);
+    if (!self) {
+      node.setAttribute("x", left);
+      node.setAttribute("y", Math.max(size, top - size * 0.7));
+      return;
+    }
+    const tw = self.width, th = self.height;
+
+    const others = [];
+    svg.querySelectorAll("*").forEach(n => {
+      if (n === node || n === svg) return;
+      const b = bb(n);
+      if (b) others.push(b);
+    });
+
+    // Overlap area against everything already drawn, in square pixels.
+    const cost = (x, y) => {
+      const L = x, R = x + tw, T = y - th * 0.82, B = y + th * 0.25;
+      if (L < -1 || R > W + 1 || T < 0 || B > H) return Infinity;
+      let a = 0;
+      others.forEach(o => {
+        const ow = Math.min(R, o.x + o.width) - Math.max(L, o.x) + 7;
+        const oh = Math.min(B, o.y + o.height) - Math.max(T, o.y) + 3;
+        if (ow > 0 && oh > 0) a += ow * oh;
+      });
+      return a;
+    };
+
+    const above = top - size * 0.6;
+    const inside = top + size * 1.45;
+    const candidates = [
+      [left, above],                     // above the plot, flush left
+      [right - tw, above],               // above the plot, flush right
+      [(left + right - tw) / 2, above],  // above the plot, centred
+      [right - tw - 4, inside],          // inside the plot, top right
+      [left + 4, inside],                // inside the plot, top left
+    ];
+    let spot = candidates[0], best = Infinity;
+    candidates.forEach(c => { const v = cost(c[0], c[1]); if (v < best) { best = v; spot = c; } });
+    if (best > 0) {
+      // Nothing is completely clear. Keep the notice where it belongs and lift
+      // it off what is underneath with a panel of the chart's own ground.
+      const pad = 3;
+      svg.insertBefore(el("rect", {
+        x: spot[0] - pad, y: spot[1] - th * 0.82 - pad + 1,
+        width: tw + pad * 2, height: th + pad * 2 - 2, rx: 2,
+        fill: PAL === LIGHT ? "#ffffff" : surfaceColour(), opacity: 0.9,
+        "pointer-events": "none", class: "hrc-credit-bg",
+      }), node);
+    }
+    node.setAttribute("x", Math.max(0, Math.min(spot[0], W - tw)));
+    node.setAttribute("y", spot[1]);
+  }
+
   /* ---------------- chart 1 ---------------- */
   function drawA(host) {
     const W = Math.max(host.clientWidth || 960, 300);
@@ -3310,7 +3445,7 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
       if (c.prose) return;
       const card = host.querySelector(`.sg-card[data-card="${c.id}"]`);
       card._mode = c.modes ? c.modes[0][0] : null;
-      card._draw = (h) => c.draw(h, card._mode);
+      card._draw = (h) => { c.draw(h, card._mode); stampCredit(h); };
       card._file = () => (typeof c.file === "function" ? c.file(card._mode) : c.file);
       card._draw($(".sg-chart", card));
     });
@@ -3379,6 +3514,6 @@ What an expansion looks like: resolution 62/1 of 6 July 2026, on El Obeid, adopt
 
   // CARDS is exposed so the Presentation tab can render the same cards full screen,
   // calling the same draw functions - so the charts there keep their tooltips.
-  window.HRCSummary = { activate, cards: () => CARDS, deck: () => DECK, palette: () => PAL,
+  window.HRCSummary = { activate, cards: () => CARDS, deck: () => DECK, palette: () => PAL, stampCredit,
     data: { A: A_DATA, B: B_DATA, C: C_DATA, texts: TEXTS.length, bodies: BODIES.length } };
 })();

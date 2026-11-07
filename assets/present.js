@@ -27,6 +27,14 @@
   // The talk is a curated deck, not every chart on the Overview: a selection of
   // the same card objects, with some shown two to a slide. Fall back to the full
   // set if an older summary.js is cached.
+  // The same notice the Overview draws into every chart SVG. Guarded: an older
+  // cached summary.js will not have it, and a missing notice must not stop a
+  // slide from drawing.
+  function stamp(host) {
+    const api = window.HRCSummary;
+    if (api && api.stampCredit) api.stampCredit(host);
+  }
+
   function cards() {
     const S = window.HRCSummary;
     if (!S) return [];
@@ -97,7 +105,7 @@
         const h = hosts[i];
         if (!h) return;
         h.innerHTML = "";
-        try { p.draw(h, p.modes ? p.modes[0][0] : null); }
+        try { p.draw(h, p.modes ? p.modes[0][0] : null); stamp(h); }
         catch (err) {
           h.innerHTML = '<p class="pr-fail">This chart could not be drawn here.</p>';
           console.warn("present: draw failed for card", p.id, err);
@@ -111,6 +119,7 @@
     host.innerHTML = "";
     try {
       c.draw(host, c.modes ? c.modes[0][0] : null);
+      stamp(host);
       el._drawn = true;
     } catch (err) {
       host.innerHTML = '<p class="pr-fail">This chart could not be drawn here. It is on the Overview tab.</p>';
